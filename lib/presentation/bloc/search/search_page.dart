@@ -20,8 +20,6 @@ class _SearchPageState extends State<SearchPage> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -62,7 +60,7 @@ class _SearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final cs = Theme.of(context).colorScheme; 
     return TextField(
       controller: controller,
       autofocus: true,
@@ -106,7 +104,7 @@ class _ResultList extends StatelessWidget {
                 ? Image.network(s.artUrl!, width: 48, height: 48, fit: BoxFit.cover)
                 : Container(
                     width: 48, height: 48,
-                    color: Theme.of(context).colorScheme.surfaceVariant,
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
                     child: const Icon(Icons.music_note_rounded),
                   ),
           ),

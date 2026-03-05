@@ -57,3 +57,7 @@ class SkipToIndexEvent extends PlayerEvent {
   const SkipToIndexEvent(this.index);
   @override List<Object?> get props => [index];
 }
+
+class InternalUpdateEvent extends PlayerEvent {
+  const InternalUpdateEvent();
+}

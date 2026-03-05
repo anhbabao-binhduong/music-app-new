@@ -2,6 +2,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:dartz/dartz.dart';
 import '../../core/errors/failures.dart';
 import '../entities/song_entity.dart';
+import '../entities/playlist_entity.dart';
 
 /// Pure abstract contract — zero Flutter/Hive imports here.
 /// Presentation layer depends ONLY on this interface.

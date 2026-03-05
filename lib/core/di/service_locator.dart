@@ -20,9 +20,9 @@ Future<void> setupServiceLocator() async {
   );
 
   // ── BLoCs / Cubits (Factories — new instance per page) ──
-  getIt.registerFactory<PlayerBloc>(
-    () => PlayerBloc(getIt<MusicPlayerService>()),
-  );
+  getIt.registerLazySingleton<PlayerBloc>(
+  () => PlayerBloc(getIt<MusicPlayerService>()),
+);
   getIt.registerFactory<SearchCubit>(
     () => SearchCubit(getIt<MusicRepository>()),
   );

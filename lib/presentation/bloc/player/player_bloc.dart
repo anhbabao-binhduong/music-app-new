@@ -31,7 +31,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     on<ToggleShuffleEvent>(_onToggleShuffle);
     on<CycleRepeatEvent> (_onCycleRepeat);
     on<SkipToIndexEvent> (_onSkipToIndex);
-
+    on<InternalUpdateEvent>(_onInternalUpdate);
     _subscribeToStreams();
   }
 
@@ -40,11 +40,11 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
   void _subscribeToStreams() {
     // Position updates (throttle to 300ms to avoid excess rebuilds)
     _positionSub = _service.positionStream
-        .distinct()
-        .listen((pos) {
-      _position = pos;
-      _emitCurrentState();
-    });
+    .distinct()
+    .listen((pos) {
+  _position = pos;
+  add(const InternalUpdateEvent());
+});
 
     // Duration updates
     _service.durationStream.listen((dur) {
@@ -53,15 +53,15 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
 
     // Playback state (playing / paused / buffering)
     _playbackSub = _service.playbackStateStream.listen((ps) {
-      if (ps.processingState == AudioProcessingState.loading ||
-          ps.processingState == AudioProcessingState.buffering) {
-        emit(PlayerLoading(song: _currentSong));
-      } else if (ps.playing) {
-        _emitPlaying();
-      } else if (ps.processingState == AudioProcessingState.ready) {
-        _emitPaused();
-      }
-    });
+  if (ps.processingState == AudioProcessingState.loading ||
+      ps.processingState == AudioProcessingState.buffering) {
+    add(const InternalUpdateEvent());
+  } else if (ps.playing) {
+    add(const InternalUpdateEvent());
+  } else if (ps.processingState == AudioProcessingState.ready) {
+    add(const InternalUpdateEvent());
+  }
+});
 
     // Current song changes
     _mediaSub = _service.currentSongStream.listen((item) {
@@ -116,7 +116,6 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
           ? AudioServiceShuffleMode.all
           : AudioServiceShuffleMode.none,
     );
-    _emitCurrentState();
   }
 
   Future<void> _onCycleRepeat(
@@ -128,7 +127,6 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       RepeatMode.all  => AudioServiceRepeatMode.all,
     };
     await _service.handler.setRepeatMode(mode);
-    _emitCurrentState();
   }
 
   Future<void> _onSkipToIndex(
@@ -137,19 +135,17 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     await _service.handler.skipToQueueItem(event.index);
   }
 
-  // ─── Emit Helpers ────────────────────────────────────────
 
-  void _emitCurrentState() {
-    final st = state;
-    if (st is PlayerPlaying || st is PlayerLoading) {
-      _emitPlaying();
-    } else {
-      _emitPaused();
-    }
-  }
+  Future<void> _onInternalUpdate(
+  InternalUpdateEvent event,
+  Emitter<PlayerState> emit,
+) async {
+  if (_currentSong == null) return;
 
-  void _emitPlaying() {
-    if (_currentSong == null) return;
+  final isPlaying =
+      _service.handler.playbackState.value.playing;
+
+  if (isPlaying) {
     emit(PlayerPlaying(
       song: _currentSong!,
       position: _position,
@@ -159,10 +155,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       queue: _queue,
       currentIndex: _currentIndex,
     ));
-  }
-
-  void _emitPaused() {
-    if (_currentSong == null) return;
+  } else {
     emit(PlayerPaused(
       song: _currentSong!,
       position: _position,
@@ -173,6 +166,10 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       currentIndex: _currentIndex,
     ));
   }
+}
+  // ─── Emit Helpers ────────────────────────────────────────
+
+
 
   @override
   Future<void> close() {

@@ -22,12 +22,11 @@ class MusicPlayerService {
     _audioHandler = await AudioService.init(
       builder: () => MyAudioHandler(),
       config: const AudioServiceConfig(
-        androidNotificationChannelId: 'com.yourapp.music.channel.audio',
-        androidNotificationChannelName: 'Music Playback',
-        androidNotificationOngoing: true,
-        androidStopForegroundOnPause: true,
-        notificationColor: Color(0xFF1DB954), // Spotify-green accent ví dụ
-      ),
+      androidNotificationChannelId: 'com.yourapp.music.channel.audio',
+      androidNotificationChannelName: 'Music Playback',
+      androidNotificationOngoing: true,
+      androidStopForegroundOnPause: true,
+    ),
     );
   }
 

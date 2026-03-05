@@ -1,21 +1,19 @@
-import 'package:audio_service/audio_service.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:music_app/core/constants/app_theme.dart';
+import 'package:music_app/services/music_player_service.dart';
+import 'package:music_app/presentation/bloc/player/player_bloc.dart';   
+import 'package:music_app/presentation/bloc/player/player_event.dart'; 
+import 'package:music_app/presentation/bloc/player/player_state.dart';   
+import 'package:music_app/widgets/progress_bar_widget.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../core/constants/app_theme.dart';
-import '../../../services/music_player_service.dart';
-import '../../bloc/player/player_bloc.dart';
-import '../../bloc/player/player_event.dart';
-import '../../bloc/player/player_state.dart';
-import '../../widgets/progress_bar_widget.dart';
-
+import 'package:flutter_bloc/flutter_bloc.dart';            // Để sửa lỗi: BlocBuilder not found
+import 'package:audio_service/audio_service.dart';          // Để sửa lỗi: MediaItem not found
+import 'package:cached_network_image/cached_network_image.dart'; // Để sửa lỗi: CachedNetworkImage not found
 class PlayerPage extends StatelessWidget {
   final MediaItem song;
   const PlayerPage({super.key, required this.song});
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -176,7 +174,7 @@ class _AlbumArt extends StatelessWidget {
                 boxShadow: [
                   BoxShadow(
                     color: Theme.of(context).colorScheme.primary
-                        .withOpacity(0.4),
+                        .withValues(alpha: 0.4),
                     blurRadius: 40,
                     offset: const Offset(0, 16),
                     spreadRadius: -8,
@@ -206,7 +204,7 @@ class _ArtPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Theme.of(context).colorScheme.surfaceVariant,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Icon(Icons.music_note_rounded,
           size: 64, color: Theme.of(context).colorScheme.primary),
     );
@@ -281,22 +279,30 @@ class _Controls extends StatelessWidget {
             color: isShuffle ? cs.primary : null,
             size: 24,
           ),
+
           // Previous
           _IconBtn(
             icon: Icons.skip_previous_rounded,
             onTap: onPrevious,
             size: 36,
-            color: cs.onBackground,
+            color: cs.onSurface,
           ),
-          // Play/Pause — primary CTA
-          _PlayButton(isPlaying: isPlaying, onPlay: onPlay, onPause: onPause),
+
+          // Play/Pause
+          _PlayButton(
+            isPlaying: isPlaying,
+            onPlay: onPlay,
+            onPause: onPause,
+          ),
+
           // Next
           _IconBtn(
             icon: Icons.skip_next_rounded,
             onTap: onNext,
             size: 36,
-            color: cs.onBackground,
+            color: cs.onSurface,
           ),
+
           // Repeat
           _IconBtn(
             icon: repeatMode == RepeatMode.one
@@ -311,7 +317,6 @@ class _Controls extends StatelessWidget {
     );
   }
 }
-
 class _PlayButton extends StatelessWidget {
   final bool isPlaying;
   final VoidCallback onPlay, onPause;
@@ -330,7 +335,7 @@ class _PlayButton extends StatelessWidget {
       child: InkWell(
         onTap: isPlaying ? onPause : onPlay,
         customBorder: const CircleBorder(),
-        splashColor: cs.onPrimary.withOpacity(0.2),
+        splashColor: cs.onPrimary.withValues(alpha: 0.2),
         child: SizedBox.square(
           dimension: 68,
           child: AnimatedSwitcher(
@@ -370,7 +375,7 @@ class _IconBtn extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(50),
-        splashColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+        splashColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
         child: Padding(
           padding: const EdgeInsets.all(8),
           child: Icon(icon, color: c, size: size),

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:music_app/presentation/widgets/progress_bar_widget.dart';
+import 'package:music_app/widgets/progress_bar_widget.dart';
 import 'package:music_app/services/music_player_service.dart';
 
 // ─── Mock ────────────────────────────────────────────────────

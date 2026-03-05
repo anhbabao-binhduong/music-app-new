@@ -64,12 +64,16 @@ class MyAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   // ─── Queue Management ────────────────────────────────────
 
   @override
-  Future<void> addQueueItems(List<MediaItem> mediaItems) async {
-    final audioSources = mediaItems.map(_mediaItemToAudioSource).toList();
-    final playlist = ConcatenatingAudioSource(children: audioSources);
-    await _player.setAudioSource(playlist);
-    queue.add([...queue.value, ...mediaItems]);
-  }
+Future<void> addQueueItems(List<MediaItem> mediaItems) async {
+  final audioSources = mediaItems.map(_mediaItemToAudioSource).toList();
+
+  await _player.setAudioSources(
+    audioSources,
+    initialIndex: 0,
+  );
+
+  queue.add(mediaItems);
+}
 
   @override
   Future<void> skipToQueueItem(int index) async {
@@ -80,11 +84,11 @@ class MyAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   // ─── Helpers ─────────────────────────────────────────────
 
   AudioSource _mediaItemToAudioSource(MediaItem item) {
-    return AudioSource.uri(
-      Uri.parse(item.id),
-      tag: item,
-    );
+  if (item.id.startsWith('assets/')) {
+    return AudioSource.asset(item.id, tag: item);
   }
+  return AudioSource.uri(Uri.parse(item.id), tag: item);
+}
 
   PlaybackState _transformEvent(PlaybackEvent event) {
     final playing = _player.playing;
