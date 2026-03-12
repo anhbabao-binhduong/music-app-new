@@ -1,12 +1,17 @@
+import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../data/local_music_data.dart';
 import '../../../domain/entities/song_entity.dart';
+import '../../../widgets/auth_guard.dart';
 import '../../bloc/search/search_cubit.dart';
 import '../../bloc/search/search_state.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
-  @override State<SearchPage> createState() => _SearchPageState();
+  @override
+  State<SearchPage> createState() => _SearchPageState();
 }
 
 class _SearchPageState extends State<SearchPage> {
@@ -18,29 +23,37 @@ class _SearchPageState extends State<SearchPage> {
     super.dispose();
   }
 
+  void _playSong(BuildContext ctx, SongEntity song) {
+    final index = localPlaylist.indexWhere((m) => m.id == song.audioUrl);
+    if (index == -1) return;
+    playWithAuthGuard(ctx, playlist: localPlaylist, index: index);
+  }
+
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       appBar: AppBar(
         title: _SearchBar(
           controller: _controller,
-          onChanged: (q) =>
-              context.read<SearchCubit>().onQueryChanged(q),
+          onChanged: (q) => context.read<SearchCubit>().onQueryChanged(q),
           onClear: () {
             _controller.clear();
             context.read<SearchCubit>().clearSearch();
           },
         ),
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: true,
       ),
       body: BlocBuilder<SearchCubit, SearchState>(
         builder: (context, state) => switch (state) {
-          SearchInitial() => _EmptyPrompt(),
+          SearchInitial() => const _EmptyPrompt(),
           SearchLoading() => const Center(child: CircularProgressIndicator()),
-          SearchSuccess s => _ResultList(results: s.results, query: s.query),
-          SearchEmpty   s => _NoResults(query: s.query),
-          SearchError   s => _ErrorView(message: s.message),
+          SearchSuccess s => _ResultList(
+              results: s.results,
+              query:   s.query,
+              onTap:   (song) => _playSong(context, song),
+            ),
+          SearchEmpty s   => _NoResults(query: s.query),
+          SearchError s   => _ErrorView(message: s.message),
           _               => const SizedBox.shrink(),
         },
       ),
@@ -48,26 +61,24 @@ class _SearchPageState extends State<SearchPage> {
   }
 }
 
+// ── Search Bar ────────────────────────────────────────────────────────────────
+
 class _SearchBar extends StatelessWidget {
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
   final VoidCallback onClear;
-  const _SearchBar({
-    required this.controller,
-    required this.onChanged,
-    required this.onClear,
-  });
+  const _SearchBar({required this.controller, required this.onChanged, required this.onClear});
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme; 
+    final cs = Theme.of(context).colorScheme;
     return TextField(
       controller: controller,
       autofocus: true,
       onChanged: onChanged,
       style: Theme.of(context).textTheme.bodyMedium,
       decoration: InputDecoration(
-        hintText: 'Search songs, artists, albums…',
+        hintText: 'Tìm bài hát, nghệ sĩ...',
         hintStyle: TextStyle(color: cs.outline),
         prefixIcon: Icon(Icons.search_rounded, color: cs.outline),
         suffixIcon: ValueListenableBuilder(
@@ -86,10 +97,13 @@ class _SearchBar extends StatelessWidget {
   }
 }
 
+// ── Result List ───────────────────────────────────────────────────────────────
+
 class _ResultList extends StatelessWidget {
   final List<SongEntity> results;
   final String query;
-  const _ResultList({required this.results, required this.query});
+  final ValueChanged<SongEntity> onTap;
+  const _ResultList({required this.results, required this.query, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -101,23 +115,31 @@ class _ResultList extends StatelessWidget {
           leading: ClipRRect(
             borderRadius: BorderRadius.circular(6),
             child: s.artUrl != null
-                ? Image.network(s.artUrl!, width: 48, height: 48, fit: BoxFit.cover)
-                : Container(
-                    width: 48, height: 48,
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                    child: const Icon(Icons.music_note_rounded),
-                  ),
+                ? Image.network(s.artUrl!, width: 48, height: 48, fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _artPlaceholder(context))
+                : _artPlaceholder(context),
           ),
-          title: _HighlightText(text: s.title, query: query),
+          title:    _HighlightText(text: s.title,  query: query),
           subtitle: _HighlightText(text: s.artist, query: query, isSubtitle: true),
-          onTap: () { /* dispatch LoadPlaylistEvent */ },
+          trailing: const Icon(Icons.play_arrow_rounded, color: Colors.white54),
+          onTap: () => onTap(s),
         );
       },
     );
   }
+
+  Widget _artPlaceholder(BuildContext context) => Container(
+    width: 48, height: 48,
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(6),
+    ),
+    child: const Icon(Icons.music_note_rounded),
+  );
 }
 
-/// Highlights matching query text in results
+// ── Highlight matching text ───────────────────────────────────────────────────
+
 class _HighlightText extends StatelessWidget {
   final String text, query;
   final bool isSubtitle;
@@ -129,47 +151,42 @@ class _HighlightText extends StatelessWidget {
     final tt  = Theme.of(context).textTheme;
     final idx = text.toLowerCase().indexOf(query.toLowerCase());
 
-    if (idx == -1) {
-      return Text(text, style: isSubtitle ? tt.titleMedium : tt.titleLarge);
-    }
+    final base = isSubtitle ? tt.titleMedium : tt.titleLarge;
+
+    if (idx == -1) return Text(text, style: base);
 
     return Text.rich(TextSpan(children: [
-      TextSpan(
-        text: text.substring(0, idx),
-        style: isSubtitle ? tt.titleMedium : tt.titleLarge,
-      ),
+      TextSpan(text: text.substring(0, idx), style: base),
       TextSpan(
         text: text.substring(idx, idx + query.length),
-        style: (isSubtitle ? tt.titleMedium : tt.titleLarge)?.copyWith(
-          color: cs.primary, fontWeight: FontWeight.w700,
-        ),
+        style: base?.copyWith(color: cs.primary, fontWeight: FontWeight.w700),
       ),
-      TextSpan(
-        text: text.substring(idx + query.length),
-        style: isSubtitle ? tt.titleMedium : tt.titleLarge,
-      ),
+      TextSpan(text: text.substring(idx + query.length), style: base),
     ]));
   }
 }
 
+// ── Empty / Error states ──────────────────────────────────────────────────────
+
 class _EmptyPrompt extends StatelessWidget {
+  const _EmptyPrompt();
   @override
-  Widget build(BuildContext context) =>
-      Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Icon(Icons.search_rounded, size: 64,
-            color: Theme.of(context).colorScheme.outline),
-        const SizedBox(height: 16),
-        Text('Search your music', style: Theme.of(context).textTheme.titleMedium),
-      ]));
+  Widget build(BuildContext context) => Center(
+    child: Column(mainAxisSize: MainAxisSize.min, children: [
+      Icon(Icons.search_rounded, size: 64, color: Theme.of(context).colorScheme.outline),
+      const SizedBox(height: 16),
+      Text('Tìm kiếm bài hát', style: Theme.of(context).textTheme.titleMedium),
+    ]),
+  );
 }
 
 class _NoResults extends StatelessWidget {
   final String query;
   const _NoResults({required this.query});
   @override
-  Widget build(BuildContext context) =>
-      Center(child: Text('No results for "$query"',
-          style: Theme.of(context).textTheme.titleMedium));
+  Widget build(BuildContext context) => Center(
+    child: Text('Không tìm thấy "$query"', style: Theme.of(context).textTheme.titleMedium),
+  );
 }
 
 class _ErrorView extends StatelessWidget {

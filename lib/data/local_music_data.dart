@@ -1,196 +1,31 @@
 ﻿import 'package:audio_service/audio_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-final List<MediaItem> localPlaylist = [
-  MediaItem(
-    id: 'assets/music/anh_danh_roi_nguoi_yeu_nay.mp3',
-    title: 'Anh Đánh Rơi Người Yêu Này',
-    artist: 'Unknown',
-    album: 'Local Music',
-    artUri: Uri.parse('https://picsum.photos/seed/song1/400/400'),
-    duration: const Duration(minutes: 4),
-  ),
-  MediaItem(
-    id: 'assets/music/bang_cuong_x_hc_remix.mp3',
-    title: 'Bằng Cường X HC Remix',
-    artist: 'Bằng Cường',
-    album: 'Local Music',
-    artUri: Uri.parse('https://picsum.photos/seed/song2/400/400'),
-    duration: const Duration(minutes: 4),
-  ),
-  MediaItem(
-    id: 'assets/music/cau_hon.mp3',
-    title: 'Cầu Hôn',
-    artist: 'Unknown',
-    album: 'Local Music',
-    artUri: Uri.parse('https://picsum.photos/seed/song3/400/400'),
-    duration: const Duration(minutes: 4),
-  ),
-  MediaItem(
-    id: 'assets/music/chac_vi_minh_chua_tot.mp3',
-    title: 'Chắc Vì Mình Chưa Tốt',
-    artist: 'Hà Anh Tuấn',
-    album: 'Local Music',
-    artUri: Uri.parse('https://picsum.photos/seed/song4/400/400'),
-    duration: const Duration(minutes: 4),
-  ),
-  MediaItem(
-    id: 'assets/music/chuyen_cu_bo_qua.mp3',
-    title: 'Chuyện Cũ Bỏ Qua',
-    artist: 'Unknown',
-    album: 'Local Music',
-    artUri: Uri.parse('https://picsum.photos/seed/song5/400/400'),
-    duration: const Duration(minutes: 4),
-  ),
-  MediaItem(
-    id: 'assets/music/chuyen_tinh_cang_day.mp3',
-    title: 'Chuyện Tình Càng Đây',
-    artist: 'Unknown',
-    album: 'Local Music',
-    artUri: Uri.parse('https://picsum.photos/seed/song6/400/400'),
-    duration: const Duration(minutes: 4),
-  ),
-  MediaItem(
-    id: 'assets/music/chuyen_tinh_toi.mp3',
-    title: 'Chuyện Tình Tôi',
-    artist: 'Unknown',
-    album: 'Local Music',
-    artUri: Uri.parse('https://picsum.photos/seed/song7/400/400'),
-    duration: const Duration(minutes: 4),
-  ),
-  MediaItem(
-    id: 'assets/music/Con_Duong_Toi.mp3',
-    title: 'Con Đường Tôi',
-    artist: 'Unknown',
-    album: 'Local Music',
-    artUri: Uri.parse('https://picsum.photos/seed/song8/400/400'),
-    duration: const Duration(minutes: 4),
-  ),
-  MediaItem(
-    id: 'assets/music/con_trai_cung.mp3',
-    title: 'Con Trai Cưng',
-    artist: 'Unknown',
-    album: 'Local Music',
-    artUri: Uri.parse('https://picsum.photos/seed/song9/400/400'),
-    duration: const Duration(minutes: 4),
-  ),
-  MediaItem(
-    id: 'assets/music/co_sao_gio_lai_chia_xa.mp3',
-    title: 'Có Sao Giờ Lại Chia Xa',
-    artist: 'Unknown',
-    album: 'Local Music',
-    artUri: Uri.parse('https://picsum.photos/seed/song10/400/400'),
-    duration: const Duration(minutes: 4),
-  ),
-  MediaItem(
-    id: 'assets/music/cuoc_vui_co_don.mp3',
-    title: 'Cuộc Vui Cô Đơn',
-    artist: 'Unknown',
-    album: 'Local Music',
-    artUri: Uri.parse('https://picsum.photos/seed/song11/400/400'),
-    duration: const Duration(minutes: 4),
-  ),
-  MediaItem(
-    id: 'assets/music/cu_tuyet.mp3',
-    title: 'Cự Tuyệt',
-    artist: 'Unknown',
-    album: 'Local Music',
-    artUri: Uri.parse('https://picsum.photos/seed/song12/400/400'),
-    duration: const Duration(minutes: 4),
-  ),
-  MediaItem(
-    id: 'assets/music/di_de_tro_ve.mp3',
-    title: 'Đi Để Trở Về',
-    artist: 'Soobin Hoàng Sơn',
-    album: 'Local Music',
-    artUri: Uri.parse('https://picsum.photos/seed/song13/400/400'),
-    duration: const Duration(minutes: 4),
-  ),
-  MediaItem(
-    id: 'assets/music/duyen_minh_lo.mp3',
-    title: 'Duyên Mình Lỡ',
-    artist: 'Unknown',
-    album: 'Local Music',
-    artUri: Uri.parse('https://picsum.photos/seed/song14/400/400'),
-    duration: const Duration(minutes: 4),
-  ),
-  MediaItem(
-    id: 'assets/music/em_biet.mp3',
-    title: 'Em Biết',
-    artist: 'Unknown',
-    album: 'Local Music',
-    artUri: Uri.parse('https://picsum.photos/seed/song15/400/400'),
-    duration: const Duration(minutes: 4),
-  ),
-  MediaItem(
-    id: 'assets/music/em_lo_thoi_a.mp3',
-    title: 'Em Lo Thôi À',
-    artist: 'Unknown',
-    album: 'Local Music',
-    artUri: Uri.parse('https://picsum.photos/seed/song16/400/400'),
-    duration: const Duration(minutes: 4),
-  ),
-  MediaItem(
-    id: 'assets/music/em_may.mp3',
-    title: 'Em May',
-    artist: 'Unknown',
-    album: 'Local Music',
-    artUri: Uri.parse('https://picsum.photos/seed/song17/400/400'),
-    duration: const Duration(minutes: 4),
-  ),
-  MediaItem(
-    id: 'assets/music/em_ngay_xua_khac_roi.mp3',
-    title: 'Em Ngày Xưa Khác Rồi',
-    artist: 'Unknown',
-    album: 'Local Music',
-    artUri: Uri.parse('https://picsum.photos/seed/song18/400/400'),
-    duration: const Duration(minutes: 4),
-  ),
-  MediaItem(
-    id: 'assets/music/em_se_on_thoi.mp3',
-    title: 'Em Sẽ Ổn Thôi',
-    artist: 'Unknown',
-    album: 'Local Music',
-    artUri: Uri.parse('https://picsum.photos/seed/song19/400/400'),
-    duration: const Duration(minutes: 4),
-  ),
-  MediaItem(
-    id: 'assets/music/ex_s_hate_me.mp3',
-    title: "Ex's Hate Me",
-    artist: 'Unknown',
-    album: 'Local Music',
-    artUri: Uri.parse('https://picsum.photos/seed/song20/400/400'),
-    duration: const Duration(minutes: 4),
-  ),
-  MediaItem(
-    id: 'assets/music/ganh_me_lat_mat_4_nha_co_khach_ost.mp3',
-    title: 'Gánh Mẹ (Lật Mặt 4 OST)',
-    artist: 'Unknown',
-    album: 'Lật Mặt 4',
-    artUri: Uri.parse('https://picsum.photos/seed/song21/400/400'),
-    duration: const Duration(minutes: 4),
-  ),
-  MediaItem(
-    id: 'assets/music/ghe_qua.mp3',
-    title: 'Ghé Qua',
-    artist: 'Unknown',
-    album: 'Local Music',
-    artUri: Uri.parse('https://picsum.photos/seed/song22/400/400'),
-    duration: const Duration(minutes: 4),
-  ),
-  MediaItem(
-    id: 'assets/music/gui_ngan_loi_yeu.mp3',
-    title: 'Gửi Ngàn Lời Yêu',
-    artist: 'Unknown',
-    album: 'Local Music',
-    artUri: Uri.parse('https://picsum.photos/seed/song23/400/400'),
-    duration: const Duration(minutes: 4),
-  ),
-  MediaItem(
-    id: 'assets/music/gui_ngan_loi_yeu_1.mp3',
-    title: 'Gửi Ngàn Lời Yêu (Ver. 2)',
-    artist: 'Unknown',
-    album: 'Local Music',
-    artUri: Uri.parse('https://picsum.photos/seed/song24/400/400'),
-    duration: const Duration(minutes: 4),
-  ),
-];
+List<MediaItem> localPlaylist = [];
+class SongRepository {
+  // Lấy instance của Supabase
+  final _supabase = Supabase.instance.client;
+
+  Future<List<MediaItem>> fetchSongsFromSupabase() async {
+    try {
+      // Query toàn bộ dữ liệu từ bảng 'songs'
+      final List<dynamic> response = await _supabase.from('songs').select();
+
+      // Chuyển đổi dữ liệu JSON từ Supabase thành List<MediaItem>
+      return response.map((song) {
+        return MediaItem(
+          id: song['audio_url'], // Dùng URL làm ID cho AudioService
+          title: song['title'],
+          artist: song['artist'],
+          album: song['album'],
+          artUri: Uri.parse(song['art_url'] ?? 'https://picsum.photos/400'),
+          duration: Duration(seconds: song['duration_seconds'] ?? 0),
+        );
+      }).toList();
+      
+    } catch (e) {
+      print('Lỗi khi tải nhạc: $e');
+      return []; // Trả về list rỗng nếu lỗi
+    }
+  }
+}

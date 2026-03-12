@@ -1,181 +1,136 @@
 import 'dart:async';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../services/music_player_service.dart';
 import 'player_event.dart';
 import 'player_state.dart';
+import 'package:flutter/foundation.dart';
 
 class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
-  final MusicPlayerService _service;
+  final AudioHandler _audioHandler;
+  StreamSubscription? _playerSubscription;
+  StreamSubscription? _mediaSubscription;
 
-  StreamSubscription? _playbackSub;
-  StreamSubscription? _mediaSub;
-  StreamSubscription? _positionSub;
-
-  // Internal cache
-  MediaItem? _currentSong;
-  Duration   _position = Duration.zero;
-  Duration   _duration = Duration.zero;
-  bool       _isShuffle = false;
-  RepeatMode _repeat = RepeatMode.none;
-  List<MediaItem> _queue = [];
-  int _currentIndex = 0;
-
-  PlayerBloc(this._service) : super(const PlayerInitial()) {
+  PlayerBloc(this._audioHandler) : super(const PlayerInitial()) {
     on<LoadPlaylistEvent>(_onLoadPlaylist);
-    on<PlayEvent>        (_onPlay);
-    on<PauseEvent>       (_onPause);
-    on<SeekEvent>        (_onSeek);
-    on<NextEvent>        (_onNext);
-    on<PreviousEvent>    (_onPrevious);
-    on<ToggleShuffleEvent>(_onToggleShuffle);
-    on<CycleRepeatEvent> (_onCycleRepeat);
-    on<SkipToIndexEvent> (_onSkipToIndex);
+    on<PlayEvent>((event, emit) => _audioHandler.play());
+    on<PauseEvent>((event, emit) => _audioHandler.pause());
+    on<NextEvent>((event, emit) => _audioHandler.skipToNext());
+    on<PreviousEvent>((event, emit) => _audioHandler.skipToPrevious());
+    on<SeekEvent>((event, emit) => _audioHandler.seek(event.position));
+    on<SkipToIndexEvent>((event, emit) => _audioHandler.skipToQueueItem(event.index));
+    on<PlayNextEvent>(_onPlayNext);
     on<InternalUpdateEvent>(_onInternalUpdate);
-    _subscribeToStreams();
+    
+    // Đăng ký 2 sự kiện mới cho Queue
+    on<RemoveFromQueueEvent>(_onRemoveFromQueue);
+    on<PrioritizeSongEvent>(_onPrioritizeSong);
+
+    _playerSubscription = _audioHandler.playbackState.listen((_) => add(const InternalUpdateEvent()));
+    _mediaSubscription = _audioHandler.mediaItem.listen((_) => add(const InternalUpdateEvent()));
   }
 
-  // ─── Stream Subscriptions ────────────────────────────────
-
-  void _subscribeToStreams() {
-    // Position updates (throttle to 300ms to avoid excess rebuilds)
-    _positionSub = _service.positionStream
-    .distinct()
-    .listen((pos) {
-  _position = pos;
-  add(const InternalUpdateEvent());
-});
-
-    // Duration updates
-    _service.durationStream.listen((dur) {
-      if (dur != null) _duration = dur;
-    });
-
-    // Playback state (playing / paused / buffering)
-    _playbackSub = _service.playbackStateStream.listen((ps) {
-  if (ps.processingState == AudioProcessingState.loading ||
-      ps.processingState == AudioProcessingState.buffering) {
-    add(const InternalUpdateEvent());
-  } else if (ps.playing) {
-    add(const InternalUpdateEvent());
-  } else if (ps.processingState == AudioProcessingState.ready) {
-    add(const InternalUpdateEvent());
-  }
-});
-
-    // Current song changes
-    _mediaSub = _service.currentSongStream.listen((item) {
-      _currentSong = item;
-    });
+  Future<void> _onLoadPlaylist(LoadPlaylistEvent event, Emitter<PlayerState> emit) async {
+    await _audioHandler.updateQueue(event.playlist);
+    await _audioHandler.skipToQueueItem(event.startIndex);
+    await _audioHandler.play();
   }
 
-  // ─── Event Handlers ──────────────────────────────────────
+  // --- 1. HÀM PHÁT TIẾP THEO (Chỉ thêm ngầm, KHÔNG reset nhạc) ---
+  // --- 1. HÀM PHÁT TIẾP THEO (Chỉ thêm ngầm, KHÔNG reset nhạc) ---
+  Future<void> _onPlayNext(PlayNextEvent event, Emitter<PlayerState> emit) async {
+    final newItem = event.item;
+    final queue = _audioHandler.queue.value;
+    
+    // Nếu bài đang hát trùng với bài muốn thêm thì bỏ qua
+    if (_audioHandler.mediaItem.value?.id == newItem.id) return;
 
-  Future<void> _onLoadPlaylist(
-      LoadPlaylistEvent event, Emitter<PlayerState> emit) async {
-    try {
-      emit(PlayerLoading(song: event.playlist[event.startIndex]));
-      _queue = event.playlist;
-      _currentIndex = event.startIndex;
-      await _service.playPlaylist(event.playlist, startIndex: event.startIndex);
-    } catch (e) {
-      emit(PlayerError('Failed to load playlist: $e'));
+    // Tìm xem bài này đã có trong danh sách chưa, nếu có thì rút nó ra
+    final existingIndex = queue.indexWhere((item) => item.id == newItem.id);
+    if (existingIndex != -1) {
+      await _audioHandler.removeQueueItemAt(existingIndex);
+    }
+
+    // GỌI HÀM ADD TRỰC TIẾP: Bài hát sẽ được nối vào đuôi mà nhạc vẫn chạy bình thường
+    await _audioHandler.addQueueItem(newItem);
+
+    // FIX CHÓT: Kích hoạt phát nhạc an toàn
+    final isPlaying = _audioHandler.playbackState.value.playing;
+    final isMediaItemNull = _audioHandler.mediaItem.value == null;
+
+    if (!isPlaying || isMediaItemNull) {
+      // Đợi 100ms để AudioSource kịp nạp bài hát vào bộ nhớ đệm
+      await Future.delayed(const Duration(milliseconds: 100));
+      
+      if (isMediaItemNull) {
+        // Nếu là bài đầu tiên, ép nhảy tới vị trí 0
+        await _audioHandler.skipToQueueItem(0);
+      }
+      await _audioHandler.play();
     }
   }
 
-  Future<void> _onPlay(PlayEvent event, Emitter<PlayerState> emit) async {
-    await _service.play();
+  // --- 2. HÀM XÓA BÀI HÁT (Rút ngầm, KHÔNG reset nhạc) ---
+  Future<void> _onRemoveFromQueue(RemoveFromQueueEvent event, Emitter<PlayerState> emit) async {
+    final queue = _audioHandler.queue.value;
+    if (event.index >= 0 && event.index < queue.length) {
+      // Chặn không cho xóa bài đang hát để tránh sập nhạc
+      if (_audioHandler.mediaItem.value?.id == queue[event.index].id) return;
+      
+      // Gọi hàm rút bài trực tiếp
+      await _audioHandler.removeQueueItemAt(event.index);
+    }
   }
 
-  Future<void> _onPause(PauseEvent event, Emitter<PlayerState> emit) async {
-    await _service.pause();
+  // --- 3. HÀM ƯU TIÊN PHÁT BÀI HÁT ---
+  Future<void> _onPrioritizeSong(PrioritizeSongEvent event, Emitter<PlayerState> emit) async {
+    final queue = _audioHandler.queue.value;
+    final currentMediaItem = _audioHandler.mediaItem.value;
+    if (currentMediaItem == null) return;
+
+    int currentPlayingIndex = queue.indexWhere((item) => item.id == currentMediaItem.id);
+    
+    if (event.index != currentPlayingIndex && event.index >= 0 && event.index < queue.length) {
+      final itemToMove = queue[event.index];
+      
+      // B1: Rút bài đó ra khỏi danh sách
+      await _audioHandler.removeQueueItemAt(event.index);
+      
+      // B2: Cập nhật lại vị trí bài đang hát (Vì rút 1 bài nên danh sách ngắn lại)
+      int newCurrentIndex = _audioHandler.queue.value.indexWhere((item) => item.id == currentMediaItem.id);
+      
+      // B3: Chèn bài đó vào ngay sau bài đang hát
+      await _audioHandler.insertQueueItem(newCurrentIndex + 1, itemToMove);
+    }
   }
 
-  Future<void> _onSeek(SeekEvent event, Emitter<PlayerState> emit) async {
-    await _service.seek(event.position);
-  }
+  void _onInternalUpdate(InternalUpdateEvent event, Emitter<PlayerState> emit) {
+    final playbackState = _audioHandler.playbackState.value;
+    final mediaItem = _audioHandler.mediaItem.value;
+    final queue = _audioHandler.queue.value;
 
-  Future<void> _onNext(NextEvent event, Emitter<PlayerState> emit) async {
-    await _service.next();
-  }
+    if (mediaItem == null) return;
 
-  Future<void> _onPrevious(PreviousEvent event, Emitter<PlayerState> emit) async {
-    // If past 3 seconds, restart; else go to previous
-    if (_position.inSeconds > 3) {
-      await _service.seek(Duration.zero);
+    final currentIndex = queue.indexWhere((item) => item.id == mediaItem.id);
+    final duration = mediaItem.duration ?? Duration.zero;
+    final position = playbackState.position;
+
+    if (playbackState.playing) {
+      emit(PlayerPlaying(
+        song: mediaItem, position: position, duration: duration, queue: queue,
+        currentIndex: currentIndex != -1 ? currentIndex : 0,
+      ));
     } else {
-      await _service.previous();
+      emit(PlayerPaused(
+        song: mediaItem, position: position, duration: duration, queue: queue,
+        currentIndex: currentIndex != -1 ? currentIndex : 0,
+      ));
     }
   }
-
-  Future<void> _onToggleShuffle(
-      ToggleShuffleEvent event, Emitter<PlayerState> emit) async {
-    _isShuffle = !_isShuffle;
-    await _service.handler.setShuffleMode(
-      _isShuffle
-          ? AudioServiceShuffleMode.all
-          : AudioServiceShuffleMode.none,
-    );
-  }
-
-  Future<void> _onCycleRepeat(
-      CycleRepeatEvent event, Emitter<PlayerState> emit) async {
-    _repeat = RepeatMode.values[(_repeat.index + 1) % RepeatMode.values.length];
-    final mode = switch (_repeat) {
-      RepeatMode.none => AudioServiceRepeatMode.none,
-      RepeatMode.one  => AudioServiceRepeatMode.one,
-      RepeatMode.all  => AudioServiceRepeatMode.all,
-    };
-    await _service.handler.setRepeatMode(mode);
-  }
-
-  Future<void> _onSkipToIndex(
-      SkipToIndexEvent event, Emitter<PlayerState> emit) async {
-    _currentIndex = event.index;
-    await _service.handler.skipToQueueItem(event.index);
-  }
-
-
-  Future<void> _onInternalUpdate(
-  InternalUpdateEvent event,
-  Emitter<PlayerState> emit,
-) async {
-  if (_currentSong == null) return;
-
-  final isPlaying =
-      _service.handler.playbackState.value.playing;
-
-  if (isPlaying) {
-    emit(PlayerPlaying(
-      song: _currentSong!,
-      position: _position,
-      duration: _duration,
-      isShuffle: _isShuffle,
-      repeatMode: _repeat,
-      queue: _queue,
-      currentIndex: _currentIndex,
-    ));
-  } else {
-    emit(PlayerPaused(
-      song: _currentSong!,
-      position: _position,
-      duration: _duration,
-      isShuffle: _isShuffle,
-      repeatMode: _repeat,
-      queue: _queue,
-      currentIndex: _currentIndex,
-    ));
-  }
-}
-  // ─── Emit Helpers ────────────────────────────────────────
-
-
 
   @override
   Future<void> close() {
-    _playbackSub?.cancel();
-    _mediaSub?.cancel();
-    _positionSub?.cancel();
+    _playerSubscription?.cancel();
+    _mediaSubscription?.cancel();
     return super.close();
   }
 }

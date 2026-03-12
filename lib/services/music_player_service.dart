@@ -33,13 +33,15 @@ class MusicPlayerService {
   // ─── Convenience API (delegates to handler) ──────────────
 
   Future<void> playSong(MediaItem item) async {
-    await _audioHandler.addQueueItems([item]);
+    // Cập nhật lại toàn bộ danh sách chỉ có 1 bài và phát ngay
+    await _audioHandler.updateQueue([item]); 
     await _audioHandler.play();
   }
 
   Future<void> playPlaylist(List<MediaItem> items, {int startIndex = 0}) async {
-    await _audioHandler.addQueueItems(items);
+    await _audioHandler.updateQueue(items);
     await _audioHandler.skipToQueueItem(startIndex);
+    await _audioHandler.play();
   }
 
   Future<void> play()         => _audioHandler.play();

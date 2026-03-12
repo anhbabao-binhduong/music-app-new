@@ -5,10 +5,6 @@ import 'package:music_app/pages/auth/auth_shared.dart';
 import 'package:music_app/pages/auth/register_page.dart';
 import 'package:music_app/pages/home/home_page.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// LoginPage
-// ─────────────────────────────────────────────────────────────────────────────
-
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -44,8 +40,6 @@ class _LoginPageState extends State<LoginPage>
     super.dispose();
   }
 
-  // ── Validation ──────────────────────────────────────────────────────────────
-
   String? _validateEmail(String? v) {
     if (v == null || v.trim().isEmpty) return 'Vui lòng nhập email';
     final re = RegExp(r'^[\w\.\-]+@[\w\-]+\.[a-zA-Z]{2,}$');
@@ -59,24 +53,16 @@ class _LoginPageState extends State<LoginPage>
     return null;
   }
 
-  // ── Submit → Firebase ───────────────────────────────────────────────────────
-
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
-
     setState(() => _isLoading = true);
-
     try {
-      // Đăng nhập bằng Firebase Authentication
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailCtrl.text.trim(),
         password: _passCtrl.text,
       );
-
       if (!mounted) return;
-
-      // Về HomePage, xóa toàn bộ stack navigation
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const HomePage()),
         (route) => false,
@@ -90,77 +76,84 @@ class _LoginPageState extends State<LoginPage>
     }
   }
 
-  // ── Helper: SnackBar ────────────────────────────────────────────────────────
-
   void _showSnack(String msg, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: isError ? kAuthError : Colors.green.shade600,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg),
+      backgroundColor: isError ? kAuthError : Colors.green.shade600,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      margin: const EdgeInsets.all(16),
+    ));
   }
-
-  // ── Helper: lỗi Firebase → tiếng Việt ─────────────────────────────────────
 
   String _friendlyError(String code) {
     switch (code) {
-      case 'user-not-found':
-        return 'Email này chưa được đăng ký';
-      case 'wrong-password':
-        return 'Mật khẩu không đúng';
-      case 'invalid-credential':
-        return 'Email hoặc mật khẩu không đúng';
-      case 'invalid-email':
-        return 'Email không hợp lệ';
-      case 'user-disabled':
-        return 'Tài khoản này đã bị vô hiệu hóa';
-      case 'too-many-requests':
-        return 'Quá nhiều lần thử. Vui lòng thử lại sau';
-      case 'network-request-failed':
-        return 'Lỗi kết nối mạng. Kiểm tra lại internet';
-      default:
-        return 'Đăng nhập thất bại ($code)';
+      case 'user-not-found':         return 'Email này chưa được đăng ký';
+      case 'wrong-password':         return 'Mật khẩu không đúng';
+      case 'invalid-credential':     return 'Email hoặc mật khẩu không đúng';
+      case 'invalid-email':          return 'Email không hợp lệ';
+      case 'user-disabled':          return 'Tài khoản này đã bị vô hiệu hóa';
+      case 'too-many-requests':      return 'Quá nhiều lần thử. Vui lòng thử lại sau';
+      case 'network-request-failed': return 'Lỗi kết nối mạng';
+      default:                       return 'Đăng nhập thất bại ($code)';
     }
   }
-
-  // ── Build ───────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kAuthBg,
       body: Stack(
+        fit: StackFit.expand,
         children: [
           AuthAnimatedBackground(controller: _bgCtrl),
           SafeArea(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 28),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const SizedBox(height: 56),
-                    _buildHeader(),
-                    const SizedBox(height: 48),
-                    _buildForm(),
-                    const SizedBox(height: 32),
-                    _buildLoginButton(),
-                    const SizedBox(height: 28),
-                    _buildDivider(),
-                    const SizedBox(height: 24),
-                    _buildSocialButtons(),
-                    const SizedBox(height: 36),
-                    _buildFooter(context),
-                    const SizedBox(height: 32),
-                  ],
-                ),
-              ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide = constraints.maxWidth > 600;
+                final hPad   = isWide
+                    ? (constraints.maxWidth * 0.08).clamp(40.0, 80.0)
+                    : 28.0;
+                final vPad   = isWide ? 60.0 : 40.0;
+                final maxW   = isWide ? 560.0 : 460.0;
+
+                return SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: maxW),
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: hPad,
+                            vertical: vPad,
+                          ),
+                          child: Form(
+                            key: _formKey,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _buildHeader(isWide),
+                                SizedBox(height: isWide ? 56 : 48),
+                                _buildForm(),
+                                const SizedBox(height: 32),
+                                _buildLoginButton(),
+                                const SizedBox(height: 28),
+                                _buildDivider(),
+                                const SizedBox(height: 24),
+                                _buildSocialButtons(),
+                                const SizedBox(height: 36),
+                                _buildFooter(context),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ],
@@ -168,14 +161,14 @@ class _LoginPageState extends State<LoginPage>
     );
   }
 
-  // ── Header ──────────────────────────────────────────────────────────────────
+  Widget _buildHeader(bool isWide) {
+    final iconSize  = isWide ? 100.0 : 88.0;
+    final titleSize = isWide ? 32.0  : 28.0;
 
-  Widget _buildHeader() {
     return Column(
       children: [
         Container(
-          width: 88,
-          height: 88,
+          width: iconSize, height: iconSize,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: const LinearGradient(
@@ -191,14 +184,15 @@ class _LoginPageState extends State<LoginPage>
               ),
             ],
           ),
-          child: const Icon(Icons.music_note_rounded, color: Colors.white, size: 42),
+          child: Icon(Icons.music_note_rounded, color: Colors.white,
+              size: isWide ? 48 : 42),
         ),
         const SizedBox(height: 24),
-        const Text(
+        Text(
           'Chào mừng trở lại!',
           style: TextStyle(
             color: Colors.white,
-            fontSize: 28,
+            fontSize: titleSize,
             fontWeight: FontWeight.w800,
             letterSpacing: -0.5,
           ),
@@ -212,8 +206,6 @@ class _LoginPageState extends State<LoginPage>
       ],
     );
   }
-
-  // ── Form ────────────────────────────────────────────────────────────────────
 
   Widget _buildForm() {
     return Column(
@@ -262,40 +254,40 @@ class _LoginPageState extends State<LoginPage>
     );
   }
 
-  // ── Login Button ─────────────────────────────────────────────────────────────
-
-  Widget _buildLoginButton() {
-    return AuthGradientButton(
-      label: 'Đăng nhập',
-      isLoading: _isLoading,
-      onTap: _submit,
-    );
-  }
-
-  // ── Divider ──────────────────────────────────────────────────────────────────
+  Widget _buildLoginButton() => AuthGradientButton(
+        label: 'Đăng nhập',
+        isLoading: _isLoading,
+        onTap: _submit,
+      );
 
   Widget _buildDivider() {
     return Row(
       children: [
         Expanded(
-            child: Divider(
-                color: Colors.white.withValues(alpha: 0.12), thickness: 1)),
+          child: Divider(
+            color: Colors.white.withValues(alpha: 0.12),
+            thickness: 1,
+          ),
+        ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
             'hoặc tiếp tục với',
             style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.35), fontSize: 12),
+              color: Colors.white.withValues(alpha: 0.35),
+              fontSize: 12,
+            ),
           ),
         ),
         Expanded(
-            child: Divider(
-                color: Colors.white.withValues(alpha: 0.12), thickness: 1)),
+          child: Divider(
+            color: Colors.white.withValues(alpha: 0.12),
+            thickness: 1,
+          ),
+        ),
       ],
     );
   }
-
-  // ── Social Buttons ───────────────────────────────────────────────────────────
 
   Widget _buildSocialButtons() {
     return Row(
@@ -321,8 +313,6 @@ class _LoginPageState extends State<LoginPage>
     );
   }
 
-  // ── Footer ───────────────────────────────────────────────────────────────────
-
   Widget _buildFooter(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -336,9 +326,12 @@ class _LoginPageState extends State<LoginPage>
             PageRouteBuilder(
               pageBuilder: (_, anim, __) => const RegisterPage(),
               transitionsBuilder: (_, anim, __, child) => SlideTransition(
-                position: Tween(begin: const Offset(1, 0), end: Offset.zero)
-                    .animate(CurvedAnimation(
-                        parent: anim, curve: Curves.easeOutCubic)),
+                position: Tween(
+                  begin: const Offset(1, 0),
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(parent: anim, curve: Curves.easeOutCubic),
+                ),
                 child: child,
               ),
             ),

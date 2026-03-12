@@ -61,3 +61,25 @@ class SkipToIndexEvent extends PlayerEvent {
 class InternalUpdateEvent extends PlayerEvent {
   const InternalUpdateEvent();
 }
+
+// Thêm đoạn này vào cùng với các event khác của bạn
+class PlayNextEvent extends PlayerEvent {
+  final MediaItem item;
+
+  const PlayNextEvent(this.item);
+
+  @override
+  List<Object?> get props => [item];
+}
+
+// Xóa một bài khỏi hàng đợi
+class RemoveFromQueueEvent extends PlayerEvent {
+  final int index;
+  const RemoveFromQueueEvent(this.index);
+}
+
+// Đẩy bài hát lên ưu tiên (ngay sau bài đang hát)
+class PrioritizeSongEvent extends PlayerEvent {
+  final int index;
+  const PrioritizeSongEvent(this.index);
+}

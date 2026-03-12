@@ -4,93 +4,120 @@ import 'package:equatable/equatable.dart';
 enum RepeatMode { none, one, all }
 
 abstract class PlayerState extends Equatable {
-  const PlayerState();
-  @override List<Object?> get props => [];
-}
-
-/// App just launched, no song loaded
-class PlayerInitial extends PlayerState {
-  const PlayerInitial();
-}
-
-/// Buffering / loading audio source
-class PlayerLoading extends PlayerState {
   final MediaItem? song;
-  const PlayerLoading({this.song});
-  @override List<Object?> get props => [song];
-}
-
-/// Actively playing
-class PlayerPlaying extends PlayerState {
-  final MediaItem song;
   final Duration position;
   final Duration duration;
-  final bool isShuffle;
-  final RepeatMode repeatMode;
   final List<MediaItem> queue;
   final int currentIndex;
 
-  const PlayerPlaying({
-    required this.song,
-    required this.position,
-    required this.duration,
-    this.isShuffle = false,
-    this.repeatMode = RepeatMode.none,
-    required this.queue,
-    required this.currentIndex,
+  const PlayerState({
+    this.song,
+    this.position = Duration.zero,
+    this.duration = Duration.zero,
+    this.queue = const [],
+    this.currentIndex = 0,
   });
 
+  PlayerState copyWith({
+    MediaItem? song,
+    Duration? position,
+    Duration? duration,
+    List<MediaItem>? queue,
+    int? currentIndex,
+  });
+
+  @override
+  List<Object?> get props => [song, position, duration, queue, currentIndex];
+}
+
+class PlayerInitial extends PlayerState {
+  const PlayerInitial() : super();
+  @override
+  PlayerState copyWith({MediaItem? song, Duration? position, Duration? duration, List<MediaItem>? queue, int? currentIndex}) => this;
+}
+
+class PlayerLoading extends PlayerState {
+  const PlayerLoading({super.song}) : super();
+  @override
+  PlayerState copyWith({MediaItem? song, Duration? position, Duration? duration, List<MediaItem>? queue, int? currentIndex}) => this;
+}
+
+class PlayerPlaying extends PlayerState {
+  final bool isShuffle;
+  final RepeatMode repeatMode;
+
+  const PlayerPlaying({
+    required MediaItem super.song,
+    required super.position,
+    required super.duration,
+    required super.queue,
+    required super.currentIndex,
+    this.isShuffle = false,
+    this.repeatMode = RepeatMode.none,
+  });
+
+  @override
   PlayerPlaying copyWith({
     MediaItem? song,
     Duration? position,
     Duration? duration,
-    bool? isShuffle,
-    RepeatMode? repeatMode,
     List<MediaItem>? queue,
     int? currentIndex,
+    bool? isShuffle,
+    RepeatMode? repeatMode,
   }) => PlayerPlaying(
-    song:         song         ?? this.song,
-    position:     position     ?? this.position,
-    duration:     duration     ?? this.duration,
-    isShuffle:    isShuffle    ?? this.isShuffle,
-    repeatMode:   repeatMode   ?? this.repeatMode,
-    queue:        queue        ?? this.queue,
+    song: song ?? this.song!,
+    position: position ?? this.position,
+    duration: duration ?? this.duration,
+    queue: queue ?? this.queue,
     currentIndex: currentIndex ?? this.currentIndex,
+    isShuffle: isShuffle ?? this.isShuffle,
+    repeatMode: repeatMode ?? this.repeatMode,
   );
 
   @override
-  List<Object?> get props =>
-    [song, position, duration, isShuffle, repeatMode, currentIndex];
+  List<Object?> get props => [super.song, super.position, super.duration, super.queue, super.currentIndex, isShuffle, repeatMode];
 }
 
-/// Paused — carries the same payload so UI doesn't blank
 class PlayerPaused extends PlayerState {
-  final MediaItem song;
-  final Duration position;
-  final Duration duration;
-  final bool isShuffle;
+  final bool isShuffle; // Thêm vào để đồng bộ với PlayerPage
   final RepeatMode repeatMode;
-  final List<MediaItem> queue;
-  final int currentIndex;
 
   const PlayerPaused({
-    required this.song,
-    required this.position,
-    required this.duration,
+    required MediaItem super.song,
+    required super.position,
+    required super.duration,
+    required super.queue,
+    required super.currentIndex,
     this.isShuffle = false,
     this.repeatMode = RepeatMode.none,
-    required this.queue,
-    required this.currentIndex,
   });
 
   @override
-  List<Object?> get props =>
-    [song, position, duration, isShuffle, repeatMode, currentIndex];
+  PlayerPaused copyWith({
+    MediaItem? song,
+    Duration? position,
+    Duration? duration,
+    List<MediaItem>? queue,
+    int? currentIndex,
+    bool? isShuffle,
+    RepeatMode? repeatMode,
+  }) => PlayerPaused(
+    song: song ?? this.song!,
+    position: position ?? this.position,
+    duration: duration ?? this.duration,
+    queue: queue ?? this.queue,
+    currentIndex: currentIndex ?? this.currentIndex,
+    isShuffle: isShuffle ?? this.isShuffle,
+    repeatMode: repeatMode ?? this.repeatMode,
+  );
 }
 
-/// Fatal error
 class PlayerError extends PlayerState {
   final String message;
-  const PlayerError(this.message);
-  @override List<Object?> get props => [message];
+  const PlayerError(this.message) : super();
+  @override
+  PlayerState copyWith({MediaItem? song, Duration? position, Duration? duration, List<MediaItem>? queue, int? currentIndex}) => this;
+  @override
+  List<Object?> get props => [message];
 }

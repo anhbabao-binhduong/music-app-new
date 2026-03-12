@@ -3,12 +3,12 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Design tokens  (dùng chung cho LoginPage & RegisterPage)
+// Design tokens
 // ─────────────────────────────────────────────────────────────────────────────
 
-const kAuthBg    = Color(0xFF121212);
-const kAuthCard  = Color(0xFF1C1C1E);
-const kAuthField = Color(0xFF242427);
+const kAuthBg      = Color(0xFF121212);
+const kAuthCard    = Color(0xFF1C1C1E);
+const kAuthField   = Color(0xFF242427);
 const kAuthAccent  = Colors.deepPurpleAccent;
 const kAuthAccent2 = Color(0xFF1565C0);
 const kAuthSubText = Color(0xFF9E9E9E);
@@ -24,37 +24,43 @@ class AuthAnimatedBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: controller,
-      builder: (_, __) {
-        final t = controller.value;
-        return Stack(
-          children: [
-            Positioned(
-              left: -60 + 30 * math.sin(t * 2 * math.pi),
-              top:  -60 + 20 * math.cos(t * 2 * math.pi),
-              child: _Orb(
-                size: 240,
-                color: const Color(0xFF7B1FA2).withValues(alpha: 0.18),
-              ),
-            ),
-            Positioned(
-              right:  -80 + 25 * math.cos(t * 2 * math.pi + 1),
-              bottom:  60 + 30 * math.sin(t * 2 * math.pi + 1),
-              child: _Orb(
-                size: 200,
-                color: const Color(0xFF1565C0).withValues(alpha: 0.14),
-              ),
-            ),
-            Positioned(
-              left: MediaQuery.of(context).size.width / 2 - 60,
-              top:  MediaQuery.of(context).size.height * 0.35,
-              child: _Orb(
-                size: 120,
-                color: const Color(0xFF4A148C).withValues(alpha: 0.10),
-              ),
-            ),
-          ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final w = constraints.maxWidth;
+        final h = constraints.maxHeight;
+        return AnimatedBuilder(
+          animation: controller,
+          builder: (_, __) {
+            final t = controller.value;
+            return Stack(
+              children: [
+                Positioned(
+                  left: -60 + 30 * math.sin(t * 2 * math.pi),
+                  top:  -60 + 20 * math.cos(t * 2 * math.pi),
+                  child: _Orb(
+                    size: w * 0.35,
+                    color: const Color(0xFF7B1FA2).withValues(alpha: 0.18),
+                  ),
+                ),
+                Positioned(
+                  right:  -80 + 25 * math.cos(t * 2 * math.pi + 1),
+                  bottom:  h * 0.08 + 30 * math.sin(t * 2 * math.pi + 1),
+                  child: _Orb(
+                    size: w * 0.28,
+                    color: const Color(0xFF1565C0).withValues(alpha: 0.14),
+                  ),
+                ),
+                Positioned(
+                  left: w / 2 - 60,
+                  top:  h * 0.35,
+                  child: _Orb(
+                    size: w * 0.15,
+                    color: const Color(0xFF4A148C).withValues(alpha: 0.10),
+                  ),
+                ),
+              ],
+            );
+          },
         );
       },
     );
