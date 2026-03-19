@@ -12,8 +12,8 @@ import 'services/music_player_service.dart';
 import 'app.dart';
 import 'core/di/hive_initializer.dart';
 import 'core/di/service_locator.dart';
+import 'package:music_app/presentation/bloc/download/download_cubit.dart';
 import 'package:music_app/presentation/bloc/favorite/favorite_cubit.dart';
-// THÊM DÒNG IMPORT NÀY:
 import 'package:music_app/presentation/bloc/playlist/playlist_cubit.dart';
 
 Future<void> main() async {
@@ -71,11 +71,13 @@ Future<void> main() async {
           ),
           BlocProvider<SearchCubit>.value(value: searchCubit),
           BlocProvider<FavoriteCubit>(
-              create: (_) => FavoriteCubit(),
+            create: (_) => FavoriteCubit(),
           ),
-          // THÊM PLAYLIST CUBIT VÀO ĐÂY:
+          BlocProvider<DownloadCubit>(
+            create: (_) => DownloadCubit(),
+          ),
           BlocProvider<PlaylistCubit>(
-              create: (_) => PlaylistCubit(),
+            create: (_) => PlaylistCubit(),
           ),
         ],
         child: const MyApp(),

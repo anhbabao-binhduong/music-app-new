@@ -2,17 +2,15 @@ import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:music_app/presentation/bloc/download/download_cubit.dart';
 import 'package:music_app/presentation/bloc/playlist/playlist_cubit.dart';
 import 'package:music_app/data/models/playlist_model.dart';
-import 'package:music_app/core/di/service_locator.dart';
-import 'package:music_app/data/models/playlist_model.dart';
-import 'package:music_app/services/playlist_storage_service.dart';
 import 'package:music_app/presentation/bloc/favorite/favorite_cubit.dart';
 import 'package:music_app/presentation/bloc/player/player_bloc.dart';
 import 'package:music_app/presentation/bloc/player/player_event.dart';
 
-import '../home_page.dart'; // Kiểm tra lại đường dẫn này
-import 'song_cards.dart'; // Kiểm tra lại đường dẫn này
+import '../home_page.dart';
+import 'song_cards.dart';
 
 class ChartTile extends StatelessWidget {
   final MediaItem item;
@@ -26,25 +24,23 @@ class ChartTile extends StatelessWidget {
     required this.onTap,
   });
 
-  // --- 1. Hàm hiện thông báo cực nhanh (0.8 giây) ---
-  void _showFastSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).removeCurrentSnackBar(); // Xóa cái cũ ngay
+  void _showFastSnackBar(BuildContext context, String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).removeCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        duration: const Duration(milliseconds: 800), 
+        duration: Duration(milliseconds: isError ? 1800 : 1000),
+        backgroundColor: isError ? Colors.redAccent : null,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
 
-  // --- 2. Hàm chọn Playlist để thêm bài hát (Đã nâng cấp) ---
   void _showPlaylistSelection(BuildContext context) {
-    // Hàm hiển thị Popup gõ tên Playlist mới
     void showCreateDialog() {
       final TextEditingController nameController = TextEditingController();
-      Navigator.pop(context); // Tắt Bottom Sheet màu xám cũ
+      Navigator.pop(context);
 
       showDialog(
         context: context,
@@ -70,13 +66,18 @@ class ChartTile extends StatelessWidget {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary),
-              onPressed: () {
+              onPressed: () async {
                 final name = nameController.text.trim();
-                if (name.isNotEmpty) {
-                  // Gọi Cubit để Tạo mới và Thêm bài
-                  context.read<PlaylistCubit>().createPlaylistAndAddSong(name, item.id);
-                  Navigator.pop(ctx);
+                if (name.isEmpty) return;
+
+                final error = await context.read<PlaylistCubit>().createPlaylistAndAddSong(name, item.id);
+                if (!ctx.mounted) return;
+                Navigator.pop(ctx);
+
+                if (error == null) {
                   _showFastSnackBar(context, 'Đã tạo "$name" và thêm bài hát!');
+                } else {
+                  _showFastSnackBar(context, error, isError: true);
                 }
               },
               child: const Text('Tạo mới', style: TextStyle(color: Colors.white)),
@@ -86,7 +87,6 @@ class ChartTile extends StatelessWidget {
       );
     }
 
-    // Hiển thị Bottom Sheet chọn Playlist
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF1E1E1E),
@@ -94,7 +94,6 @@ class ChartTile extends StatelessWidget {
       builder: (context) => SafeArea(
         child: BlocBuilder<PlaylistCubit, PlaylistState>(
           builder: (context, state) {
-            // Lấy danh sách Playlist từ Cubit
             final playlists = (state is PlaylistLoaded) ? state.playlists : <PlaylistModel>[];
 
             return Column(
@@ -102,27 +101,23 @@ class ChartTile extends StatelessWidget {
               children: [
                 const Padding(
                   padding: EdgeInsets.all(16.0),
-                  child: Text("Thêm vào danh sách phát", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                  child: Text('Thêm vào danh sách phát', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                 ),
-                
-                // NÚT TẠO PLAYLIST MỚI LUÔN HIỂN THỊ
                 ListTile(
                   leading: Container(
-                    width: 40, height: 40,
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(color: Colors.white12, borderRadius: BorderRadius.circular(8)),
                     child: const Icon(Icons.add_rounded, color: Colors.white),
                   ),
                   title: const Text('Tạo danh sách phát mới', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                  onTap: showCreateDialog, // Bấm vào sẽ mở cái Popup gõ tên
+                  onTap: showCreateDialog,
                 ),
-                
                 const Divider(color: Colors.white12, height: 1, indent: 16, endIndent: 16),
-                
-                // DANH SÁCH PLAYLIST ĐÃ CÓ
                 if (playlists.isEmpty)
                   const Padding(
                     padding: EdgeInsets.all(32.0),
-                    child: Text("Bạn chưa có danh sách phát nào", style: TextStyle(color: Colors.grey)),
+                    child: Text('Bạn chưa có danh sách phát nào', style: TextStyle(color: Colors.grey)),
                   )
                 else
                   Flexible(
@@ -134,11 +129,16 @@ class ChartTile extends StatelessWidget {
                         return ListTile(
                           leading: const Icon(Icons.playlist_play_rounded, color: Colors.white70),
                           title: Text(p.name, style: const TextStyle(color: Colors.white)),
-                          onTap: () {
-                            // Gọi Cubit để chèn thêm bài
-                            context.read<PlaylistCubit>().addSongToPlaylist(p.id, item.id);
-                            Navigator.pop(context); 
-                            _showFastSnackBar(context, 'Đã thêm vào "${p.name}"');
+                          onTap: () async {
+                            final error = await context.read<PlaylistCubit>().addSongToPlaylist(p.id, item.id);
+                            if (!context.mounted) return;
+                            Navigator.pop(context);
+
+                            if (error == null) {
+                              _showFastSnackBar(context, 'Đã thêm vào "${p.name}"');
+                            } else {
+                              _showFastSnackBar(context, error, isError: true);
+                            }
                           },
                         );
                       },
@@ -154,8 +154,6 @@ class ChartTile extends StatelessWidget {
   }
 
   void _showOptionsBottomSheet(BuildContext context) {
-    final isFavorite = context.read<FavoriteCubit>().state.contains(item.id);
-
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF1E1E1E),
@@ -164,12 +162,18 @@ class ChartTile extends StatelessWidget {
       ),
       builder: (bottomSheetContext) {
         return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+          child: BlocBuilder<FavoriteCubit, List<String>>(
+            builder: (context, favoriteIds) {
+              final isFavorite = favoriteIds.contains(item.id);
+              final isDownloaded = context.watch<DownloadCubit>().state.contains(item.id);
+
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
               const SizedBox(height: 12),
               Container(
-                width: 40, height: 4,
+                width: 40,
+                height: 4,
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(2),
@@ -184,7 +188,6 @@ class ChartTile extends StatelessWidget {
                 subtitle: Text(item.artist ?? 'Unknown Artist', style: const TextStyle(color: Colors.grey), maxLines: 1, overflow: TextOverflow.ellipsis),
               ),
               const Divider(color: Colors.white12),
-
               _MenuActionTile(
                 icon: Icons.queue_music_rounded,
                 title: 'Phát tiếp theo',
@@ -194,7 +197,6 @@ class ChartTile extends StatelessWidget {
                   _showFastSnackBar(context, 'Đã thêm vào hàng đợi');
                 },
               ),
-
               _MenuActionTile(
                 icon: Icons.playlist_add_rounded,
                 title: 'Thêm vào danh sách phát',
@@ -203,18 +205,48 @@ class ChartTile extends StatelessWidget {
                   _showPlaylistSelection(context);
                 },
               ),
-
               _MenuActionTile(
                 icon: isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                 iconColor: isFavorite ? Colors.redAccent : Colors.white,
                 title: isFavorite ? 'Bỏ yêu thích' : 'Thêm vào yêu thích',
-                onTap: () {
+                onTap: () async {
                   Navigator.pop(bottomSheetContext);
-                  context.read<FavoriteCubit>().toggleFavorite(item.id);
-                  _showFastSnackBar(context, isFavorite ? 'Đã xóa khỏi yêu thích' : 'Đã thêm vào yêu thích');
+                  try {
+                    await context.read<FavoriteCubit>().toggleFavorite(item.id);
+                    if (!context.mounted) return;
+                    _showFastSnackBar(context, isFavorite ? 'Đã xóa khỏi yêu thích' : 'Đã thêm vào yêu thích');
+                  } catch (e) {
+                    if (!context.mounted) return;
+                    _showFastSnackBar(
+                      context,
+                      e.toString().replaceFirst('Exception: ', ''),
+                      isError: true,
+                    );
+                  }
                 },
               ),
-
+              _MenuActionTile(
+                icon: isDownloaded ? Icons.download_done_rounded : Icons.download_rounded,
+                title: isDownloaded ? 'Bỏ khỏi Nhạc đã tải' : 'Lưu vào Nhạc đã tải',
+                onTap: () async {
+                  Navigator.pop(bottomSheetContext);
+                  try {
+                    await context.read<DownloadCubit>().toggleDownload(item);
+                    if (!context.mounted) return;
+                    _showFastSnackBar(
+                      context,
+                      isDownloaded ? 'Đã bỏ khỏi Nhạc đã tải' : 'Đã lưu vào Nhạc đã tải',
+                    );
+                  } catch (e) {
+                    if (!context.mounted) return;
+                    _showFastSnackBar(
+                      context,
+                      e.toString().replaceFirst('Exception: ', ''),
+                      isError: true,
+                    );
+                  }
+                },
+              ),
               _MenuActionTile(
                 icon: Icons.share_rounded,
                 title: 'Chia sẻ',
@@ -226,13 +258,14 @@ class ChartTile extends StatelessWidget {
               ),
               const SizedBox(height: 16),
             ],
+          );
+            },
           ),
         );
       },
     );
   }
 
-  // --- Các Getter hiển thị ---
   Color get _rankColor {
     if (rank == 1) return const Color(0xFFFFD700);
     if (rank == 2) return const Color(0xFFC0C0C0);
@@ -320,7 +353,7 @@ class _MenuActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(icon, color: iconColor ?? Colors.white), 
+      leading: Icon(icon, color: iconColor ?? Colors.white),
       title: Text(title, style: const TextStyle(color: Colors.white, fontSize: 16)),
       onTap: onTap,
     );

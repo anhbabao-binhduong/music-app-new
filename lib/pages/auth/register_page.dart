@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:music_app/pages/auth/auth_shared.dart';
@@ -80,6 +81,11 @@ class _RegisterPageState extends State<RegisterPage>
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       margin: const EdgeInsets.all(16),
     ));
+  }
+
+  void _showComingSoon(String provider) {
+    final suffix = kIsWeb ? ' trên bản web này' : '';
+    _showSnack('$provider chưa được tích hợp$suffix', isError: true);
   }
 
   String _friendlyError(String code) {
@@ -329,11 +335,13 @@ class _RegisterPageState extends State<RegisterPage>
     return Row(children: [
       Expanded(child: AuthSocialButton(label: 'Google',
           icon: Icons.g_mobiledata_rounded,
-          iconColor: const Color(0xFFEA4335), onTap: () {})),
+          iconColor: const Color(0xFFEA4335),
+          onTap: () => _showComingSoon('Đăng ký Google'))),
       const SizedBox(width: 14),
       Expanded(child: AuthSocialButton(label: 'Facebook',
           icon: Icons.facebook_rounded,
-          iconColor: const Color(0xFF1877F2), onTap: () {})),
+          iconColor: const Color(0xFF1877F2),
+          onTap: () => _showComingSoon('Đăng ký Facebook'))),
     ]);
   }
 

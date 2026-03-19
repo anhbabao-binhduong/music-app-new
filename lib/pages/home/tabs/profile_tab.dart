@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:music_app/pages/profile/download_page.dart';
 import 'package:music_app/pages/profile/favorite_page.dart';
 import '../../auth/login_page.dart';
 import '../../auth/register_page.dart';
@@ -194,12 +195,15 @@ const _LoggedInProfile({
               icon: item.$1, 
               label: item.$2, 
               onTap: () {
-                // Kiểm tra nếu bấm vào "Bài hát yêu thích"
                 if (item.$2 == 'Bài hát yêu thích') {
                   Navigator.push(
                     context,
-                    // ĐÃ XÓA CHỮ 'const' Ở TRƯỚC FavoritePage()
-                    MaterialPageRoute(builder: (context) => FavoritePage()), 
+                    MaterialPageRoute(builder: (context) => const FavoritePage()),
+                  );
+                } else if (item.$2 == 'Nhạc đã tải') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const DownloadPage()),
                   );
                 }
               },

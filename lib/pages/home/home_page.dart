@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:music_app/presentation/bloc/download/download_cubit.dart';
 import 'package:music_app/presentation/bloc/favorite/favorite_cubit.dart';
 import '../../presentation/bloc/search/search_page.dart';
 import '../../widgets/mini_player_bar.dart';
@@ -67,11 +68,13 @@ class _HomePageState extends State<HomePage> {
       
       case 3:  
         final totalFavorites = context.watch<FavoriteCubit>().state.length;
+        final totalDownloads = context.watch<DownloadCubit>().state.length;
         return ProfileTab(
           isLoggedIn: _isLoggedIn,
           userName:   _userName,
           userEmail:  _userEmail,
           favoriteCount: totalFavorites,
+          followingCount: totalDownloads,
           onLogout:   _onLogout,
         );
       default: return ExploreTab(isLoggedIn: _isLoggedIn);

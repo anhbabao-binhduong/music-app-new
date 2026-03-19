@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:music_app/pages/auth/auth_shared.dart';
@@ -84,6 +85,43 @@ class _LoginPageState extends State<LoginPage>
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       margin: const EdgeInsets.all(16),
     ));
+  }
+
+  Future<void> _sendPasswordReset() async {
+    final email = _emailCtrl.text.trim();
+
+    if (email.isEmpty) {
+      _showSnack('Nhập email trước để đặt lại mật khẩu', isError: true);
+      return;
+    }
+
+    final emailError = _validateEmail(email);
+    if (emailError != null) {
+      _showSnack(emailError, isError: true);
+      return;
+    }
+
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      if (!mounted) return;
+      _showSnack('Đã gửi email đặt lại mật khẩu tới $email');
+    } on FirebaseAuthException catch (e) {
+      final msg = switch (e.code) {
+        'user-not-found' => 'Email này chưa được đăng ký',
+        'invalid-email' => 'Email không hợp lệ',
+        'too-many-requests' => 'Quá nhiều yêu cầu. Vui lòng thử lại sau',
+        'network-request-failed' => 'Lỗi kết nối mạng',
+        _ => 'Không thể gửi email đặt lại mật khẩu (${e.code})',
+      };
+      _showSnack(msg, isError: true);
+    } catch (_) {
+      _showSnack('Không thể gửi email đặt lại mật khẩu', isError: true);
+    }
+  }
+
+  void _showComingSoon(String provider) {
+    final suffix = kIsWeb ? ' trên bản web này' : '';
+    _showSnack('$provider chưa được tích hợp$suffix', isError: true);
   }
 
   String _friendlyError(String code) {
@@ -239,11 +277,11 @@ class _LoginPageState extends State<LoginPage>
         Align(
           alignment: Alignment.centerRight,
           child: GestureDetector(
-            onTap: () {},
-            child: const Text(
+            onTap: _isLoading ? null : _sendPasswordReset,
+            child: Text(
               'Quên mật khẩu?',
               style: TextStyle(
-                color: kAuthAccent,
+                color: _isLoading ? kAuthSubText : kAuthAccent,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
@@ -297,7 +335,7 @@ class _LoginPageState extends State<LoginPage>
             label: 'Google',
             icon: Icons.g_mobiledata_rounded,
             iconColor: const Color(0xFFEA4335),
-            onTap: () {},
+            onTap: () => _showComingSoon('Đăng nhập Google'),
           ),
         ),
         const SizedBox(width: 14),
@@ -306,7 +344,7 @@ class _LoginPageState extends State<LoginPage>
             label: 'Facebook',
             icon: Icons.facebook_rounded,
             iconColor: const Color(0xFF1877F2),
-            onTap: () {},
+            onTap: () => _showComingSoon('Đăng nhập Facebook'),
           ),
         ),
       ],

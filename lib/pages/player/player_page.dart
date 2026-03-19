@@ -1,5 +1,6 @@
 import 'package:music_app/core/constants/app_theme.dart';
 import 'package:music_app/services/music_player_service.dart';
+import 'package:music_app/presentation/bloc/favorite/favorite_cubit.dart';
 import 'package:music_app/presentation/bloc/player/player_bloc.dart';
 import 'package:music_app/presentation/bloc/player/player_event.dart';
 import 'package:music_app/presentation/bloc/player/player_state.dart';
@@ -343,6 +344,9 @@ class _SongInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
+    final favoriteIds = context.watch<FavoriteCubit>().state;
+    final isFavorite = favoriteIds.contains(song.id);
+
     return Row(
       children: [
         Expanded(
@@ -355,7 +359,27 @@ class _SongInfo extends StatelessWidget {
             ],
           ),
         ),
-        _IconBtn(icon: Icons.favorite_border_rounded, onTap: () {}, size: 28),
+        _IconBtn(
+          icon: isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+          onTap: () async {
+            try {
+              await context.read<FavoriteCubit>().toggleFavorite(song.id);
+            } catch (e) {
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context)
+                ..removeCurrentSnackBar()
+                ..showSnackBar(
+                  SnackBar(
+                    content: Text(e.toString().replaceFirst('Exception: ', '')),
+                    backgroundColor: Colors.redAccent,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+            }
+          },
+          color: isFavorite ? Colors.redAccent : null,
+          size: 28,
+        ),
       ],
     );
   }
