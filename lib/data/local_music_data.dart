@@ -3,9 +3,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 List<MediaItem> localPlaylist = [];
 
-MediaItem? findSongById(String songId) {
+MediaItem? findSongById(String idOrUrl) {
   for (final song in localPlaylist) {
-    if (song.id == songId) return song;
+    // ✅ match theo ID
+    if (song.id == idOrUrl) return song;
+
+    // ✅ fallback cho dữ liệu cũ (Cloudinary)
+    if (song.extras?['url'] == idOrUrl) return song;
   }
   return null;
 }
@@ -15,18 +19,49 @@ class SongRepository {
 
   Future<List<MediaItem>> fetchSongsFromSupabase() async {
     try {
-      final List<dynamic> response = await _supabase.from('songs').select();
+      final List<dynamic> response =
+          await _supabase.from('songs').select();
 
-      return response.map((song) {
+      final songs = response.map<MediaItem?>((song) {
+        final audioPath = song['audio_path'];
+
+        if (audioPath == null || audioPath.toString().isEmpty) {
+          return null;
+        }
+
+        final publicUrl = _supabase
+            .storage
+            .from('songs')
+            .getPublicUrl(audioPath);
+
+        if (publicUrl.isEmpty) {
+          print("❌ URL rỗng: $audioPath");
+          return null;
+        }
+
+        final artUrl = (song['art_url'] != null &&
+                song['art_url'].toString().isNotEmpty)
+            ? song['art_url']
+            : 'https://picsum.photos/400';
+
         return MediaItem(
-          id: song['audio_url'],
-          title: song['title'],
-          artist: song['artist'],
-          album: song['album'],
-          artUri: Uri.parse(song['art_url'] ?? 'https://picsum.photos/400'),
-          duration: Duration(seconds: song['duration_seconds'] ?? 0),
+          id: song['id'].toString(), // ✅ QUAN TRỌNG
+          title: song['title'] ?? '',
+          artist: song['artist'] ?? '',
+          album: song['album'] ?? '',
+          artUri: Uri.parse(artUrl),
+          duration: Duration(
+              seconds: song['duration_seconds'] ?? 0),
+
+          extras: {
+            'url': publicUrl, // ✅ URL audio thật
+          },
         );
-      }).toList();
+      }).whereType<MediaItem>().toList();
+
+      localPlaylist = songs;
+
+      return songs;
     } catch (e) {
       print('Lỗi khi tải nhạc: $e');
       return [];

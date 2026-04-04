@@ -6,12 +6,14 @@ class LyricsPage extends StatefulWidget {
   final MediaItem song;
   final LyricsService lyricsService;
   final Stream<Duration> positionStream;
+  final void Function(Duration position)? onSeek;
 
   const LyricsPage({
     super.key,
     required this.song,
     required this.lyricsService,
     required this.positionStream,
+    this.onSeek,
   });
 
   @override
@@ -30,9 +32,7 @@ class _LyricsPageState extends State<LyricsPage> {
   @override
   void didUpdateWidget(covariant LyricsPage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.song.id != widget.song.id) {
-      _fetchLyrics();
-    }
+    if (oldWidget.song.id != widget.song.id) _fetchLyrics();
   }
 
   void _fetchLyrics() {
@@ -53,26 +53,45 @@ class _LyricsPageState extends State<LyricsPage> {
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
           return Center(
-            child: CircularProgressIndicator(color: cs.primary, strokeWidth: 2),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(
+                    color: cs.primary,
+                    strokeWidth: 2,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Đang tải lời bài hát...',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.5),
+                    fontSize: 13,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ],
+            ),
           );
         }
 
         final data = snapshot.data;
 
-        // Nếu không có dữ liệu trả về, gọi class _NoLyrics
         if (data == null || !data.hasAnyLyrics) {
           return _NoLyrics(title: widget.song.title, onRetry: _fetchLyrics);
         }
 
-        // Nếu có Synced Lyrics (karaoke)
         if (data.isSynced) {
           return _SyncedLyricsBody(
             lyrics: data.syncedLyrics!,
             positionStream: widget.positionStream,
+            onSeek: widget.onSeek,
           );
         }
 
-        // Nếu chỉ có Plain Lyrics tĩnh
         return _PlainLyricsBody(lyrics: data.plainLyrics!);
       },
     );
@@ -80,16 +99,18 @@ class _LyricsPageState extends State<LyricsPage> {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Synced Lyrics (Karaoke mode) - Màu trắng, đổ bóng đen
+// Synced Lyrics
 // ─────────────────────────────────────────────────────────────
 
 class _SyncedLyricsBody extends StatefulWidget {
   final List<LyricLine> lyrics;
   final Stream<Duration> positionStream;
+  final void Function(Duration position)? onSeek;
 
   const _SyncedLyricsBody({
     required this.lyrics,
     required this.positionStream,
+    this.onSeek,
   });
 
   @override
@@ -98,7 +119,47 @@ class _SyncedLyricsBody extends StatefulWidget {
 
 class _SyncedLyricsBodyState extends State<_SyncedLyricsBody> {
   final ScrollController _scrollController = ScrollController();
-  int _activeIndex = -1;
+
+  // Dùng GlobalKey để đo vị trí thực của từng item
+  final Map<int, GlobalKey> _keys = {};
+
+  int _lastScrolledIndex = -2;
+
+  int _findActiveIndex(Duration position) {
+    final lyrics = widget.lyrics;
+    if (lyrics.isEmpty) return -1;
+    if (lyrics[0].time > position) return -1;
+
+    int lo = 0, hi = lyrics.length - 1;
+    while (lo < hi) {
+      final mid = (lo + hi + 1) ~/ 2;
+      if (lyrics[mid].time <= position) {
+        lo = mid;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    return lo;
+  }
+
+  void _scrollToIndex(int index) {
+    if (index < 0 || index == _lastScrolledIndex) return;
+    _lastScrolledIndex = index;
+
+    final key = _keys[index];
+    if (key?.currentContext == null) return;
+
+    Scrollable.ensureVisible(
+      key!.currentContext!,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOutCubic,
+      alignment: 0.38, // dòng active nằm 38% từ trên → tự nhiên hơn center
+    );
+  }
+
+  GlobalKey _keyFor(int index) {
+    return _keys.putIfAbsent(index, () => GlobalKey());
+  }
 
   @override
   void dispose() {
@@ -106,93 +167,95 @@ class _SyncedLyricsBodyState extends State<_SyncedLyricsBody> {
     super.dispose();
   }
 
-  void _scrollToActiveIndex(int index) {
-    if (index == _activeIndex || index < 0) return;
-    _activeIndex = index;
-
-    if (_scrollController.hasClients) {
-      final offset = (index * 60.0) - (MediaQuery.of(context).size.height / 3);
-      _scrollController.animateTo(
-        offset > 0 ? offset : 0,
-        duration: const Duration(milliseconds: 600),
-        curve: Curves.easeOutCubic,
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final screenH = MediaQuery.of(context).size.height;
+
     return StreamBuilder<Duration>(
       stream: widget.positionStream,
       builder: (context, snapshot) {
-        final currentPosition = snapshot.data ?? Duration.zero;
-
-        int newActiveIndex = -1;
-        for (int i = 0; i < widget.lyrics.length; i++) {
-          if (widget.lyrics[i].time <= currentPosition &&
-              (i == widget.lyrics.length - 1 || widget.lyrics[i + 1].time > currentPosition)) {
-            newActiveIndex = i;
-            break;
-          }
-        }
+        final position = snapshot.data ?? Duration.zero;
+        final activeIndex = _findActiveIndex(position);
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          _scrollToActiveIndex(newActiveIndex);
+          _scrollToIndex(activeIndex);
         });
 
         return ShaderMask(
-          shaderCallback: (Rect rect) {
-            return const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.transparent,
-                Colors.black,
-                Colors.black,
-                Colors.transparent,
-              ],
-              stops: [0.0, 0.15, 0.85, 1.0],
-            ).createShader(rect);
-          },
+          shaderCallback: (rect) => const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.transparent,
+              Colors.black,
+              Colors.black,
+              Colors.transparent,
+            ],
+            stops: [0.0, 0.12, 0.88, 1.0],
+          ).createShader(rect),
           blendMode: BlendMode.dstIn,
           child: ListView.builder(
             controller: _scrollController,
             physics: const BouncingScrollPhysics(),
-            padding: EdgeInsets.only(
-              top: MediaQuery.of(context).size.height / 3,
-              bottom: MediaQuery.of(context).size.height / 2,
-              left: 24,
-              right: 24,
+            padding: EdgeInsets.symmetric(
+              vertical: screenH * 0.38,
+              horizontal: 28,
             ),
             itemCount: widget.lyrics.length,
             itemBuilder: (context, index) {
               final line = widget.lyrics[index];
-              final isActive = index == newActiveIndex;
+              final isActive = index == activeIndex;
 
-              if (line.text.isEmpty) return const SizedBox(height: 24);
+              // Dòng trống → spacer nhỏ
+              if (line.text.isEmpty) {
+                return const SizedBox(height: 18);
+              }
 
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: AnimatedDefaultTextStyle(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeOut,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleLarge!.copyWith(
-                        fontWeight: isActive ? FontWeight.w900 : FontWeight.w600,
-                        fontSize: isActive ? 28 : 20,
-                        height: 1.4,
-                        color: isActive
-                            ? Colors.white
-                            : Colors.white.withValues(alpha: 0.55),
-                        shadows: [
-                          Shadow(
-                            color: Colors.black.withValues(alpha: isActive ? 0.6 : 0.4),
-                            blurRadius: isActive ? 12 : 6,
-                            offset: const Offset(0, 2),
-                          )
-                        ],
-                      ),
-                  child: Text(line.text),
+              // Khoảng cách xa active → mờ hơn
+              final distance = (index - activeIndex).abs();
+              final opacity = activeIndex < 0
+                  ? 0.5
+                  : isActive
+                      ? 1.0
+                      : distance == 1
+                          ? 0.45
+                          : distance == 2
+                              ? 0.28
+                              : 0.18;
+
+              return GestureDetector(
+                key: _keyFor(index),
+                behavior: HitTestBehavior.opaque,
+                onTap: () => widget.onSeek?.call(line.time),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    vertical: isActive ? 10 : 7,
+                  ),
+                  child: AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 280),
+                    curve: Curves.easeOutCubic,
+                    style: TextStyle(
+                      fontFamily: 'sans-serif',
+                      fontSize: isActive ? 26 : 18,
+                      fontWeight:
+                          isActive ? FontWeight.w800 : FontWeight.w500,
+                      height: 1.45,
+                      letterSpacing: isActive ? 0.2 : 0.0,
+                      color: Colors.white.withValues(alpha: opacity),
+                      shadows: isActive
+                          ? [
+                              Shadow(
+                                color: Colors.white.withValues(alpha: 0.25),
+                                blurRadius: 20,
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Text(
+                      line.text,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
                 ),
               );
             },
@@ -204,7 +267,7 @@ class _SyncedLyricsBodyState extends State<_SyncedLyricsBody> {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Plain Lyrics (Fallback) - Màu trắng, đổ bóng đen
+// Plain Lyrics
 // ─────────────────────────────────────────────────────────────
 
 class _PlainLyricsBody extends StatelessWidget {
@@ -215,39 +278,35 @@ class _PlainLyricsBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final lines = lyrics.split('\n');
     return ShaderMask(
-      shaderCallback: (Rect rect) {
-        return const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Colors.transparent, Colors.black, Colors.black, Colors.transparent],
-          stops: [0.0, 0.05, 0.95, 1.0],
-        ).createShader(rect);
-      },
+      shaderCallback: (rect) => const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          Colors.transparent,
+          Colors.black,
+          Colors.black,
+          Colors.transparent,
+        ],
+        stops: [0.0, 0.06, 0.94, 1.0],
+      ).createShader(rect),
       blendMode: BlendMode.dstIn,
       child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
         child: Column(
           children: lines.map((line) {
-            if (line.trim().isEmpty) return const SizedBox(height: 16);
+            if (line.trim().isEmpty) return const SizedBox(height: 18);
             return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
+              padding: const EdgeInsets.symmetric(vertical: 5),
               child: Text(
                 line.trim(),
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontSize: 18,
-                      height: 1.6,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white.withValues(alpha: 0.8),
-                      shadows: [
-                        Shadow(
-                          color: Colors.black.withValues(alpha: 0.5),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        )
-                      ],
-                    ),
+                style: TextStyle(
+                  fontSize: 17,
+                  height: 1.7,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white.withValues(alpha: 0.75),
+                ),
               ),
             );
           }).toList(),
@@ -258,7 +317,7 @@ class _PlainLyricsBody extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Empty state với nút Thử lại
+// Empty state
 // ─────────────────────────────────────────────────────────────
 
 class _NoLyrics extends StatelessWidget {
@@ -271,40 +330,64 @@ class _NoLyrics extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
+        padding: const EdgeInsets.symmetric(horizontal: 40),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               Icons.lyrics_outlined,
-              size: 64,
-              color: Colors.white.withValues(alpha: 0.4),
+              size: 52,
+              color: Colors.white.withValues(alpha: 0.25),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             Text(
               'Không có lời bài hát',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.7),
-                  ),
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.6),
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.2,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
-              '"$title"',
+              title,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.5),
-                  ),
-            ),
-            const SizedBox(height: 24),
-            TextButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh_rounded, color: Colors.white),
-              label: const Text(
-                'Thử lại',
-                style: TextStyle(color: Colors.white),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.35),
+                fontSize: 13,
               ),
-              style: TextButton.styleFrom(
-                backgroundColor: Colors.white.withValues(alpha: 0.1),
+            ),
+            const SizedBox(height: 28),
+            GestureDetector(
+              onTap: onRetry,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2)),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.refresh_rounded,
+                        size: 16,
+                        color: Colors.white.withValues(alpha: 0.6)),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Thử lại',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.6),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

@@ -3,8 +3,8 @@ import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../data/local_music_data.dart';
-import '../../../widgets/auth_guard.dart';
+import '../../../../data/local_music_data.dart';
+import '../../../../widgets/auth_guard.dart';
 import '../../player/player_page.dart';
 import '../home_page.dart';
 import '../widgets/banner_carousel.dart';
@@ -54,65 +54,6 @@ class _ExploreTabState extends State<ExploreTab> {
     playWithAuthGuard(ctx, playlist: localPlaylist, index: index);
   }
 
-  @override
-Widget build(BuildContext context) {
-  return SingleChildScrollView(
-    physics: const BouncingScrollPhysics(),
-    padding: const EdgeInsets.only(bottom: 140),
-    child: Center(                                              // ← thêm
-      child: ConstrainedBox(                                   // ← thêm
-        constraints: const BoxConstraints(maxWidth: 800),      // ← thêm
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 16),
-            BannerCarousel(
-              banners: _banners,
-              controller: _pageController,
-              currentIndex: _bannerIndex,
-              onPageChanged: (i) => setState(() => _bannerIndex = i),
-            ),
-            const SizedBox(height: 32),
-            _buildCategory(
-              context, 'Gợi ý cho bạn',
-              SizedBox(
-                height: 178,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: localPlaylist.length.clamp(0, 10),
-                  itemBuilder: (ctx, i) => HorizontalSongCard(
-                    item: localPlaylist[i],
-                    onTap: () => _navigateToPlayer(ctx, localPlaylist[i], i),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 32),
-            _buildCategory(
-              context, 'Bảng xếp hạng',
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: localPlaylist.length.clamp(0, 10),
-                separatorBuilder: (_, __) => Divider(
-                    color: Colors.white.withValues(alpha: 0.06), height: 1, indent: 72),
-                itemBuilder: (ctx, i) => ChartTile( 
-                  item: localPlaylist[i],
-                  rank: i + 1,
-                  onTap: () => _navigateToPlayer(ctx, localPlaylist[i], i),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-}
-
   Widget _buildCategory(BuildContext context, String title, Widget child) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -135,6 +76,68 @@ Widget build(BuildContext context) {
         const SizedBox(height: 14),
         child,
       ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.only(bottom: 140),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 16),
+              BannerCarousel(
+                banners: _banners,
+                controller: _pageController,
+                currentIndex: _bannerIndex,
+                onPageChanged: (i) => setState(() => _bannerIndex = i),
+              ),
+              const SizedBox(height: 32),
+              _buildCategory(
+                context, 'Gợi ý cho bạn',
+                SizedBox(
+                  height: 210,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: localPlaylist.length.clamp(0, 10),
+                    itemBuilder: (ctx, i) => HorizontalSongCard(
+                      item: localPlaylist[i],
+                      onTap: () => _navigateToPlayer(ctx, localPlaylist[i], i),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              _buildCategory(
+                context, 'Bảng xếp hạng',
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: localPlaylist.length.clamp(0, 10),
+                  separatorBuilder: (_, __) => Divider(
+                    color: Colors.white.withValues(alpha: 0.06),
+                    height: 1,
+                    indent: 72,
+                  ),
+                  itemBuilder: (ctx, i) => ChartTile(
+                    item: localPlaylist[i],
+                    rank: i + 1,
+                    onTap: () => _navigateToPlayer(ctx, localPlaylist[i], i),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

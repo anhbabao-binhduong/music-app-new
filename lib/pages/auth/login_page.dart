@@ -1,10 +1,9 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-
 import 'package:music_app/pages/auth/auth_shared.dart';
 import 'package:music_app/pages/auth/register_page.dart';
 import 'package:music_app/pages/home/home_page.dart';
+import 'package:music_app/services/supabase_auth_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -15,13 +14,13 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage>
     with SingleTickerProviderStateMixin {
-  final _formKey   = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
-  final _passCtrl  = TextEditingController();
+  final _passCtrl = TextEditingController();
+  final _authService = SupabaseAuthService();
 
   bool _obscurePass = true;
-  bool _isLoading   = false;
-
+  bool _isLoading = false;
   late final AnimationController _bgCtrl;
 
   @override
@@ -43,7 +42,7 @@ class _LoginPageState extends State<LoginPage>
 
   String? _validateEmail(String? v) {
     if (v == null || v.trim().isEmpty) return 'Vui lòng nhập email';
-    final re = RegExp(r'^[\w\.\-]+@[\w\-]+\.[a-zA-Z]{2,}$');
+    final re = RegExp(r'^[\w.\-]+@[\w\-]+\.[a-zA-Z]{2,}$');
     if (!re.hasMatch(v.trim())) return 'Email không hợp lệ';
     return null;
   }
@@ -59,7 +58,7 @@ class _LoginPageState extends State<LoginPage>
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
+      await _authService.signIn(
         email: _emailCtrl.text.trim(),
         password: _passCtrl.text,
       );
@@ -68,73 +67,28 @@ class _LoginPageState extends State<LoginPage>
         MaterialPageRoute(builder: (_) => const HomePage()),
         (route) => false,
       );
-    } on FirebaseAuthException catch (e) {
-      _showSnack(_friendlyError(e.code), isError: true);
     } catch (e) {
-      _showSnack('Đã xảy ra lỗi. Vui lòng thử lại.', isError: true);
+      _showSnack(_authService.mapError(e), isError: true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
   void _showSnack(String msg, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg),
-      backgroundColor: isError ? kAuthError : Colors.green.shade600,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      margin: const EdgeInsets.all(16),
-    ));
-  }
-
-  Future<void> _sendPasswordReset() async {
-    final email = _emailCtrl.text.trim();
-
-    if (email.isEmpty) {
-      _showSnack('Nhập email trước để đặt lại mật khẩu', isError: true);
-      return;
-    }
-
-    final emailError = _validateEmail(email);
-    if (emailError != null) {
-      _showSnack(emailError, isError: true);
-      return;
-    }
-
-    try {
-      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-      if (!mounted) return;
-      _showSnack('Đã gửi email đặt lại mật khẩu tới $email');
-    } on FirebaseAuthException catch (e) {
-      final msg = switch (e.code) {
-        'user-not-found' => 'Email này chưa được đăng ký',
-        'invalid-email' => 'Email không hợp lệ',
-        'too-many-requests' => 'Quá nhiều yêu cầu. Vui lòng thử lại sau',
-        'network-request-failed' => 'Lỗi kết nối mạng',
-        _ => 'Không thể gửi email đặt lại mật khẩu (${e.code})',
-      };
-      _showSnack(msg, isError: true);
-    } catch (_) {
-      _showSnack('Không thể gửi email đặt lại mật khẩu', isError: true);
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: isError ? kAuthError : Colors.green.shade600,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
   }
 
   void _showComingSoon(String provider) {
     final suffix = kIsWeb ? ' trên bản web này' : '';
     _showSnack('$provider chưa được tích hợp$suffix', isError: true);
-  }
-
-  String _friendlyError(String code) {
-    switch (code) {
-      case 'user-not-found':         return 'Email này chưa được đăng ký';
-      case 'wrong-password':         return 'Mật khẩu không đúng';
-      case 'invalid-credential':     return 'Email hoặc mật khẩu không đúng';
-      case 'invalid-email':          return 'Email không hợp lệ';
-      case 'user-disabled':          return 'Tài khoản này đã bị vô hiệu hóa';
-      case 'too-many-requests':      return 'Quá nhiều lần thử. Vui lòng thử lại sau';
-      case 'network-request-failed': return 'Lỗi kết nối mạng';
-      default:                       return 'Đăng nhập thất bại ($code)';
-    }
   }
 
   @override
@@ -149,11 +103,11 @@ class _LoginPageState extends State<LoginPage>
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final isWide = constraints.maxWidth > 600;
-                final hPad   = isWide
+                final hPad = isWide
                     ? (constraints.maxWidth * 0.08).clamp(40.0, 80.0)
                     : 28.0;
-                final vPad   = isWide ? 60.0 : 40.0;
-                final maxW   = isWide ? 560.0 : 460.0;
+                final vPad = isWide ? 60.0 : 40.0;
+                final maxW = isWide ? 560.0 : 460.0;
 
                 return SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
@@ -200,13 +154,14 @@ class _LoginPageState extends State<LoginPage>
   }
 
   Widget _buildHeader(bool isWide) {
-    final iconSize  = isWide ? 100.0 : 88.0;
-    final titleSize = isWide ? 32.0  : 28.0;
+    final iconSize = isWide ? 100.0 : 88.0;
+    final titleSize = isWide ? 32.0 : 28.0;
 
     return Column(
       children: [
         Container(
-          width: iconSize, height: iconSize,
+          width: iconSize,
+          height: iconSize,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: const LinearGradient(
@@ -222,8 +177,11 @@ class _LoginPageState extends State<LoginPage>
               ),
             ],
           ),
-          child: Icon(Icons.music_note_rounded, color: Colors.white,
-              size: isWide ? 48 : 42),
+          child: Icon(
+            Icons.lock_person_rounded,
+            color: Colors.white,
+            size: isWide ? 48 : 42,
+          ),
         ),
         const SizedBox(height: 24),
         Text(
@@ -237,7 +195,7 @@ class _LoginPageState extends State<LoginPage>
         ),
         const SizedBox(height: 8),
         const Text(
-          'Đăng nhập để tiếp tục thưởng thức âm nhạc',
+          'Đăng nhập bằng email và mật khẩu để tiếp tục nghe nhạc',
           textAlign: TextAlign.center,
           style: TextStyle(color: kAuthSubText, fontSize: 14, height: 1.5),
         ),
@@ -270,21 +228,6 @@ class _LoginPageState extends State<LoginPage>
                   : Icons.visibility_outlined,
               color: kAuthSubText,
               size: 20,
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Align(
-          alignment: Alignment.centerRight,
-          child: GestureDetector(
-            onTap: _isLoading ? null : _sendPasswordReset,
-            child: Text(
-              'Quên mật khẩu?',
-              style: TextStyle(
-                color: _isLoading ? kAuthSubText : kAuthAccent,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
             ),
           ),
         ),

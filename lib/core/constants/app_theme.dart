@@ -153,14 +153,15 @@ class AppTheme {
 
   // ─── Gradient helpers ────────────────────────────────────
   static LinearGradient playerGradient(Color dominantColor) =>
-      LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          dominantColor.withValues(alpha: 0.6),
-          dominantColor.withValues(alpha: 0.2),
-          const Color(0xFF0A0A0F),
-        ],
-        stops: const [0.0, 0.4, 0.85],
-      );
+    LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: const [
+        Color(0xFF4B2FD4),
+        Color(0xFF2A1A8A),
+        Color(0xFF0D0820),
+        Color(0xFF050510),
+      ],
+      stops: const [0.0, 0.30, 0.75, 1.0],
+    );
 }

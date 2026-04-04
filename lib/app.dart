@@ -14,10 +14,10 @@ class MyApp extends StatelessWidget {
       builder: (context, themeState) => MaterialApp(
         title: 'Music App',
         debugShowCheckedModeBanner: false,
-        theme:     AppTheme.lightTheme,
+        theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
         themeMode: themeState.flutterThemeMode,
-        home: const HomePage(),
+        home: const HomePage(),  // Vào thẳng HomePage, không qua login
       ),
     );
   }

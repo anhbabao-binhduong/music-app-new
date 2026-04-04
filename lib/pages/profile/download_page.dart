@@ -38,8 +38,13 @@ class DownloadPage extends StatelessWidget {
             );
           }
 
-          final downloadedSongs = localPlaylist.where((song) => downloadedIds.contains(song.id)).toList();
+          String normalize(String url) => url.split('/').last;
 
+          final downloadedSongs = localPlaylist.where((song) {
+            final songFile = normalize(song.id);
+
+            return downloadedIds.any((id) => normalize(id) == songFile);
+          }).toList();
           return ListView.builder(
             physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.only(bottom: 120),

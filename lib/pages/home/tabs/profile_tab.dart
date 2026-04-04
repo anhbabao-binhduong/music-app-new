@@ -14,7 +14,6 @@ class ProfileTab extends StatelessWidget {
   final int playlistCount;
   final int followingCount;
 
-
   const ProfileTab({
     super.key,
     required this.isLoggedIn,
@@ -30,8 +29,8 @@ class ProfileTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return isLoggedIn
         ? _LoggedInProfile(
-            userName: userName, 
-            userEmail: userEmail, 
+            userName: userName,
+            userEmail: userEmail,
             onLogout: onLogout,
             favoriteCount: favoriteCount,
             playlistCount: playlistCount,
@@ -51,31 +50,36 @@ class _GuestProfile extends StatelessWidget {
     return SafeArea(
       child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
-        child: Center(                                          // ← thêm
-          child: ConstrainedBox(                               // ← thêm
-            constraints: const BoxConstraints(maxWidth: 480),  // ← thêm
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(28, 48, 28, 120),
               child: Column(
                 children: [
                   Container(
-                    width: 100, height: 100,
+                    width: 100,
+                    height: 100,
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle, color: kCard,
+                      shape: BoxShape.circle,
+                      color: kCard,
                       border: Border.all(color: Colors.white.withValues(alpha: 0.08), width: 2),
                     ),
-                    child: Icon(Icons.person_rounded, size: 52, color: Colors.white.withValues(alpha: 0.25)),
+                    child: Icon(Icons.person_rounded,
+                        size: 52, color: Colors.white.withValues(alpha: 0.25)),
                   ),
                   const SizedBox(height: 24),
                   const Text('Bạn chưa đăng nhập',
-                      style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
+                      style:
+                          TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
                   const SizedBox(height: 10),
                   const Text('Đăng nhập để lưu playlist,\ntheo dõi nghệ sĩ và nhiều hơn nữa',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: kSubText, fontSize: 14, height: 1.6)),
                   const SizedBox(height: 36),
                   _AuthButton(
-                    label: 'Đăng nhập', isPrimary: true,
+                    label: 'Đăng nhập',
+                    isPrimary: true,
                     onTap: () => Navigator.of(context).push(PageRouteBuilder(
                       pageBuilder: (_, anim, __) => const LoginPage(),
                       transitionsBuilder: (_, anim, __, child) => SlideTransition(
@@ -87,7 +91,8 @@ class _GuestProfile extends StatelessWidget {
                   ),
                   const SizedBox(height: 14),
                   _AuthButton(
-                    label: 'Tạo tài khoản mới', isPrimary: false,
+                    label: 'Tạo tài khoản mới',
+                    isPrimary: false,
                     onTap: () => Navigator.of(context).push(PageRouteBuilder(
                       pageBuilder: (_, anim, __) => const RegisterPage(),
                       transitionsBuilder: (_, anim, __, child) => SlideTransition(
@@ -115,10 +120,10 @@ class _GuestProfile extends StatelessWidget {
 }
 
 const _kFeatures = [
-  (Icons.favorite_rounded,     'Yêu thích bài hát',  'Lưu những bài hát bạn thích'),
-  (Icons.queue_music_rounded,  'Tạo playlist',        'Sắp xếp nhạc theo ý muốn'),
-  (Icons.download_rounded,     'Tải nhạc offline',    'Nghe không cần mạng'),
-  (Icons.history_rounded,      'Lịch sử nghe',        'Xem lại những gì đã nghe'),
+  (Icons.favorite_rounded, 'Yêu thích bài hát', 'Lưu những bài hát bạn thích'),
+  (Icons.queue_music_rounded, 'Tạo playlist', 'Sắp xếp nhạc theo ý muốn'),
+  (Icons.download_rounded, 'Tải nhạc offline', 'Nghe không cần mạng'),
+  (Icons.history_rounded, 'Lịch sử nghe', 'Xem lại những gì đã nghe'),
 ];
 
 class _FeatureRow extends StatelessWidget {
@@ -133,7 +138,8 @@ class _FeatureRow extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 44, height: 44,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               gradient: LinearGradient(colors: [
@@ -147,8 +153,10 @@ class _FeatureRow extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
-              Text(sub,   style: const TextStyle(color: kSubText, fontSize: 12)),
+              Text(label,
+                  style: const TextStyle(
+                      color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+              Text(sub, style: const TextStyle(color: kSubText, fontSize: 12)),
             ],
           ),
         ],
@@ -166,15 +174,15 @@ class _LoggedInProfile extends StatelessWidget {
   final int playlistCount;
   final int followingCount;
 
-const _LoggedInProfile({
-    required this.userName, 
-    required this.userEmail, 
+  const _LoggedInProfile({
+    required this.userName,
+    required this.userEmail,
     required this.onLogout,
     required this.favoriteCount,
     required this.playlistCount,
     required this.followingCount,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -184,7 +192,7 @@ const _LoggedInProfile({
         child: Column(
           children: [
             _ProfileHeader(
-              userName: userName, 
+              userName: userName,
               userEmail: userEmail,
               favoriteCount: favoriteCount,
               playlistCount: playlistCount,
@@ -192,22 +200,22 @@ const _LoggedInProfile({
             ),
             const SizedBox(height: 8),
             ..._kMenuItems.map((item) => _MenuItem(
-              icon: item.$1, 
-              label: item.$2, 
-              onTap: () {
-                if (item.$2 == 'Bài hát yêu thích') {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const FavoritePage()),
-                  );
-                } else if (item.$2 == 'Nhạc đã tải') {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const DownloadPage()),
-                  );
-                }
-              },
-            )),
+                  icon: item.$1,
+                  label: item.$2,
+                  onTap: () {
+                    if (item.$2 == 'Bài hát yêu thích') {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const FavoritePage()),
+                      );
+                    } else if (item.$2 == 'Nhạc đã tải') {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const DownloadPage()),
+                      );
+                    }
+                  },
+                )),
             const SizedBox(height: 8),
             _LogoutButton(onLogout: onLogout),
           ],
@@ -224,7 +232,7 @@ class _ProfileHeader extends StatelessWidget {
   final int followingCount;
 
   const _ProfileHeader({
-    required this.userName, 
+    required this.userName,
     required this.userEmail,
     required this.favoriteCount,
     required this.playlistCount,
@@ -239,23 +247,29 @@ class _ProfileHeader extends StatelessWidget {
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [Color(0xFF2A0845), Color(0xFF121212)],
-          begin: Alignment.topCenter, end: Alignment.bottomCenter,
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
         ),
       ),
       child: Column(
         children: [
           Container(
-            width: 90, height: 90,
+            width: 90,
+            height: 90,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: const LinearGradient(
                 colors: [Color(0xFF7B1FA2), Color(0xFF1565C0)],
-                begin: Alignment.topLeft, end: Alignment.bottomRight,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              boxShadow: [BoxShadow(
-                color: const Color(0xFF7B1FA2).withValues(alpha: 0.5),
-                blurRadius: 24, spreadRadius: 2,
-              )],
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF7B1FA2).withValues(alpha: 0.5),
+                  blurRadius: 24,
+                  spreadRadius: 2,
+                )
+              ],
             ),
             alignment: Alignment.center,
             child: Text(
@@ -264,16 +278,17 @@ class _ProfileHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          Text(userName,   style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
+          Text(userName,
+              style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
           const SizedBox(height: 4),
-          Text(userEmail,  style: const TextStyle(color: kSubText, fontSize: 13)),
+          Text(userEmail, style: const TextStyle(color: kSubText, fontSize: 13)),
           const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _StatChip(label: 'Theo dõi', value: followingCount.toString()),
               _divider,
-              _StatChip(label: 'Playlist',  value: playlistCount.toString()),
+              _StatChip(label: 'Playlist', value: playlistCount.toString()),
               _divider,
               _StatChip(label: 'Yêu thích', value: favoriteCount.toString()),
             ],
@@ -284,10 +299,11 @@ class _ProfileHeader extends StatelessWidget {
   }
 
   Widget get _divider => Container(
-    width: 1, height: 28,
-    color: Colors.white.withValues(alpha: 0.1),
-    margin: const EdgeInsets.symmetric(horizontal: 20),
-  );
+        width: 1,
+        height: 28,
+        color: Colors.white.withValues(alpha: 0.1),
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+      );
 }
 
 class _StatChip extends StatelessWidget {
@@ -296,22 +312,23 @@ class _StatChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-    children: [
-      Text(value, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
-      const SizedBox(height: 2),
-      Text(label, style: const TextStyle(color: kSubText, fontSize: 11)),
-    ],
-  );
+        children: [
+          Text(value,
+              style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 2),
+          Text(label, style: const TextStyle(color: kSubText, fontSize: 11)),
+        ],
+      );
 }
 
 const _kMenuItems = [
-  (Icons.manage_accounts_outlined,  'Chỉnh sửa hồ sơ'),
-  (Icons.favorite_outline_rounded,  'Bài hát yêu thích'),
-  (Icons.download_outlined,         'Nhạc đã tải'),
-  (Icons.history_rounded,           'Lịch sử nghe'),
-  (Icons.notifications_outlined,    'Thông báo'),
-  (Icons.settings_outlined,         'Cài đặt'),
-  (Icons.help_outline_rounded,      'Trợ giúp & Phản hồi'),
+  (Icons.manage_accounts_outlined, 'Chỉnh sửa hồ sơ'),
+  (Icons.favorite_outline_rounded, 'Bài hát yêu thích'),
+  (Icons.download_outlined, 'Nhạc đã tải'),
+  (Icons.history_rounded, 'Lịch sử nghe'),
+  (Icons.notifications_outlined, 'Thông báo'),
+  (Icons.settings_outlined, 'Cài đặt'),
+  (Icons.help_outline_rounded, 'Trợ giúp & Phản hồi'),
 ];
 
 class _MenuItem extends StatelessWidget {
@@ -335,7 +352,8 @@ class _MenuItem extends StatelessWidget {
             child: Row(
               children: [
                 Container(
-                  width: 42, height: 42,
+                  width: 42,
+                  height: 42,
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.06),
                     borderRadius: BorderRadius.circular(12),
@@ -343,9 +361,12 @@ class _MenuItem extends StatelessWidget {
                   child: Icon(icon, color: Colors.white70, size: 20),
                 ),
                 const SizedBox(width: 16),
-                Expanded(child: Text(label,
-                    style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500))),
-                Icon(Icons.chevron_right_rounded, color: Colors.white.withValues(alpha: 0.25), size: 20),
+                Expanded(
+                    child: Text(label,
+                        style: const TextStyle(
+                            color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500))),
+                Icon(Icons.chevron_right_rounded,
+                    color: Colors.white.withValues(alpha: 0.25), size: 20),
               ],
             ),
           ),
@@ -366,23 +387,39 @@ class _LogoutButton extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onLogout,
+          onTap: () async {
+            final confirm = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                backgroundColor: const Color(0xFF2A2A2E),
+                title: const Text('Đăng xuất', style: TextStyle(color: Colors.white)),
+                content: const Text('Bạn có chắc muốn đăng xuất?', style: TextStyle(color: Colors.white)),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Hủy', style: TextStyle(color: Colors.grey)),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('Đăng xuất', style: TextStyle(color: Colors.redAccent)),
+                  ),
+                ],
+              ),
+            );
+
+            if (confirm == true) {
+              await onLogout();
+            }
+          },
           borderRadius: BorderRadius.circular(14),
           splashColor: Colors.red.withValues(alpha: 0.08),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          child: const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             child: Row(
               children: [
-                Container(
-                  width: 42, height: 42,
-                  decoration: BoxDecoration(
-                    color: Colors.red.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 20),
-                ),
-                const SizedBox(width: 16),
-                const Text('Đăng xuất',
+                Icon(Icons.logout_rounded, color: Colors.redAccent, size: 20),
+                SizedBox(width: 16),
+                Text('Đăng xuất',
                     style: TextStyle(color: Colors.redAccent, fontSize: 15, fontWeight: FontWeight.w600)),
               ],
             ),
@@ -406,18 +443,23 @@ class _AuthButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: double.infinity, height: 56,
+        width: double.infinity,
+        height: 56,
         decoration: isPrimary
             ? BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [Color(0xFF7B1FA2), Color(0xFF1565C0)],
-                  begin: Alignment.centerLeft, end: Alignment.centerRight,
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
                 ),
                 borderRadius: BorderRadius.circular(14),
-                boxShadow: [BoxShadow(
-                  color: const Color(0xFF7B1FA2).withValues(alpha: 0.40),
-                  blurRadius: 20, offset: const Offset(0, 8),
-                )],
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF7B1FA2).withValues(alpha: 0.40),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  )
+                ],
               )
             : BoxDecoration(
                 borderRadius: BorderRadius.circular(14),
@@ -428,7 +470,9 @@ class _AuthButton extends StatelessWidget {
         child: Text(label,
             style: TextStyle(
               color: isPrimary ? Colors.white : kAccent,
-              fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 0.3,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.3,
             )),
       ),
     );

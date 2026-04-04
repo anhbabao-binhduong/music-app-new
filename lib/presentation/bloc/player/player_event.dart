@@ -1,85 +1,85 @@
 import 'package:audio_service/audio_service.dart';
-import 'package:equatable/equatable.dart';
 
-abstract class PlayerEvent extends Equatable {
+abstract class PlayerEvent {
   const PlayerEvent();
-  @override List<Object?> get props => [];
 }
 
-/// Load a playlist and optionally start at [startIndex]
 class LoadPlaylistEvent extends PlayerEvent {
   final List<MediaItem> playlist;
   final int startIndex;
-  const LoadPlaylistEvent(this.playlist, {this.startIndex = 0});
-  @override List<Object?> get props => [playlist, startIndex];
+  final String? userId;
+
+  // Giữ positional arg thứ nhất để không break các chỗ gọi cũ:
+  // LoadPlaylistEvent(songs, startIndex: 0)
+  const LoadPlaylistEvent(this.playlist, {required this.startIndex, this.userId});
 }
 
-/// Play or resume
 class PlayEvent extends PlayerEvent {
   const PlayEvent();
 }
 
-/// Pause playback
 class PauseEvent extends PlayerEvent {
   const PauseEvent();
 }
 
-/// Seek to an absolute position
-class SeekEvent extends PlayerEvent {
-  final Duration position;
-  const SeekEvent(this.position);
-  @override List<Object?> get props => [position];
-}
-
-/// Skip to next track
 class NextEvent extends PlayerEvent {
   const NextEvent();
 }
 
-/// Skip to previous track
 class PreviousEvent extends PlayerEvent {
   const PreviousEvent();
 }
 
-/// Toggle shuffle mode
-class ToggleShuffleEvent extends PlayerEvent {
-  const ToggleShuffleEvent();
+class SeekEvent extends PlayerEvent {
+  final Duration position;
+  const SeekEvent(this.position);
 }
 
-/// Cycle repeat: none → one → all
-class CycleRepeatEvent extends PlayerEvent {
-  const CycleRepeatEvent();
-}
-
-/// Jump to a specific index in the current queue
 class SkipToIndexEvent extends PlayerEvent {
   final int index;
   const SkipToIndexEvent(this.index);
-  @override List<Object?> get props => [index];
+}
+
+// "Phát tiếp theo" — chen vào ngay sau bài đang phát
+class PlayNextEvent extends PlayerEvent {
+  final MediaItem item;
+  final String? userId;
+  const PlayNextEvent(this.item, {this.userId});
 }
 
 class InternalUpdateEvent extends PlayerEvent {
   const InternalUpdateEvent();
 }
 
-// Thêm đoạn này vào cùng với các event khác của bạn
-class PlayNextEvent extends PlayerEvent {
-  final MediaItem item;
-
-  const PlayNextEvent(this.item);
-
-  @override
-  List<Object?> get props => [item];
-}
-
-// Xóa một bài khỏi hàng đợi
+// Queue events
 class RemoveFromQueueEvent extends PlayerEvent {
   final int index;
-  const RemoveFromQueueEvent(this.index);
+  final String? userId;
+  const RemoveFromQueueEvent(this.index, {this.userId});
 }
 
-// Đẩy bài hát lên ưu tiên (ngay sau bài đang hát)
 class PrioritizeSongEvent extends PlayerEvent {
   final int index;
-  const PrioritizeSongEvent(this.index);
+  final String? userId;
+  const PrioritizeSongEvent(this.index, {this.userId});
+}
+
+// Shuffle / Repeat — dùng trong player_page.dart
+class ToggleShuffleEvent extends PlayerEvent {
+  const ToggleShuffleEvent();
+}
+
+class CycleRepeatEvent extends PlayerEvent {
+  const CycleRepeatEvent();
+}
+
+// Reset toàn bộ khi đăng xuất
+class ResetPlayerEvent extends PlayerEvent {
+  const ResetPlayerEvent();
+}
+
+// Khôi phục queue khi đăng nhập lại
+class RestoreQueueEvent extends PlayerEvent {
+  final String userId;
+  const RestoreQueueEvent(this.userId);
 }

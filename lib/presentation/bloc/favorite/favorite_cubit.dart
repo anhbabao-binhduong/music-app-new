@@ -1,79 +1,68 @@
-import 'dart:async';
-import 'dart:convert';
-
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class FavoriteCubit extends Cubit<List<String>> {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  StreamSubscription? _authSub;
-  StreamSubscription? _favoritesSub;
+  final SupabaseClient _supabase = Supabase.instance.client;
 
   FavoriteCubit() : super([]) {
-    _authSub = FirebaseAuth.instance.authStateChanges().listen((user) {
-      _favoritesSub?.cancel();
-
-      if (user != null) {
-        _bindFavoritesStream(user.uid);
-      } else {
-        emit([]);
-      }
+    _loadFavorites();
+    _supabase.auth.onAuthStateChange.listen((_) {
+      _loadFavorites();
     });
   }
 
-  CollectionReference<Map<String, dynamic>> _favoriteCollection(String uid) {
-    return _firestore.collection('users').doc(uid).collection('favorites');
-  }
+  String? get _uid => _supabase.auth.currentUser?.id;
 
-  String _favoriteDocId(String songId) => base64Url.encode(utf8.encode(songId));
+  Future<void> _loadFavorites() async {
+    final uid = _uid;
+    if (uid == null) {
+      emit([]);
+      return;
+    }
 
-  void _bindFavoritesStream(String uid) {
-    _favoritesSub = _favoriteCollection(uid)
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .listen(
-      (snapshot) {
-        final savedIds = snapshot.docs
-            .map((doc) => (doc.data()['songId'] ?? '').toString())
-            .where((id) => id.isNotEmpty)
-            .toList();
-        emit(savedIds);
-      },
-      onError: (e) {
-        print('Lỗi realtime yêu thích từ Firestore: $e');
-      },
-    );
+    try {
+      final response = await _supabase
+          .from('favorites')
+          .select('song_id')
+          .eq('user_id', uid)
+          .order('created_at', ascending: false);
+
+      final ids = (response as List)
+          .map((row) => row['song_id']?.toString())
+          .whereType<String>()
+          .toList();
+
+      emit(ids);
+    } catch (e) {
+      emit([]);
+    }
   }
 
   Future<void> toggleFavorite(String songId) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
+    final uid = _uid;
+    if (uid == null) {
       throw Exception('Bạn cần đăng nhập để dùng yêu thích');
     }
 
     final isLiked = state.contains(songId);
 
     try {
-      final docRef = _favoriteCollection(user.uid).doc(_favoriteDocId(songId));
       if (isLiked) {
-        await docRef.delete();
+        await _supabase
+            .from('favorites')
+            .delete()
+            .eq('user_id', uid)
+            .eq('song_id', songId);
       } else {
-        await docRef.set({
-          'songId': songId,
-          'createdAt': FieldValue.serverTimestamp(),
+        await _supabase.from('favorites').insert({
+          'user_id': uid,
+          'song_id': songId,
         });
       }
+
+      await _loadFavorites();
     } catch (e) {
-      print('Lỗi đồng bộ yêu thích với Firestore: $e');
       rethrow;
     }
-  }
-
-  @override
-  Future<void> close() async {
-    await _favoritesSub?.cancel();
-    await _authSub?.cancel();
-    return super.close();
   }
 }

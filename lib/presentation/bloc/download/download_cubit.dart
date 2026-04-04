@@ -1,79 +1,72 @@
-import 'dart:async';
-import 'dart:convert';
-
 import 'package:audio_service/audio_service.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class DownloadCubit extends Cubit<List<String>> {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  StreamSubscription? _authSub;
-  StreamSubscription? _downloadsSub;
+  final SupabaseClient _supabase = Supabase.instance.client;
 
   DownloadCubit() : super([]) {
-    _authSub = FirebaseAuth.instance.authStateChanges().listen((user) {
-      _downloadsSub?.cancel();
-
-      if (user != null) {
-        _bindDownloadsStream(user.uid);
-      } else {
-        emit([]);
-      }
+    _loadDownloads();
+    _supabase.auth.onAuthStateChange.listen((_) {
+      _loadDownloads();
     });
   }
 
-  CollectionReference<Map<String, dynamic>> _downloadCollection(String uid) {
-    return _firestore.collection('users').doc(uid).collection('downloads');
-  }
+  String? get _uid => _supabase.auth.currentUser?.id;
 
-  String _downloadDocId(String songId) => base64Url.encode(utf8.encode(songId));
+  Future<void> _loadDownloads() async {
+    final uid = _uid;
+    if (uid == null) {
+      emit([]);
+      return;
+    }
 
-  void _bindDownloadsStream(String uid) {
-    _downloadsSub = _downloadCollection(uid)
-        .orderBy('downloadedAt', descending: true)
-        .snapshots()
-        .listen((snapshot) {
-      final ids = snapshot.docs
-          .map((doc) => (doc.data()['songId'] ?? '').toString())
-          .where((id) => id.isNotEmpty)
+    try {
+      final response = await _supabase
+          .from('downloads')
+          .select('song_id')
+          .eq('user_id', uid)
+          .order('created_at', ascending: false);
+
+      final ids = (response as List)
+          .map((row) => row['song_id']?.toString())
+          .whereType<String>()
           .toList();
+
       emit(ids);
-    }, onError: (e) {
-      print('Lỗi realtime downloads từ Firestore: $e');
-    });
+    } catch (e) {
+      emit([]);
+    }
   }
 
   Future<void> toggleDownload(MediaItem song) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
+    final uid = _uid;
+    if (uid == null) {
       throw Exception('Bạn cần đăng nhập để lưu nhạc đã tải');
     }
 
     final isDownloaded = state.contains(song.id);
-    final docRef = _downloadCollection(user.uid).doc(_downloadDocId(song.id));
 
     if (isDownloaded) {
-      await docRef.delete();
+      await _supabase
+          .from('downloads')
+          .delete()
+          .eq('user_id', uid)
+          .eq('song_id', song.id);
+      await _loadDownloads();
       return;
     }
 
-    await docRef.set({
-      'songId': song.id,
+    await _supabase.from('downloads').insert({
+      'user_id': uid,
+      'song_id': song.id,
       'title': song.title,
       'artist': song.artist,
       'album': song.album,
-      'artUrl': song.artUri?.toString(),
-      'audioUrl': song.id,
-      'downloadedAt': FieldValue.serverTimestamp(),
+      'art_url': song.artUri?.toString(),
       'status': 'saved',
     });
-  }
 
-  @override
-  Future<void> close() async {
-    await _downloadsSub?.cancel();
-    await _authSub?.cancel();
-    return super.close();
+    await _loadDownloads();
   }
 }

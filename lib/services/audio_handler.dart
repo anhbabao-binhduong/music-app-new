@@ -1,10 +1,15 @@
+import 'dart:async';
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:flutter/foundation.dart'; // Thêm để dùng kIsWeb
 
-class MyAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
+class MyAudioHandler extends BaseAudioHandler
+    with QueueHandler, SeekHandler {
   final AudioPlayer _player = AudioPlayer();
-  final ConcatenatingAudioSource _playlist = ConcatenatingAudioSource(children: []);
+  final ConcatenatingAudioSource _playlist =
+      ConcatenatingAudioSource(children: []);
+
+  // ✅ Chỉ dùng 1 stream duy nhất — không merge, không race condition
+  late final Stream<Duration> positionStream;
 
   MyAudioHandler() {
     _init();
@@ -19,14 +24,17 @@ class MyAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
       }
     });
 
-    // Chỉ gán playlist nếy nó có bài hát (Tránh lỗi Null trên Web)
-    // AudioPlayer sẽ tự động nhận playlist khi ta nạp bài hát đầu tiên vào.
     _player.setAudioSource(_playlist);
+
+    // ✅ Dùng thẳng just_audio positionStream — chuẩn nhất
+    // Tự update sau seek, không cần inject thêm gì
+    positionStream = _player.positionStream.asBroadcastStream();
   }
+
+  // ─── Playback controls ────────────────────────────────────
 
   @override
   Future<void> play() async {
-    // BẢO VỆ: Nếu danh sách rỗng thì không làm gì cả, tránh Crash
     if (_playlist.length == 0) return;
     await _player.play();
   }
@@ -44,6 +52,7 @@ class MyAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   Future<void> seek(Duration position) async {
     if (_playlist.length == 0) return;
     await _player.seek(position);
+    // ✅ Bỏ _positionController.add(position) — just_audio tự emit sau seek
   }
 
   @override
@@ -60,23 +69,23 @@ class MyAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
 
   @override
   Future<void> skipToQueueItem(int index) async {
-    if (index < 0 || index >= queue.value.length || _playlist.length == 0) return;
-    
+    if (index < 0 ||
+        index >= queue.value.length ||
+        _playlist.length == 0) return;
     try {
       await _player.seek(Duration.zero, index: index);
     } catch (e) {
-      print("Lỗi Seek Audio Web: $e");
+      print('Lỗi Seek Audio Web: $e');
     }
   }
+
+  // ─── Queue management ─────────────────────────────────────
 
   @override
   Future<void> updateQueue(List<MediaItem> newQueue) async {
     final audioSources = newQueue.map(_mediaItemToAudioSource).toList();
-    
-    // Tạm dừng player trước khi dọn dẹp để an toàn
     if (_player.playing) await _player.pause();
-    
-    await _playlist.clear(); 
+    await _playlist.clear();
     await _playlist.addAll(audioSources);
     queue.add(newQueue);
   }
@@ -85,41 +94,42 @@ class MyAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   Future<void> addQueueItems(List<MediaItem> mediaItems) async {
     final audioSources = mediaItems.map(_mediaItemToAudioSource).toList();
     await _playlist.addAll(audioSources);
-    final currentQueue = queue.value;
-    queue.add([...currentQueue, ...mediaItems]);
+    queue.add([...queue.value, ...mediaItems]);
   }
-
-  // --- CÁC HÀM QUẢN LÝ QUEUE ---
 
   @override
   Future<void> addQueueItem(MediaItem mediaItem) async {
     await _playlist.add(_mediaItemToAudioSource(mediaItem));
-    final newQueue = List<MediaItem>.from(queue.value)..add(mediaItem);
-    queue.add(newQueue);
+    queue.add(List<MediaItem>.from(queue.value)..add(mediaItem));
   }
 
   @override
   Future<void> insertQueueItem(int index, MediaItem mediaItem) async {
     await _playlist.insert(index, _mediaItemToAudioSource(mediaItem));
-    final newQueue = List<MediaItem>.from(queue.value)..insert(index, mediaItem);
-    queue.add(newQueue);
+    queue.add(List<MediaItem>.from(queue.value)..insert(index, mediaItem));
   }
 
   @override
   Future<void> removeQueueItemAt(int index) async {
     await _playlist.removeAt(index);
-    final newQueue = List<MediaItem>.from(queue.value)..removeAt(index);
-    queue.add(newQueue);
+    queue.add(List<MediaItem>.from(queue.value)..removeAt(index));
   }
 
-  // ---------------------------------------------------------------
+  // ─── Streams ──────────────────────────────────────────────
+
+  Stream<Duration?> get durationStream => _player.durationStream;
+
+  // ─── Helpers ──────────────────────────────────────────────
 
   AudioSource _mediaItemToAudioSource(MediaItem item) {
-    // FIX: Đảm bảo URI hợp lệ. Nếu item.id rỗng hoặc bất thường, thay bằng 1 khoảng lặng (hoặc link dự phòng)
-    final url = item.id.isNotEmpty ? item.id : 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
-
-    if (url.startsWith('assets/')) {
-      return AudioSource.asset(url, tag: item);
+    final url = item.extras?['url'];
+    if (url == null || url.toString().isEmpty) {
+      print('❌ URL null: ${item.id}');
+      return AudioSource.uri(
+        Uri.parse(
+            'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'),
+        tag: item,
+      );
     }
     return AudioSource.uri(Uri.parse(url), tag: item);
   }
@@ -153,7 +163,4 @@ class MyAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
       queueIndex: event.currentIndex,
     );
   }
-
-  Stream<Duration> get positionStream => _player.positionStream;
-  Stream<Duration?> get durationStream => _player.durationStream;
 }

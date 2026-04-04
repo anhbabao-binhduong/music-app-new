@@ -43,7 +43,13 @@ class FavoritePage extends StatelessWidget {
           }
 
           // Phép thuật ở đây: Lọc ra những bài hát trong localPlaylist có ID nằm trong danh sách favoriteIds
-          final favoriteSongs = localPlaylist.where((song) => favoriteIds.contains(song.id)).toList();
+          String normalize(String url) => url.split('/').last;
+
+          final favoriteSongs = localPlaylist.where((song) {
+            final songFile = normalize(song.id);
+
+            return favoriteIds.any((id) => normalize(id) == songFile);
+          }).toList();
 
           return ListView.builder(
             physics: const BouncingScrollPhysics(),

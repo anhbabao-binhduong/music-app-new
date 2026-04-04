@@ -13,23 +13,43 @@ class HorizontalSongCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 120,
-        margin: const EdgeInsets.symmetric(horizontal: 6),
+        width: 130,
+        margin: const EdgeInsets.symmetric(horizontal: 4),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
+            // Ảnh bìa
             Hero(
               tag: 'art-${item.id}',
               child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: ArtImage(uri: item.artUri, size: 120)),
+                borderRadius: BorderRadius.circular(12),
+                child: ArtImage(uri: item.artUri, size: 130),
+              ),
             ),
             const SizedBox(height: 8),
-            Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
-            const SizedBox(height: 2),
-            Text(item.artist ?? 'Unknown Artist', maxLines: 1, overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: kSubText, fontSize: 12)),
+            // Tên bài hát
+            Text(
+              item.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
+            // Tên nghệ sĩ
+            Text(
+              item.artist ?? 'Unknown Artist',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: kSubText,
+                fontSize: 11,
+              ),
+            ),
           ],
         ),
       ),
@@ -47,7 +67,10 @@ class ArtImage extends StatelessWidget {
     if (uri != null) {
       return CachedNetworkImage(
         imageUrl: uri.toString(),
-        width: size, height: size, fit: BoxFit.cover,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        placeholder: (context, url) => ArtPlaceholder(size: size),
         errorWidget: (_, __, ___) => ArtPlaceholder(size: size),
       );
     }
@@ -62,15 +85,21 @@ class ArtPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: size, height: size,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         gradient: const LinearGradient(
-            colors: [Color(0xFF2A2A2E), Color(0xFF1C1C1E)],
-            begin: Alignment.topLeft, end: Alignment.bottomRight),
+          colors: [Color(0xFF2A2A2E), Color(0xFF1C1C1E)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
       ),
-      child: Icon(Icons.music_note_rounded,
-          color: kAccent.withValues(alpha: 0.7), size: size * 0.42),
+      child: Icon(
+        Icons.music_note_rounded,
+        color: kAccent.withValues(alpha: 0.7),
+        size: size * 0.4,
+      ),
     );
   }
 }

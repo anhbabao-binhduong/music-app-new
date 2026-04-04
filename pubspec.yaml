@@ -33,7 +33,7 @@ dependencies:
   # ─── Network ────────────────────────────────────────────
   dio: ^5.4.0
   cached_network_image: ^3.3.1
-
+  async: ^2.11.0  # cho StreamGroup.merge
   # ─── UI & Utilities ─────────────────────────────────────
   google_fonts: ^8.0.2
   animations: ^2.0.11
@@ -42,9 +42,6 @@ dependencies:
   get_it: ^9.2.1
   dartz: ^0.10.1
   permission_handler: ^12.0.1
-  firebase_core: ^4.5.0
-  firebase_auth: ^6.2.0
-  cloud_firestore: ^6.1.3
   supabase_flutter: ^2.12.0
   share_plus: ^12.0.1
 

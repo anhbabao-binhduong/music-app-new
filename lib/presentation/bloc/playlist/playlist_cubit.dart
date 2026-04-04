@@ -6,89 +6,209 @@ import 'package:music_app/data/models/playlist_model.dart';
 part 'playlist_state.dart';
 
 class PlaylistCubit extends Cubit<PlaylistState> {
-  final PlaylistStorageService _storageService = getIt<PlaylistStorageService>();
+  final PlaylistStorageService _storageService =
+      getIt<PlaylistStorageService>();
 
-  PlaylistCubit() : super(PlaylistInitial()) {
-    loadPlaylists();
-  }
+  PlaylistCubit() : super(PlaylistLoaded([])) {
+  loadPlaylists();
+}
 
   Future<void> loadPlaylists() async {
     try {
       final playlists = await _storageService.fetchPlaylists();
       emit(PlaylistLoaded(playlists));
     } catch (e) {
-      emit(PlaylistError(e.toString().replaceFirst('Exception: ', '')));
+      emit(PlaylistError(e.toString()));
     }
   }
 
+  /// ✅ CREATE ONLY
   Future<String?> createNewPlaylist(String name) async {
     try {
-      await _storageService.createPlaylist(name);
-      await loadPlaylists();
+      final newId = await _storageService.createPlaylist(name);
+
+      final current = state;
+      if (current is PlaylistLoaded) {
+        final newPlaylist = PlaylistModel(
+          id: newId,
+          name: name,
+          songIds: [],
+        );
+
+        emit(PlaylistLoaded([...current.playlists, newPlaylist]));
+      }
+
       return null;
     } catch (e) {
-      final message = e.toString().replaceFirst('Exception: ', '');
+      final message = e.toString();
       emit(PlaylistError(message));
       return message;
     }
   }
 
-  Future<String?> createPlaylistAndAddSong(String name, String songId) async {
+  /// ✅ CREATE + ADD SONG
+  Future<String?> createPlaylistAndAddSong(
+      String name, String songId) async {
     try {
       final newId = await _storageService.createPlaylist(name);
       await _storageService.addSongToPlaylist(newId, songId);
-      await loadPlaylists();
+
+      final current = state;
+      if (current is PlaylistLoaded) {
+        final newPlaylist = PlaylistModel(
+          id: newId,
+          name: name,
+          songIds: [songId],
+        );
+
+        emit(PlaylistLoaded([...current.playlists, newPlaylist]));
+      }
+
       return null;
     } catch (e) {
-      final message = e.toString().replaceFirst('Exception: ', '');
+      final message = e.toString();
       emit(PlaylistError(message));
       return message;
     }
   }
 
-  Future<String?> addSongToPlaylist(String playlistId, String songId) async {
+  /// 🔥 ADD SONG (QUAN TRỌNG NHẤT)
+  Future<String?> addSongToPlaylist(
+      String playlistId, String songId) async {
     try {
-      await _storageService.addSongToPlaylist(playlistId, songId);
-      await loadPlaylists();
+      final current = state;
+
+      if (current is! PlaylistLoaded) return "State lỗi";
+
+      final playlists = List<PlaylistModel>.from(current.playlists);
+
+      final index =
+          playlists.indexWhere((p) => p.id == playlistId);
+
+      if (index == -1) return "Không tìm thấy playlist";
+
+      final playlist = playlists[index];
+
+      if (playlist.songIds.contains(songId)) {
+        return "Đã tồn tại";
+      }
+
+      /// 🔥 UPDATE FIRESTORE
+      await _storageService.addSongToPlaylist(
+          playlistId, songId);
+
+      /// 🔥 UPDATE LOCAL
+      final updatedPlaylist = playlist.copyWith(
+        songIds: [...playlist.songIds, songId],
+      );
+
+      playlists[index] = updatedPlaylist;
+
+      /// 🔥 EMIT NGAY → UI UPDATE
+      emit(PlaylistLoaded(playlists));
+
       return null;
     } catch (e) {
-      final message = e.toString().replaceFirst('Exception: ', 'Lỗi khi thêm bài hát: ');
+      final message = 'Lỗi khi thêm bài hát: $e';
       emit(PlaylistError(message));
       return message;
     }
   }
 
-  Future<String?> removeSongFromPlaylist(String playlistId, String songId) async {
+  /// REMOVE SONG
+  Future<String?> removeSongFromPlaylist(
+      String playlistId, String songId) async {
     try {
-      await _storageService.removeSongFromPlaylist(playlistId, songId);
-      await loadPlaylists();
+      final current = state;
+
+      if (current is! PlaylistLoaded) return "State lỗi";
+
+      final playlists = List<PlaylistModel>.from(current.playlists);
+
+      final index =
+          playlists.indexWhere((p) => p.id == playlistId);
+
+      if (index == -1) return "Không tìm thấy playlist";
+
+      final playlist = playlists[index];
+
+      await _storageService.removeSongFromPlaylist(
+          playlistId, songId);
+
+      final updatedPlaylist = playlist.copyWith(
+        songIds: playlist.songIds
+            .where((id) => id != songId)
+            .toList(),
+      );
+
+      playlists[index] = updatedPlaylist;
+
+      emit(PlaylistLoaded(playlists));
+
       return null;
     } catch (e) {
-      final message = e.toString().replaceFirst('Exception: ', 'Lỗi khi xóa bài hát: ');
+      final message = 'Lỗi khi xóa bài hát: $e';
       emit(PlaylistError(message));
       return message;
     }
   }
 
-  Future<String?> reorderSongs(String playlistId, int oldIndex, int newIndex) async {
+  /// REORDER
+  Future<String?> reorderSongs(
+      String playlistId, int oldIndex, int newIndex) async {
     try {
-      await _storageService.reorderSongs(playlistId, oldIndex, newIndex);
-      await loadPlaylists();
+      final current = state;
+
+      if (current is! PlaylistLoaded) return "State lỗi";
+
+      final playlists = List<PlaylistModel>.from(current.playlists);
+
+      final index =
+          playlists.indexWhere((p) => p.id == playlistId);
+
+      if (index == -1) return "Không tìm thấy playlist";
+
+      final playlist = playlists[index];
+
+      final newSongIds = List<String>.from(playlist.songIds);
+
+      final item = newSongIds.removeAt(oldIndex);
+      newSongIds.insert(newIndex, item);
+
+      await _storageService.reorderSongs(
+          playlistId, oldIndex, newIndex);
+
+      playlists[index] =
+          playlist.copyWith(songIds: newSongIds);
+
+      emit(PlaylistLoaded(playlists));
+
       return null;
     } catch (e) {
-      final message = e.toString().replaceFirst('Exception: ', 'Lỗi khi sắp xếp: ');
+      final message = 'Lỗi khi sắp xếp: $e';
       emit(PlaylistError(message));
       return message;
     }
   }
 
+  /// DELETE
   Future<String?> deletePlaylist(String playlistId) async {
     try {
+      final current = state;
+
+      if (current is! PlaylistLoaded) return "State lỗi";
+
       await _storageService.deletePlaylist(playlistId);
-      await loadPlaylists();
+
+      final updated = current.playlists
+          .where((p) => p.id != playlistId)
+          .toList();
+
+      emit(PlaylistLoaded(updated));
+
       return null;
     } catch (e) {
-      final message = e.toString().replaceFirst('Exception: ', 'Lỗi khi xóa danh sách phát: ');
+      final message = 'Lỗi khi xóa playlist: $e';
       emit(PlaylistError(message));
       return message;
     }

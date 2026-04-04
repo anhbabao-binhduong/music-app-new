@@ -47,6 +47,22 @@
 	<true/>
 
 
+
+	<key>CFBundleURLTypes</key>
+<array>
+    <dict>
+        <key>CFBundleURLSchemes</key>
+        <array>
+            <string>com.yourmusicapp</string>
+        </array>
+    </dict>
+</array>
+
+
+
+
+
+
 	<!-- ── Background Modes ─────────────────────────── -->
     <key>UIBackgroundModes</key>
     <array>

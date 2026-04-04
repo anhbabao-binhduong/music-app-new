@@ -9,9 +9,6 @@ import 'package:music_app/presentation/bloc/favorite/favorite_cubit.dart';
 import 'package:music_app/presentation/bloc/player/player_bloc.dart';
 import 'package:music_app/presentation/bloc/player/player_event.dart';
 
-import '../home_page.dart';
-import 'song_cards.dart';
-
 class ChartTile extends StatelessWidget {
   final MediaItem item;
   final int rank;
@@ -24,39 +21,39 @@ class ChartTile extends StatelessWidget {
     required this.onTap,
   });
 
-  void _showFastSnackBar(BuildContext context, String message, {bool isError = false}) {
+  void _showSnackBar(BuildContext context, String message,
+      {bool isError = false}) {
     ScaffoldMessenger.of(context).removeCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        duration: Duration(milliseconds: isError ? 1800 : 1000),
-        backgroundColor: isError ? Colors.redAccent : null,
+        duration: Duration(milliseconds: isError ? 2000 : 1500),
+        backgroundColor: isError ? Colors.redAccent : Colors.green,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
 
   void _showPlaylistSelection(BuildContext context) {
-    void showCreateDialog() {
-      final TextEditingController nameController = TextEditingController();
-      Navigator.pop(context);
+    final songId = item.id;
+    TextEditingController controller = TextEditingController();
 
+    void showCreateDialog() {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
           backgroundColor: const Color(0xFF2A2A2E),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Tạo danh sách phát', style: TextStyle(color: Colors.white, fontSize: 18)),
+          title: const Text('Tạo danh sách phát',
+              style: TextStyle(color: Colors.white)),
           content: TextField(
-            controller: nameController,
+            controller: controller,
             style: const TextStyle(color: Colors.white),
-            autofocus: true,
             decoration: const InputDecoration(
-              hintText: 'Nhập tên danh sách...',
+              hintText: 'Nhập tên playlist...',
               hintStyle: TextStyle(color: Colors.grey),
-              enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
-              focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.greenAccent)),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.grey),
+              ),
             ),
           ),
           actions: [
@@ -65,22 +62,23 @@ class ChartTile extends StatelessWidget {
               child: const Text('Hủy', style: TextStyle(color: Colors.grey)),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary),
               onPressed: () async {
-                final name = nameController.text.trim();
+                final name = controller.text.trim();
                 if (name.isEmpty) return;
 
-                final error = await context.read<PlaylistCubit>().createPlaylistAndAddSong(name, item.id);
-                if (!ctx.mounted) return;
                 Navigator.pop(ctx);
+                
+                final result = await context
+                    .read<PlaylistCubit>()
+                    .createPlaylistAndAddSong(name, songId);
 
-                if (error == null) {
-                  _showFastSnackBar(context, 'Đã tạo "$name" và thêm bài hát!');
+                if (result == null) {
+                  _showSnackBar(context, 'Đã tạo playlist "$name"');
                 } else {
-                  _showFastSnackBar(context, error, isError: true);
+                  _showSnackBar(context, result, isError: true);
                 }
               },
-              child: const Text('Tạo mới', style: TextStyle(color: Colors.white)),
+              child: const Text('Tạo'),
             ),
           ],
         ),
@@ -90,34 +88,41 @@ class ChartTile extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF1E1E1E),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (context) => SafeArea(
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (bottomSheetContext) => SafeArea(
         child: BlocBuilder<PlaylistCubit, PlaylistState>(
           builder: (context, state) {
-            final playlists = (state is PlaylistLoaded) ? state.playlists : <PlaylistModel>[];
+            final playlists = state is PlaylistLoaded
+                ? state.playlists
+                : <PlaylistModel>[];
 
             return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Text('Thêm vào danh sách phát', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                  padding: EdgeInsets.all(16),
+                  child: Text(
+                    'Thêm vào danh sách phát',
+                    style: TextStyle(color: Colors.white, fontSize: 18),
+                  ),
                 ),
                 ListTile(
-                  leading: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(color: Colors.white12, borderRadius: BorderRadius.circular(8)),
-                    child: const Icon(Icons.add_rounded, color: Colors.white),
-                  ),
-                  title: const Text('Tạo danh sách phát mới', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                  onTap: showCreateDialog,
+                  leading: const Icon(Icons.add, color: Colors.white),
+                  title: const Text('Tạo danh sách phát mới',
+                      style: TextStyle(color: Colors.white)),
+                  onTap: () {
+                    Navigator.pop(bottomSheetContext);
+                    Future.microtask(() => showCreateDialog());
+                  },
                 ),
-                const Divider(color: Colors.white12, height: 1, indent: 16, endIndent: 16),
+                const Divider(color: Colors.white12),
                 if (playlists.isEmpty)
                   const Padding(
-                    padding: EdgeInsets.all(32.0),
-                    child: Text('Bạn chưa có danh sách phát nào', style: TextStyle(color: Colors.grey)),
+                    padding: EdgeInsets.all(24),
+                    child: Text('Chưa có playlist nào',
+                        style: TextStyle(color: Colors.grey)),
                   )
                 else
                   Flexible(
@@ -126,18 +131,37 @@ class ChartTile extends StatelessWidget {
                       itemCount: playlists.length,
                       itemBuilder: (context, index) {
                         final p = playlists[index];
+                        final isAdded = p.songIds.contains(songId);
+
                         return ListTile(
-                          leading: const Icon(Icons.playlist_play_rounded, color: Colors.white70),
-                          title: Text(p.name, style: const TextStyle(color: Colors.white)),
+                          leading: Icon(
+                            isAdded ? Icons.check_circle : Icons.playlist_play,
+                            color: isAdded ? Colors.greenAccent : Colors.white70,
+                          ),
+                          title: Text(p.name,
+                              style: const TextStyle(color: Colors.white)),
+                          trailing: isAdded
+                              ? const Text("Đã thêm",
+                                  style: TextStyle(color: Colors.greenAccent))
+                              : null,
                           onTap: () async {
-                            final error = await context.read<PlaylistCubit>().addSongToPlaylist(p.id, item.id);
+                            if (isAdded) {
+                              _showSnackBar(context, "Bài hát đã có trong playlist");
+                              Navigator.pop(context);
+                              return;
+                            }
+
+                            final result = await context
+                                .read<PlaylistCubit>()
+                                .addSongToPlaylist(p.id, songId);
+
                             if (!context.mounted) return;
                             Navigator.pop(context);
 
-                            if (error == null) {
-                              _showFastSnackBar(context, 'Đã thêm vào "${p.name}"');
+                            if (result == null) {
+                              _showSnackBar(context, 'Đã thêm vào "${p.name}"');
                             } else {
-                              _showFastSnackBar(context, error, isError: true);
+                              _showSnackBar(context, result, isError: true);
                             }
                           },
                         );
@@ -153,6 +177,91 @@ class ChartTile extends StatelessWidget {
     );
   }
 
+  void _showSongInfoDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF2A2A2E),
+        title: Row(
+          children: [
+            const Icon(Icons.info_outline, color: Colors.white),
+            const SizedBox(width: 8),
+            const Text('Thông tin bài hát', style: TextStyle(color: Colors.white)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _infoRow('Tên bài hát', item.title),
+            const SizedBox(height: 8),
+            _infoRow('Nghệ sĩ', item.artist ?? 'Không rõ'),
+            const SizedBox(height: 8),
+            _infoRow('Album', item.album ?? 'Không rõ'),
+            const SizedBox(height: 8),
+            _infoRow('Thời lượng', _formatDuration(item.duration ?? Duration.zero)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Đóng', style: TextStyle(color: Colors.grey)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoRow(String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 80,
+          child: Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13)),
+        ),
+        Expanded(
+          child: Text(value, style: const TextStyle(color: Colors.white, fontSize: 13)),
+        ),
+      ],
+    );
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    return '$minutes:$seconds';
+  }
+
+  void _showReportDialog(BuildContext context) {
+    final List<String> reasons = [
+      'Nội dung không phù hợp',
+      'Bản quyền',
+      'Thông tin sai lệch',
+      'Chất lượng âm thanh kém',
+      'Lý do khác',
+    ];
+    
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF2A2A2E),
+        title: const Text('Báo cáo bài hát', style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: reasons.map((reason) => ListTile(
+            title: Text(reason, style: const TextStyle(color: Colors.white)),
+            onTap: () {
+              Navigator.pop(ctx);
+              _showSnackBar(context, 'Cảm ơn bạn đã báo cáo. Chúng tôi sẽ xem xét.');
+            },
+          )).toList(),
+        ),
+      ),
+    );
+  }
+
   void _showOptionsBottomSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -160,105 +269,102 @@ class ChartTile extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (bottomSheetContext) {
+      builder: (ctx) {
         return SafeArea(
           child: BlocBuilder<FavoriteCubit, List<String>>(
-            builder: (context, favoriteIds) {
-              final isFavorite = favoriteIds.contains(item.id);
-              final isDownloaded = context.watch<DownloadCubit>().state.contains(item.id);
-
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-              const SizedBox(height: 12),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              ListTile(
-                leading: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: ArtImage(uri: item.artUri, size: 48),
-                ),
-                title: Text(item.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
-                subtitle: Text(item.artist ?? 'Unknown Artist', style: const TextStyle(color: Colors.grey), maxLines: 1, overflow: TextOverflow.ellipsis),
-              ),
-              const Divider(color: Colors.white12),
-              _MenuActionTile(
-                icon: Icons.queue_music_rounded,
-                title: 'Phát tiếp theo',
-                onTap: () {
-                  Navigator.pop(bottomSheetContext);
-                  context.read<PlayerBloc>().add(PlayNextEvent(item));
-                  _showFastSnackBar(context, 'Đã thêm vào hàng đợi');
+            builder: (_, favState) {
+              final isFavorite = favState.contains(item.id);
+              return BlocBuilder<DownloadCubit, List<String>>(
+                builder: (_, downState) {
+                  final isDownloaded = downState.contains(item.id);
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(height: 8),
+                      _MenuActionTile(
+                        icon: Icons.playlist_play,
+                        title: 'Phát tiếp theo',
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          // SỬA: dùng đúng tên event PlayNextEvent
+                          context.read<PlayerBloc>().add(PlayNextEvent(item));
+                          _showSnackBar(context, 'Đã thêm "${item.title}" vào hàng chờ');
+                        },
+                      ),
+                      _MenuActionTile(
+                        icon: Icons.queue_music,
+                        title: 'Thêm vào playlist',
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          _showPlaylistSelection(context);
+                        },
+                      ),
+                      _MenuActionTile(
+                        icon: isFavorite ? Icons.favorite : Icons.favorite_border,
+                        title: isFavorite ? 'Bỏ yêu thích' : 'Yêu thích',
+                        iconColor: isFavorite ? Colors.redAccent : null,
+                        onTap: () async {
+                          Navigator.pop(ctx);
+                          try {
+                            await context.read<FavoriteCubit>().toggleFavorite(item.id);
+                            _showSnackBar(context, 
+                                isFavorite ? 'Đã xóa khỏi yêu thích' : 'Đã thêm vào yêu thích');
+                          } catch (e) {
+                            _showSnackBar(context, e.toString(), isError: true);
+                          }
+                        },
+                      ),
+                      _MenuActionTile(
+                        icon: isDownloaded ? Icons.download_done : Icons.download,
+                        title: isDownloaded ? 'Đã tải' : 'Tải nhạc',
+                        iconColor: isDownloaded ? Colors.greenAccent : null,
+                        onTap: () async {
+                          Navigator.pop(ctx);
+                          if (isDownloaded) {
+                            _showSnackBar(context, 'Bài hát đã được tải');
+                          } else {
+                            try {
+                              await context.read<DownloadCubit>().toggleDownload(item);
+                              _showSnackBar(context, 'Đã tải xuống thành công');
+                            } catch (e) {
+                              _showSnackBar(context, e.toString(), isError: true);
+                            }
+                          }
+                        },
+                      ),
+                      _MenuActionTile(
+                        icon: Icons.share,
+                        title: 'Chia sẻ',
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          Share.share(
+                            'Nghe bài hát "${item.title}" - ${item.artist} trên Music App',
+                            subject: 'Chia sẻ bài hát',
+                          );
+                        },
+                      ),
+                      _MenuActionTile(
+                        icon: Icons.info_outline,
+                        title: 'Thông tin bài hát',
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          _showSongInfoDialog(context);
+                        },
+                      ),
+                      _MenuActionTile(
+                        icon: Icons.flag,
+                        title: 'Báo cáo',
+                        iconColor: Colors.redAccent,
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          _showReportDialog(context);
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                  );
                 },
-              ),
-              _MenuActionTile(
-                icon: Icons.playlist_add_rounded,
-                title: 'Thêm vào danh sách phát',
-                onTap: () {
-                  Navigator.pop(bottomSheetContext);
-                  _showPlaylistSelection(context);
-                },
-              ),
-              _MenuActionTile(
-                icon: isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                iconColor: isFavorite ? Colors.redAccent : Colors.white,
-                title: isFavorite ? 'Bỏ yêu thích' : 'Thêm vào yêu thích',
-                onTap: () async {
-                  Navigator.pop(bottomSheetContext);
-                  try {
-                    await context.read<FavoriteCubit>().toggleFavorite(item.id);
-                    if (!context.mounted) return;
-                    _showFastSnackBar(context, isFavorite ? 'Đã xóa khỏi yêu thích' : 'Đã thêm vào yêu thích');
-                  } catch (e) {
-                    if (!context.mounted) return;
-                    _showFastSnackBar(
-                      context,
-                      e.toString().replaceFirst('Exception: ', ''),
-                      isError: true,
-                    );
-                  }
-                },
-              ),
-              _MenuActionTile(
-                icon: isDownloaded ? Icons.download_done_rounded : Icons.download_rounded,
-                title: isDownloaded ? 'Bỏ khỏi Nhạc đã tải' : 'Lưu vào Nhạc đã tải',
-                onTap: () async {
-                  Navigator.pop(bottomSheetContext);
-                  try {
-                    await context.read<DownloadCubit>().toggleDownload(item);
-                    if (!context.mounted) return;
-                    _showFastSnackBar(
-                      context,
-                      isDownloaded ? 'Đã bỏ khỏi Nhạc đã tải' : 'Đã lưu vào Nhạc đã tải',
-                    );
-                  } catch (e) {
-                    if (!context.mounted) return;
-                    _showFastSnackBar(
-                      context,
-                      e.toString().replaceFirst('Exception: ', ''),
-                      isError: true,
-                    );
-                  }
-                },
-              ),
-              _MenuActionTile(
-                icon: Icons.share_rounded,
-                title: 'Chia sẻ',
-                onTap: () async {
-                  Navigator.pop(bottomSheetContext);
-                  final shareText = 'Cùng nghe bài hát ${item.title} của ${item.artist} trên app của tôi nhé!\nLink: ${item.id}';
-                  await Share.share(shareText);
-                },
-              ),
-              const SizedBox(height: 16),
-            ],
-          );
+              );
             },
           ),
         );
@@ -266,73 +372,20 @@ class ChartTile extends StatelessWidget {
     );
   }
 
-  Color get _rankColor {
-    if (rank == 1) return const Color(0xFFFFD700);
-    if (rank == 2) return const Color(0xFFC0C0C0);
-    if (rank == 3) return const Color(0xFFCD7F32);
-    return Colors.grey;
-  }
-
-  String get _durationText {
-    final d = item.duration;
-    if (d == null) return '';
-    return '${d.inMinutes}:${(d.inSeconds % 60).toString().padLeft(2, '0')}';
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        splashColor: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 30,
-                child: Text('$rank',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        color: _rankColor,
-                        fontSize: rank <= 3 ? 18 : 14,
-                        fontWeight: rank <= 3 ? FontWeight.w900 : FontWeight.w500)),
-              ),
-              const SizedBox(width: 12),
-              Hero(
-                tag: 'chart-${item.id}',
-                child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: ArtImage(uri: item.artUri, size: 52)),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 3),
-                    Text(item.artist ?? 'Unknown Artist', maxLines: 1, overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Colors.grey, fontSize: 13)),
-                  ],
-                ),
-              ),
-              if (_durationText.isNotEmpty) ...[
-                Text(_durationText, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                const SizedBox(width: 4),
-              ],
-              IconButton(
-                icon: Icon(Icons.more_vert_rounded, size: 20, color: Colors.white.withValues(alpha: 0.6)),
-                onPressed: () => _showOptionsBottomSheet(context),
-                splashRadius: 24,
-              ),
-            ],
-          ),
-        ),
+    return ListTile(
+      leading: Text('$rank',
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      title: Text(item.title,
+          style: const TextStyle(color: Colors.white)),
+      subtitle: Text(item.artist ?? '',
+          style: const TextStyle(color: Colors.grey)),
+      trailing: IconButton(
+        icon: const Icon(Icons.more_vert, color: Colors.white),
+        onPressed: () => _showOptionsBottomSheet(context),
       ),
+      onTap: onTap,
     );
   }
 }
@@ -354,7 +407,7 @@ class _MenuActionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       leading: Icon(icon, color: iconColor ?? Colors.white),
-      title: Text(title, style: const TextStyle(color: Colors.white, fontSize: 16)),
+      title: Text(title, style: const TextStyle(color: Colors.white)),
       onTap: onTap,
     );
   }
