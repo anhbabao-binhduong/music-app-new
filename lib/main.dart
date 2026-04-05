@@ -15,30 +15,23 @@ import 'package:music_app/presentation/bloc/download/download_cubit.dart';
 import 'package:music_app/presentation/bloc/favorite/favorite_cubit.dart';
 import 'package:music_app/presentation/bloc/playlist/playlist_cubit.dart';
 import 'package:music_app/presentation/bloc/player/player_event.dart';
+import 'package:music_app/presentation/bloc/category/category_cubit.dart'; // 👈 THÊM
 
 void _setupAuthListener() {
   final supabase = Supabase.instance.client;
   
   supabase.auth.onAuthStateChange.listen((event) async {
     if (event.event == AuthChangeEvent.signedOut) {
-      // User đã đăng xuất - xóa toàn bộ dữ liệu nhạc
       final musicService = getIt<MusicPlayerService>();
       await musicService.stop();
       await musicService.handler.updateQueue([]);
       getIt<PlayerBloc>().add(ResetPlayerEvent());
-      // Xóa các Cubit state
       getIt<FavoriteCubit>().emit([]);
       getIt<DownloadCubit>().emit([]);
     }
     
     if (event.event == AuthChangeEvent.signedIn) {
-      // User đăng nhập - reload lại dữ liệu
-      final favoriteCubit = getIt<FavoriteCubit>();
-      final downloadCubit = getIt<DownloadCubit>();
-      
-      // TODO: Cần có method public để reload, không gọi private method
-      // favoriteCubit.loadFavorites();
-      // downloadCubit.loadDownloads();
+      // TODO: reload data
     }
   });
 }
@@ -46,31 +39,32 @@ void _setupAuthListener() {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Local storage
+  // 1. Khởi tạo Hive
   await HiveInitializer.init();
-  await setupServiceLocator();
 
-  // Supabase
+  // 2. Khởi tạo Supabase TRƯỚC
   await Supabase.initialize(
     url: SupabaseConfig.url,
     anonKey: SupabaseConfig.anonKey,
   );
 
-  // 🎧 Player service (KHÔNG init lại)
+  // 3. Sau đó mới gọi service locator (vì nó cần Supabase.instance.client)
+  await setupServiceLocator();
+
+  // 4. Lấy music service
   final musicService = getIt<MusicPlayerService>();
 
-  // 🎵 Load nhạc từ Supabase
+  // 5. Load nhạc từ Supabase
   final songRepo = SongRepository();
   final supabasePlaylist = await songRepo.fetchSongsFromSupabase();
 
   final user = Supabase.instance.client.auth.currentUser;
 
-    // ⭐ CHỈ load khi đã đăng nhập
-    if (user != null && supabasePlaylist.isNotEmpty) {
-      await musicService.handler.updateQueue(supabasePlaylist);
-    }
+  if (user != null && supabasePlaylist.isNotEmpty) {
+    await musicService.handler.updateQueue(supabasePlaylist);
+  }
 
-  // 🔍 Search data
+  // 6. Search data
   final songPool = supabasePlaylist.map((item) => SongEntity(
         id: item.id,
         title: item.title,
@@ -83,10 +77,10 @@ Future<void> main() async {
 
   final searchCubit = getIt<SearchCubit>()..loadSongPool(songPool);
 
-  // Setup auth listener sau khi Supabase đã khởi tạo
+  // 7. Auth listener
   _setupAuthListener();
 
-  // 🚀 RUN APP
+  // 8. Run app
   runApp(
     MultiRepositoryProvider(
       providers: [
@@ -97,14 +91,13 @@ Future<void> main() async {
       child: MultiBlocProvider(
         providers: [
           BlocProvider<PlayerBloc>(
-            key: UniqueKey(), // ⭐ ép rebuild khi cần
+            key: UniqueKey(),
             create: (_) => getIt<PlayerBloc>(),
           ),
           BlocProvider<ThemeBloc>(
             create: (_) => getIt<ThemeBloc>()..add(const LoadThemeEvent()),
           ),
           BlocProvider<SearchCubit>.value(value: searchCubit),
-
           BlocProvider<FavoriteCubit>(
             create: (_) => getIt<FavoriteCubit>(),
           ),
@@ -113,6 +106,9 @@ Future<void> main() async {
           ),
           BlocProvider<PlaylistCubit>(
             create: (_) => getIt<PlaylistCubit>(),
+          ),
+          BlocProvider<CategoryCubit>(
+            create: (context) => getIt<CategoryCubit>(),
           ),
         ],
         child: const MyApp(),

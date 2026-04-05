@@ -1,6 +1,9 @@
+// lib/domain/repositories/music_repository.dart
+
 import 'package:audio_service/audio_service.dart';
 import 'package:dartz/dartz.dart';
 import '../../core/errors/failures.dart';
+import '../entities/category_entity.dart';
 import '../entities/song_entity.dart';
 import '../entities/playlist_entity.dart';
 
@@ -12,7 +15,7 @@ abstract class MusicRepository {
   Future<Either<Failure, Unit>>    addFavorite(MediaItem song);
   Future<Either<Failure, Unit>>    removeFavorite(String songId);
   Future<bool>                     isFavorite(String songId);
-
+  Future<Either<Failure, List<SongEntity>>> getAllSongs();
   // ── History ────────────────────────────────────────────
   Future<Either<Failure, List<SongEntity>>> getHistory({int limit = 50});
   Future<Either<Failure, Unit>>    addToHistory(MediaItem song, {int playedMs = 0});
@@ -33,4 +36,8 @@ abstract class MusicRepository {
   // ── Settings ───────────────────────────────────────────
   Future<void> saveLastPlayed(String songId, int positionMs);
   Future<({String? songId, int positionMs})> getLastPlayed();
+
+  // ── Categories (Supabase) ──────────────────────────────
+  Future<Either<Failure, List<CategoryEntity>>> getCategories();
+  Future<Either<Failure, List<SongEntity>>>     getSongsByCategory(String? slug);
 }

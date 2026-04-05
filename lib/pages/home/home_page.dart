@@ -12,9 +12,9 @@ import '../library/library_page.dart';
 import 'package:music_app/services/supabase_auth_service.dart';
 import 'package:music_app/services/music_player_service.dart';
 import 'package:music_app/core/di/service_locator.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:music_app/presentation/bloc/player/player_bloc.dart';
 import 'package:music_app/presentation/bloc/player/player_event.dart';
+import '../../presentation/bloc/category/category_cubit.dart';
 
 const kBg = Color(0xFF121212);
 const kCard = Color(0xFF1C1C1E);
@@ -34,31 +34,28 @@ class _HomePageState extends State<HomePage> {
 
   User? _user;
   StreamSubscription<AuthState>? _authSub;
-  // Thêm method này vào class _HomePageState
-void _openSearch() {
-  Navigator.of(context).push(PageRouteBuilder(
-    pageBuilder: (_, anim, __) => const SearchPage(),
-    transitionsBuilder: (_, anim, __, child) => FadeTransition(
-      opacity: anim,
-      child: child,
-    ),
-  ));
-}
 
+  void _openSearch() {
+    Navigator.of(context).push(PageRouteBuilder(
+      pageBuilder: (_, anim, __) => const SearchPage(),
+      transitionsBuilder: (_, anim, __, child) => FadeTransition(
+        opacity: anim,
+        child: child,
+      ),
+    ));
+  }
 
   @override
-void initState() {
-  super.initState();
-  _user = _supabase.auth.currentUser;
-  _authSub = _supabase.auth.onAuthStateChange.listen((data) {
-    if (!mounted) return;
-    final newUser = data.session?.user;
-    
-    // Reload toàn bộ trang khi auth state thay đổi
-    setState(() => _user = newUser);
-  });
-}
-  
+  void initState() {
+    super.initState();
+    _user = _supabase.auth.currentUser;
+    _authSub = _supabase.auth.onAuthStateChange.listen((data) {
+      if (!mounted) return;
+      final newUser = data.session?.user;
+      setState(() => _user = newUser);
+    });
+  }
+
   @override
   void dispose() {
     _authSub?.cancel();
@@ -75,17 +72,12 @@ void initState() {
 
   String get _userEmail => _user?.email ?? '';
 
-
-// home_page.dart - sửa _onLogout
-Future<void> _onLogout() async {
-  final authService = SupabaseAuthService();
-  await authService.signOut(); // chỉ logout
-
-// ⭐ reset player NGAY TẠI UI
-context.read<PlayerBloc>().add(const ResetPlayerEvent());
-  
-  setState(() {});
-}
+  Future<void> _onLogout() async {
+    final authService = SupabaseAuthService();
+    await authService.signOut();
+    context.read<PlayerBloc>().add(const ResetPlayerEvent());
+    setState(() {});
+  }
 
   Widget _buildBody() {
     switch (_currentNavIndex) {
@@ -113,19 +105,26 @@ context.read<PlayerBloc>().add(const ResetPlayerEvent());
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: kBg,
-      extendBody: true,
-      appBar: _currentNavIndex == 3 ? null : _buildAppBar(),
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 220),
-        child: KeyedSubtree(
-          key: ValueKey(_currentNavIndex),
-          child: _buildBody(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<CategoryCubit>(
+          create: (context) => getIt<CategoryCubit>(),
         ),
+      ],
+      child: Scaffold(
+        backgroundColor: kBg,
+        extendBody: true,
+        appBar: _currentNavIndex == 3 ? null : _buildAppBar(),
+        body: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 220),
+          child: KeyedSubtree(
+            key: ValueKey(_currentNavIndex),
+            child: _buildBody(),
+          ),
+        ),
+        bottomSheet: const MiniPlayerBar(),
+        bottomNavigationBar: _buildBottomNavBar(),
       ),
-      bottomSheet: const MiniPlayerBar(),
-      bottomNavigationBar: _buildBottomNavBar(),
     );
   }
 

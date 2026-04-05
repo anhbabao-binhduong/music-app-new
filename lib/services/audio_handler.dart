@@ -8,7 +8,6 @@ class MyAudioHandler extends BaseAudioHandler
   final ConcatenatingAudioSource _playlist =
       ConcatenatingAudioSource(children: []);
 
-  // ✅ Chỉ dùng 1 stream duy nhất — không merge, không race condition
   late final Stream<Duration> positionStream;
 
   MyAudioHandler() {
@@ -26,8 +25,6 @@ class MyAudioHandler extends BaseAudioHandler
 
     _player.setAudioSource(_playlist);
 
-    // ✅ Dùng thẳng just_audio positionStream — chuẩn nhất
-    // Tự update sau seek, không cần inject thêm gì
     positionStream = _player.positionStream.asBroadcastStream();
   }
 
@@ -52,7 +49,6 @@ class MyAudioHandler extends BaseAudioHandler
   Future<void> seek(Duration position) async {
     if (_playlist.length == 0) return;
     await _player.seek(position);
-    // ✅ Bỏ _positionController.add(position) — just_audio tự emit sau seek
   }
 
   @override
@@ -122,15 +118,17 @@ class MyAudioHandler extends BaseAudioHandler
   // ─── Helpers ──────────────────────────────────────────────
 
   AudioSource _mediaItemToAudioSource(MediaItem item) {
-    final url = item.extras?['url'];
-    if (url == null || url.toString().isEmpty) {
+    // ✅ Đọc extras['url'] — đúng format từ cả localPlaylist lẫn category songs
+    final url = item.extras?['url']?.toString() ?? '';
+
+    if (url.isEmpty || !url.startsWith('http')) {
       print('❌ URL null: ${item.id}');
       return AudioSource.uri(
-        Uri.parse(
-            'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'),
+        Uri.parse('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'),
         tag: item,
       );
     }
+
     return AudioSource.uri(Uri.parse(url), tag: item);
   }
 
@@ -150,10 +148,10 @@ class MyAudioHandler extends BaseAudioHandler
       },
       androidCompactActionIndices: const [0, 1, 3],
       processingState: switch (_player.processingState) {
-        ProcessingState.idle => AudioProcessingState.idle,
-        ProcessingState.loading => AudioProcessingState.loading,
+        ProcessingState.idle      => AudioProcessingState.idle,
+        ProcessingState.loading   => AudioProcessingState.loading,
         ProcessingState.buffering => AudioProcessingState.buffering,
-        ProcessingState.ready => AudioProcessingState.ready,
+        ProcessingState.ready     => AudioProcessingState.ready,
         ProcessingState.completed => AudioProcessingState.completed,
       },
       playing: playing,

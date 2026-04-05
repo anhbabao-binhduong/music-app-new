@@ -2,14 +2,18 @@ import 'package:audio_service/audio_service.dart';
 import 'package:dartz/dartz.dart' as dz;
 import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; // 👈 THÊM
+
 import '../../core/constants/hive_constants.dart';
 import '../../core/errors/failures.dart';
 import '../../domain/entities/playlist_entity.dart';
 import '../../domain/entities/song_entity.dart';
+import '../../domain/entities/category_entity.dart';       // 👈 THÊM
 import '../../domain/repositories/music_repository.dart';
 import '../models/history_entry_model.dart';
 import '../models/playlist_model.dart';
 import '../models/song_model.dart';
+import '../models/category_model.dart';                   // 👈 THÊM
 
 extension MediaItemToEntity on MediaItem {
   SongEntity toEntity() => SongEntity(
@@ -34,8 +38,14 @@ class MusicRepositoryImpl implements MusicRepository {
 
   final _uuid = const Uuid();
 
-  // ─── Favorites ───────────────────────────────────────────
+  // ─── Supabase client ────────────────────────────────────
+  final SupabaseClient _supabase;
 
+  // Constructor: nhận supabaseClient (có thể từ DI), nếu không thì dùng instance mặc định
+  MusicRepositoryImpl({SupabaseClient? supabaseClient})
+      : _supabase = supabaseClient ?? Supabase.instance.client;
+
+  // ─── Favorites ───────────────────────────────────────────
   @override
   Future<dz.Either<Failure, List<SongEntity>>> getFavorites() async {
     try {
@@ -78,7 +88,6 @@ class MusicRepositoryImpl implements MusicRepository {
       _favorites.containsKey(songId);
 
   // ─── History ─────────────────────────────────────────────
-
   @override
   Future<dz.Either<Failure, List<SongEntity>>> getHistory(
       {int limit = 50}) async {
@@ -140,7 +149,6 @@ class MusicRepositoryImpl implements MusicRepository {
   }
 
   // ─── Playlists ───────────────────────────────────────────
-
   @override
   Future<dz.Either<Failure, List<PlaylistEntity>>> getPlaylists() async {
     try {
@@ -242,7 +250,6 @@ class MusicRepositoryImpl implements MusicRepository {
   }
 
   // ─── Song Cache ──────────────────────────────────────────
-
   @override
   Future<dz.Either<Failure, dz.Unit>> cacheSong(MediaItem song) async {
     try {
@@ -265,7 +272,6 @@ class MusicRepositoryImpl implements MusicRepository {
   }
 
   // ─── Settings ────────────────────────────────────────────
-
   @override
   Future<void> saveLastPlayed(String songId, int positionMs) async {
     await _settings.put(HiveSettingsKeys.lastSongId, songId);
@@ -282,5 +288,102 @@ class MusicRepositoryImpl implements MusicRepository {
     final positionMs = rawPos is int ? rawPos : 0;
 
     return (songId: songId, positionMs: positionMs);
+  }
+
+  // ─── Categories (Supabase) ──────────────────────────────────────────────
+  @override
+  Future<dz.Either<Failure, List<CategoryEntity>>> getCategories() async {
+    try {
+      final response = await _supabase
+          .from('categories')
+          .select()
+          .order('display_order', ascending: true);
+
+      final categories = (response as List)
+          .map((json) => CategoryModel.fromJson(json).toEntity())
+          .toList();
+
+      return dz.Right(categories);
+    } catch (e) {
+      return dz.Left(CacheFailure('Failed to fetch categories: $e'));
+    }
+  }
+
+  // Thay thế toàn bộ phương thức getAllSongs
+@override
+Future<dz.Either<Failure, List<SongEntity>>> getAllSongs() async {
+  try {
+    final response = await _supabase
+        .from('songs')
+        .select('*')
+        .order('title', ascending: true);
+    final songs = (response as List).map((json) => SongEntity(
+      id: json['id'].toString(),
+      title: json['title'] ?? 'Unknown',
+      artist: json['artist'] ?? 'Unknown',
+      album: json['album'] ?? 'Unknown',
+      artUrl: json['art_url'],
+      audioUrl: json['audio_path'],
+      durationMs: (json['duration_seconds'] ?? 0) * 1000,
+    )).toList();
+    return dz.Right(songs);
+  } catch (e) {
+    return dz.Left(CacheFailure('Failed to fetch songs: $e'));
+  }
+}
+  
+  @override
+Future<dz.Either<Failure, List<SongEntity>>> getSongsByCategory(String? slug) async {
+  try {
+    if (slug == null) {
+      // Lấy tất cả bài hát từ Supabase
+      return await getAllSongs();
+    }
+
+      // Bước 1: lấy category_id từ slug
+      final catRes = await _supabase
+          .from('categories')
+          .select('id')
+          .eq('slug', slug)
+          .maybeSingle();
+
+      if (catRes == null) return const dz.Right([]);
+
+      final categoryId = catRes['id'] as String;
+
+      // Bước 2: lấy song_id từ bảng trung gian
+      final joinRes = await _supabase
+          .from('song_categories')
+          .select('song_id')
+          .eq('category_id', categoryId);
+
+      final songIds = (joinRes as List)
+          .map((e) => e['song_id'].toString())
+          .toList();
+
+      if (songIds.isEmpty) return const dz.Right([]);
+
+      // Bước 3: lấy songs từ Supabase
+      final songsRes = await _supabase
+          .from('songs')
+          .select()
+          .inFilter('id', songIds);
+
+      final songs = (songsRes as List).map((json) {
+        return SongEntity(
+          id:         json['id'].toString(),
+          title:      (json['title']  as String?) ?? 'Unknown',
+          artist:     (json['artist'] as String?) ?? 'Unknown',
+          album:      (json['album']  as String?) ?? 'Unknown',
+          artUrl:     json['art_url']    as String?,
+          audioUrl:   json['audio_path'] as String?,           // ✅ sửa
+          durationMs: ((json['duration_seconds'] as int?) ?? 0) * 1000, // ✅ sửa
+        );
+      }).toList();
+
+      return dz.Right(songs);
+    } catch (e) {
+      return dz.Left(CacheFailure('Failed to fetch songs by category: $e'));
+    }
   }
 }
