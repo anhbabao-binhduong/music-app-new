@@ -191,6 +191,29 @@ class PlaylistCubit extends Cubit<PlaylistState> {
     }
   }
 
+  /// RENAME
+  Future<String?> renamePlaylist(String playlistId, String newName) async {
+    try {
+      final current = state;
+      if (current is! PlaylistLoaded) return "State lỗi";
+
+      await _storageService.renamePlaylist(playlistId, newName);
+
+      final playlists = List<PlaylistModel>.from(current.playlists);
+      final index = playlists.indexWhere((p) => p.id == playlistId);
+      if (index == -1) return "Không tìm thấy playlist";
+
+      playlists[index] = playlists[index].copyWith(name: newName);
+      emit(PlaylistLoaded(playlists));
+
+      return null;
+    } catch (e) {
+      final message = e.toString();
+      emit(PlaylistError(message));
+      return message;
+    }
+  }
+
   /// DELETE
   Future<String?> deletePlaylist(String playlistId) async {
     try {

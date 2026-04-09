@@ -1,4 +1,4 @@
-﻿import 'package:audio_service/audio_service.dart';
+import 'package:audio_service/audio_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 List<MediaItem> localPlaylist = [];
@@ -17,6 +17,11 @@ MediaItem? findSongById(String idOrUrl) {
 class SongRepository {
   final _supabase = Supabase.instance.client;
 
+  String resolveAudioUrl(String audioPath) {
+    if (audioPath.startsWith('http')) return audioPath.trim();
+    return _supabase.storage.from('songs').getPublicUrl(audioPath.trim());
+  }
+
   Future<List<MediaItem>> fetchSongsFromSupabase() async {
     try {
       final List<dynamic> response =
@@ -29,10 +34,8 @@ class SongRepository {
           return null;
         }
 
-        final publicUrl = _supabase
-            .storage
-            .from('songs')
-            .getPublicUrl(audioPath);
+        final publicUrl = resolveAudioUrl(audioPath.toString());
+        print('🎵 Resolved URL: $publicUrl');
 
         if (publicUrl.isEmpty) {
           print("❌ URL rỗng: $audioPath");

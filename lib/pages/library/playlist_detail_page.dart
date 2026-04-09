@@ -97,6 +97,36 @@ class PlaylistDetailPage extends StatelessWidget {
                   style: const TextStyle(color: Colors.grey, fontSize: 14),
                 ),
               ),
+              if (playableSongs.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: InkWell(
+                    onTap: () {
+                      context.read<PlayerBloc>().add(
+                        LoadPlaylistEvent(playableSongs, startIndex: 0),
+                      );
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => PlayerPage(song: playableSongs[0]),
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(30),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.play_circle_fill_rounded, color: Colors.greenAccent, size: 36),
+                        SizedBox(width: 8),
+                        Text(
+                          "Phát tất cả",
+                          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 20),
 
               // DANH SÁCH BÀI HÁT
@@ -115,7 +145,40 @@ class PlaylistDetailPage extends StatelessWidget {
                         itemBuilder: (context, index) {
                           final songId = playlist.songIds[index];
                           
-                          final song = findSongById(songId);
+                          final songIndex = playableSongs.indexWhere((s) => s.id == songId);
+                          final song = songIndex != -1 ? playableSongs[songIndex] : null;
+
+                          Widget trailingWidget = Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
+                                onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (ctx) => AlertDialog(
+                                      backgroundColor: const Color(0xFF2A2A2E),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                      title: const Text("Xóa bài hát?", style: TextStyle(color: Colors.white)),
+                                      content: const Text("Bạn có chắc chắn muốn xóa bài hát này khỏi danh sách phát không?", style: TextStyle(color: Colors.grey)),
+                                      actions: [
+                                        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Hủy", style: TextStyle(color: Colors.grey))),
+                                        ElevatedButton(
+                                          style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                                          onPressed: () {
+                                            context.read<PlaylistCubit>().removeSongFromPlaylist(playlistId, songId);
+                                            Navigator.pop(ctx); // Đóng dialog
+                                          },
+                                          child: const Text("Xóa", style: TextStyle(color: Colors.white)),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                              const Icon(Icons.drag_handle_rounded, color: Colors.white24),
+                            ],
+                          );
 
                           if (song == null) {
                             return ListTile(
@@ -140,54 +203,38 @@ class PlaylistDetailPage extends StatelessWidget {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              trailing: const Icon(Icons.drag_handle_rounded, color: Colors.white24),
+                              trailing: trailingWidget,
                             );
                           }
 
-                          return Dismissible(
+                          return ListTile(
                             key: ValueKey(songId),
-                            direction: DismissDirection.endToStart,
-                            background: Container(
-                              alignment: Alignment.centerRight,
-                              padding: const EdgeInsets.only(right: 20),
-                              color: Colors.redAccent,
-                              child: const Icon(Icons.delete_outline, color: Colors.white),
-                            ),
-                            onDismissed: (_) {
-                              context.read<PlaylistCubit>().removeSongFromPlaylist(playlistId, songId);
-                            },
-                            child: ListTile(
-                              key: ValueKey(songId),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                              leading: ClipRRect(
-                                borderRadius: BorderRadius.circular(6),
-                                child: CachedNetworkImage(
-                                  imageUrl: song.artUri?.toString() ?? '',
-                                  width: 50, height: 50, fit: BoxFit.cover,
-                                  errorWidget: (_, __, ___) => Container(
-                                    width: 50, height: 50, color: Colors.white12,
-                                    child: const Icon(Icons.music_note, color: Colors.white54),
-                                  ),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                            leading: ClipRRect(
+                              borderRadius: BorderRadius.circular(6),
+                              child: CachedNetworkImage(
+                                imageUrl: song.artUri?.toString() ?? '',
+                                width: 50, height: 50, fit: BoxFit.cover,
+                                errorWidget: (_, __, ___) => Container(
+                                  width: 50, height: 50, color: Colors.white12,
+                                  child: const Icon(Icons.music_note, color: Colors.white54),
                                 ),
                               ),
-                              title: Text(song.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
-                              subtitle: Text(song.artist ?? 'Unknown', style: const TextStyle(color: Colors.grey, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
-                              trailing: const Icon(Icons.drag_handle_rounded, color: Colors.white24),
-                              onTap: () {
-                                final startIndex = playableSongs.indexWhere((item) => item.id == song.id);
-                                if (startIndex == -1) return;
-
-                                context.read<PlayerBloc>().add(
-                                  LoadPlaylistEvent(playableSongs, startIndex: startIndex),
-                                );
-
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => PlayerPage(song: playableSongs[startIndex]),
-                                  ),
-                                );
-                              },
                             ),
+                            title: Text(song.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                            subtitle: Text(song.artist ?? 'Unknown', style: const TextStyle(color: Colors.grey, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
+                            trailing: trailingWidget,
+                            onTap: () {
+                              context.read<PlayerBloc>().add(
+                                LoadPlaylistEvent(playableSongs, startIndex: songIndex),
+                              );
+
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => PlayerPage(song: song),
+                                ),
+                              );
+                            },
                           );
                         },
                       ),

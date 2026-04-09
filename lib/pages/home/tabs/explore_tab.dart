@@ -36,6 +36,9 @@ class _ExploreTabState extends State<ExploreTab> {
   late final PageController _pageController;
   Timer? _bannerTimer;
 
+  int _chartPage = 1;
+  final Map<String, int> _categoryPageMap = {};
+
   final List<BannerData> _banners = const [
     BannerData(gradient: [Color(0xFF6A1B9A), Color(0xFF1565C0)], label: 'Nhạc Hot Tháng 5',  sub: 'Cập nhật mỗi ngày'),
     BannerData(gradient: [Color(0xFF00897B), Color(0xFF1B5E20)], label: 'V-Pop Trending',     sub: 'Bảng xếp hạng mới nhất'),
@@ -65,8 +68,33 @@ class _ExploreTabState extends State<ExploreTab> {
     super.dispose();
   }
 
-  void _navigateToPlayer(BuildContext ctx, MediaItem song, int index) {
-    playWithAuthGuard(ctx, playlist: localPlaylist, index: index);
+  Future<void> _playSongFromMediaItems(List<MediaItem> items, int index) async {
+    Future.microtask(() async {
+      final musicService = getIt<MusicPlayerService>();
+
+      final validItems = items.where((s) {
+        final url = s.extras?['url'] as String?;
+        return url != null && url.isNotEmpty;
+      }).toList();
+
+      if (validItems.isEmpty) return;
+
+      final targetSong = items[index];
+      final newIndex = validItems.indexWhere((s) => s.id == targetSong.id);
+      if (newIndex == -1) return;
+
+      final playlist = validItems.map((s) {
+        final urlStr = s.extras?['url'] as String?;
+        final audioUrl = _normalizeAudioUrl(urlStr);
+        return s.copyWith(
+          extras: {...?s.extras, 'url': audioUrl},
+        );
+      }).toList();
+
+      await musicService.handler.updateQueue(playlist);
+      await musicService.handler.skipToQueueItem(newIndex);
+      await musicService.handler.play();
+    });
   }
 
   String _normalizeAudioUrl(String? url) {
@@ -77,34 +105,36 @@ class _ExploreTabState extends State<ExploreTab> {
   }
 
   Future<void> _playSongFromCategory(List<SongEntity> songs, int index) async {
-    final musicService = getIt<MusicPlayerService>();
+    Future.microtask(() async {
+      final musicService = getIt<MusicPlayerService>();
 
-    final validSongs = songs
-        .where((s) => s.audioUrl != null && s.audioUrl!.isNotEmpty)
-        .toList();
+      final validSongs = songs
+          .where((s) => s.audioUrl != null && s.audioUrl!.isNotEmpty)
+          .toList();
 
-    if (validSongs.isEmpty) return;
+      if (validSongs.isEmpty) return;
 
-    final targetSong = songs[index];
-    final newIndex = validSongs.indexWhere((s) => s.id == targetSong.id);
-    if (newIndex == -1) return;
+      final targetSong = songs[index];
+      final newIndex = validSongs.indexWhere((s) => s.id == targetSong.id);
+      if (newIndex == -1) return;
 
-    final playlist = validSongs.map((s) {
-      final audioUrl = _normalizeAudioUrl(s.audioUrl);
-      return MediaItem(
-        id:       s.id,
-        title:    s.title,
-        artist:   s.artist,
-        album:    s.album,
-        artUri:   s.artUrl != null ? Uri.parse(s.artUrl!) : null,
-        duration: Duration(milliseconds: s.durationMs),
-        extras:   {'url': audioUrl},
-      );
-    }).toList();
+      final playlist = validSongs.map((s) {
+        final audioUrl = _normalizeAudioUrl(s.audioUrl);
+        return MediaItem(
+          id:       s.id,
+          title:    s.title,
+          artist:   s.artist,
+          album:    s.album,
+          artUri:   s.artUrl != null ? Uri.parse(s.artUrl!) : null,
+          duration: Duration(milliseconds: s.durationMs),
+          extras:   {'url': audioUrl},
+        );
+      }).toList();
 
-    await musicService.handler.updateQueue(playlist);
-    await musicService.handler.skipToQueueItem(newIndex);
-    await musicService.handler.play();
+      await musicService.handler.updateQueue(playlist);
+      await musicService.handler.skipToQueueItem(newIndex);
+      await musicService.handler.play();
+    });
   }
 
   /// Chuyển SongEntity → MediaItem để dùng chung với bottom sheet
@@ -135,6 +165,45 @@ class _ExploreTabState extends State<ExploreTab> {
               )),
           SeeAllButton(onTap: onSeeAll),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPaginationRow(int currentPage, int totalPages, Function(int) onPageChanged) {
+    if (totalPages <= 1) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(totalPages, (index) {
+            final page = index + 1;
+            final isSelected = page == currentPage;
+            return GestureDetector(
+              onTap: () => onPageChanged(page),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: isSelected ? Colors.white : Colors.transparent,
+                  border: Border.all(color: Colors.white, width: isSelected ? 0 : 1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  '$page',
+                  style: TextStyle(
+                    color: isSelected ? Colors.black : Colors.white,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+              ),
+            );
+          }),
+        ),
       ),
     );
   }
@@ -175,7 +244,7 @@ class _ExploreTabState extends State<ExploreTab> {
                   itemCount: localPlaylist.length.clamp(0, 10),
                   itemBuilder: (ctx, i) => HorizontalSongCard(
                     item: localPlaylist[i],
-                    onTap: () => _navigateToPlayer(ctx, localPlaylist[i], i),
+                    onTap: () => _playSongFromMediaItems(localPlaylist, i),
                   ),
                 ),
               ),
@@ -184,35 +253,56 @@ class _ExploreTabState extends State<ExploreTab> {
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 32)),
 
-        SliverToBoxAdapter(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildCategoryHeader('Bảng xếp hạng', () =>
-                Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => const SeeAllPage(title: 'Bảng xếp hạng'),
-                )),
+        ...(() {
+          final totalItems = localPlaylist.length;
+          final totalPages = (totalItems / 8).ceil();
+          final startIdx = (_chartPage - 1) * 8;
+          final pageItems = localPlaylist.skip(startIdx).take(8).toList();
+
+          return [
+            SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildCategoryHeader('Bảng xếp hạng', () =>
+                    Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => const SeeAllPage(title: 'Bảng xếp hạng'),
+                    )),
+                  ),
+                  const SizedBox(height: 14),
+                ],
               ),
-              const SizedBox(height: 14),
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: localPlaylist.length.clamp(0, 10),
-                separatorBuilder: (_, __) => Divider(
-                  color: Colors.white.withValues(alpha: 0.06),
-                  height: 1,
-                  indent: 72,
-                ),
-                itemBuilder: (ctx, i) => ChartTile(
-                  item: localPlaylist[i],
-                  rank: i + 1,
-                  onTap: () => _navigateToPlayer(ctx, localPlaylist[i], i),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (ctx, i) {
+                    final isFirst = i == 0;
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (!isFirst)
+                          Divider(color: Colors.white.withValues(alpha: 0.06), height: 1, indent: 72),
+                        ChartTile(
+                          item: pageItems[i],
+                          rank: startIdx + i + 1,
+                          onTap: () => _playSongFromMediaItems(localPlaylist, startIdx + i),
+                        ),
+                      ],
+                    );
+                  },
+                  childCount: pageItems.length,
                 ),
               ),
-            ],
-          ),
-        ),
+            ),
+            SliverToBoxAdapter(
+              child: _buildPaginationRow(_chartPage, totalPages, (page) {
+                setState(() => _chartPage = page);
+              }),
+            ),
+          ];
+        })(),
         const SliverToBoxAdapter(child: SizedBox(height: 32)),
 
         const SliverToBoxAdapter(
@@ -280,15 +370,32 @@ class _ExploreTabState extends State<ExploreTab> {
                   )),
                 );
               }
-              return SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (ctx, i) => _SongTile(
-                    song: state.songs[i],
-                    mediaItem: _songEntityToMediaItem(state.songs[i]),
-                    onTap: () => _playSongFromCategory(state.songs, i),
+
+              final slug = state.selectedSlug ?? '';
+              final totalItems = state.songs.length;
+              final totalPages = (totalItems / 8).ceil();
+              final currentPage = _categoryPageMap[slug] ?? 1;
+              final startIdx = (currentPage - 1) * 8;
+              final pageItems = state.songs.skip(startIdx).take(8).toList();
+
+              return SliverMainAxisGroup(
+                slivers: [
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (ctx, i) => _SongTile(
+                        song: pageItems[i],
+                        mediaItem: _songEntityToMediaItem(pageItems[i]),
+                        onTap: () => _playSongFromCategory(state.songs, startIdx + i),
+                      ),
+                      childCount: pageItems.length,
+                    ),
                   ),
-                  childCount: state.songs.length,
-                ),
+                  SliverToBoxAdapter(
+                    child: _buildPaginationRow(currentPage, totalPages, (page) {
+                      setState(() => _categoryPageMap[slug] = page);
+                    }),
+                  ),
+                ],
               );
             }
             return const SliverToBoxAdapter(child: SizedBox.shrink());

@@ -156,6 +156,34 @@ class PlaylistStorageService {
     await _touchPlaylist(playlistId);
   }
 
+  Future<void> renamePlaylist(String playlistId, String newName) async {
+    await _ensurePlaylistOwned(playlistId);
+
+    final trimmedName = newName.trim();
+    if (trimmedName.isEmpty) {
+      throw Exception('Tên danh sách phát không được để trống');
+    }
+
+    final uid = _requireUid();
+    final existing = await _supabase
+        .from('playlists')
+        .select('id')
+        .eq('user_id', uid)
+        .eq('name_lower', trimmedName.toLowerCase())
+        .neq('id', playlistId)
+        .limit(1);
+
+    if ((existing as List).isNotEmpty) {
+      throw Exception('Tên danh sách phát đã tồn tại');
+    }
+
+    await _supabase.from('playlists').update({
+      'name': trimmedName,
+      'name_lower': trimmedName.toLowerCase(),
+      'updated_at': DateTime.now().toIso8601String(),
+    }).eq('id', playlistId);
+  }
+
   Future<void> deletePlaylist(String playlistId) async {
     await _ensurePlaylistOwned(playlistId);
     await _supabase.from('playlists').delete().eq('id', playlistId);

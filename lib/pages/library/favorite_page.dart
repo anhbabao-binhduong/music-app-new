@@ -1,13 +1,50 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:audio_service/audio_service.dart';
+import 'package:music_app/presentation/bloc/player/player_bloc.dart';
+import 'package:music_app/presentation/bloc/player/player_event.dart';
+import 'package:music_app/pages/player/player_page.dart';
 
 // Import Cubit và biến localPlaylist chứa danh sách nhạc tổng
 import 'package:music_app/presentation/bloc/favorite/favorite_cubit.dart';
 import 'package:music_app/data/local_music_data.dart'; 
 import 'package:music_app/pages/home/widgets/song_cards.dart'; // Để dùng ArtImage nếu có
 
-class FavoritePage extends StatelessWidget {
+class FavoritePage extends StatefulWidget {
   const FavoritePage({super.key});
+
+  @override
+  State<FavoritePage> createState() => _FavoritePageState();
+}
+
+class _FavoritePageState extends State<FavoritePage> {
+  Future<void> _playSongs(List<MediaItem> items, int index) async {
+    final validItems = items.where((s) {
+      final url = s.extras?['url'] as String?;
+      return url != null && url.isNotEmpty;
+    }).toList();
+
+    if (validItems.isEmpty) return;
+
+    final targetSong = items[index];
+    final newIndex = validItems.indexWhere((s) => s.id == targetSong.id);
+    if (newIndex == -1) return;
+
+    context.read<PlayerBloc>().add(LoadPlaylistEvent(validItems, startIndex: newIndex));
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PlayerPage(song: validItems[newIndex]),
+      ),
+    );
+  }
+
+  String _normalizeAudioUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    if (url.startsWith('http')) return url.trim();
+    const base = 'https://pdbkojvgjrvnzqmerwmz.supabase.co/storage/v1/object/public/songs/';
+    return '$base${url.trim()}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,15 +113,31 @@ class FavoritePage extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 trailing: IconButton(
-                  icon: const Icon(Icons.favorite_rounded, color: Colors.redAccent),
+                  icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
                   onPressed: () {
-                    // Bấm vào tim đỏ ở đây thì sẽ XÓA bài hát khỏi danh sách
-                    context.read<FavoriteCubit>().toggleFavorite(item.id);
+                    showDialog(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        backgroundColor: const Color(0xFF2A2A2E),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        title: const Text("Xóa bài hát?", style: TextStyle(color: Colors.white)),
+                        content: const Text("Bạn có chắc chắn muốn xóa bài hát này khỏi danh sách yêu thích không?", style: TextStyle(color: Colors.grey)),
+                        actions: [
+                          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Hủy", style: TextStyle(color: Colors.grey))),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                            onPressed: () {
+                              context.read<FavoriteCubit>().toggleFavorite(item.id);
+                              Navigator.pop(ctx);
+                            },
+                            child: const Text("Xóa", style: TextStyle(color: Colors.white)),
+                          ),
+                        ],
+                      ),
+                    );
                   },
                 ),
-                onTap: () {
-                  // TODO: Gọi hàm Play nhạc ở đây (giống trang Khám phá)
-                },
+                onTap: () => _playSongs(favoriteSongs, index),
               );
             },
           );

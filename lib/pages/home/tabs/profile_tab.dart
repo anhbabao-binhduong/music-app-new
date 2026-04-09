@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:music_app/pages/profile/download_page.dart';
-import 'package:music_app/pages/profile/favorite_page.dart';
 import '../../auth/login_page.dart';
 import '../../auth/register_page.dart';
 import '../home_page.dart';
@@ -202,19 +200,7 @@ class _LoggedInProfile extends StatelessWidget {
             ..._kMenuItems.map((item) => _MenuItem(
                   icon: item.$1,
                   label: item.$2,
-                  onTap: () {
-                    if (item.$2 == 'Bài hát yêu thích') {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const FavoritePage()),
-                      );
-                    } else if (item.$2 == 'Nhạc đã tải') {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const DownloadPage()),
-                      );
-                    }
-                  },
+                  onTap: () {},
                 )),
             const SizedBox(height: 8),
             _LogoutButton(onLogout: onLogout),
@@ -323,8 +309,6 @@ class _StatChip extends StatelessWidget {
 
 const _kMenuItems = [
   (Icons.manage_accounts_outlined, 'Chỉnh sửa hồ sơ'),
-  (Icons.favorite_outline_rounded, 'Bài hát yêu thích'),
-  (Icons.download_outlined, 'Nhạc đã tải'),
   (Icons.history_rounded, 'Lịch sử nghe'),
   (Icons.notifications_outlined, 'Thông báo'),
   (Icons.settings_outlined, 'Cài đặt'),

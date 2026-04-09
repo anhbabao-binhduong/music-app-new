@@ -277,91 +277,92 @@ class ChartTile extends StatelessWidget {
               return BlocBuilder<DownloadCubit, List<String>>(
                 builder: (_, downState) {
                   final isDownloaded = downState.contains(item.id);
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const SizedBox(height: 8),
-                      _MenuActionTile(
-                        icon: Icons.playlist_play,
-                        title: 'Phát tiếp theo',
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          // SỬA: dùng đúng tên event PlayNextEvent
-                          context.read<PlayerBloc>().add(PlayNextEvent(item));
-                          _showSnackBar(context, 'Đã thêm "${item.title}" vào hàng chờ');
-                        },
-                      ),
-                      _MenuActionTile(
-                        icon: Icons.queue_music,
-                        title: 'Thêm vào playlist',
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          _showPlaylistSelection(context);
-                        },
-                      ),
-                      _MenuActionTile(
-                        icon: isFavorite ? Icons.favorite : Icons.favorite_border,
-                        title: isFavorite ? 'Bỏ yêu thích' : 'Yêu thích',
-                        iconColor: isFavorite ? Colors.redAccent : null,
-                        onTap: () async {
-                          Navigator.pop(ctx);
-                          try {
-                            await context.read<FavoriteCubit>().toggleFavorite(item.id);
-                            _showSnackBar(context, 
-                                isFavorite ? 'Đã xóa khỏi yêu thích' : 'Đã thêm vào yêu thích');
-                          } catch (e) {
-                            _showSnackBar(context, e.toString(), isError: true);
-                          }
-                        },
-                      ),
-                      _MenuActionTile(
-                        icon: isDownloaded ? Icons.download_done : Icons.download,
-                        title: isDownloaded ? 'Đã tải' : 'Tải nhạc',
-                        iconColor: isDownloaded ? Colors.greenAccent : null,
-                        onTap: () async {
-                          Navigator.pop(ctx);
-                          if (isDownloaded) {
-                            _showSnackBar(context, 'Bài hát đã được tải');
-                          } else {
+                  return SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(height: 8),
+                        _MenuActionTile(
+                          icon: Icons.playlist_play,
+                          title: 'Phát tiếp theo',
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            context.read<PlayerBloc>().add(PlayNextEvent(item));
+                            _showSnackBar(context, 'Đã thêm "${item.title}" vào hàng chờ');
+                          },
+                        ),
+                        _MenuActionTile(
+                          icon: Icons.queue_music,
+                          title: 'Thêm vào playlist',
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            _showPlaylistSelection(context);
+                          },
+                        ),
+                        _MenuActionTile(
+                          icon: isFavorite ? Icons.favorite : Icons.favorite_border,
+                          title: isFavorite ? 'Bỏ yêu thích' : 'Yêu thích',
+                          iconColor: isFavorite ? Colors.redAccent : null,
+                          onTap: () async {
+                            Navigator.pop(ctx);
                             try {
-                              await context.read<DownloadCubit>().toggleDownload(item);
-                              _showSnackBar(context, 'Đã tải xuống thành công');
+                              await context.read<FavoriteCubit>().toggleFavorite(item.id);
+                              _showSnackBar(context,
+                                  isFavorite ? 'Đã xóa khỏi yêu thích' : 'Đã thêm vào yêu thích');
                             } catch (e) {
                               _showSnackBar(context, e.toString(), isError: true);
                             }
-                          }
-                        },
-                      ),
-                      _MenuActionTile(
-                        icon: Icons.share,
-                        title: 'Chia sẻ',
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          Share.share(
-                            'Nghe bài hát "${item.title}" - ${item.artist} trên Music App',
-                            subject: 'Chia sẻ bài hát',
-                          );
-                        },
-                      ),
-                      _MenuActionTile(
-                        icon: Icons.info_outline,
-                        title: 'Thông tin bài hát',
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          _showSongInfoDialog(context);
-                        },
-                      ),
-                      _MenuActionTile(
-                        icon: Icons.flag,
-                        title: 'Báo cáo',
-                        iconColor: Colors.redAccent,
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          _showReportDialog(context);
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                    ],
+                          },
+                        ),
+                        _MenuActionTile(
+                          icon: isDownloaded ? Icons.download_done : Icons.download,
+                          title: isDownloaded ? 'Đã tải' : 'Tải nhạc',
+                          iconColor: isDownloaded ? Colors.greenAccent : null,
+                          onTap: () async {
+                            Navigator.pop(ctx);
+                            if (isDownloaded) {
+                              _showSnackBar(context, 'Bài hát đã được tải');
+                            } else {
+                              try {
+                                await context.read<DownloadCubit>().toggleDownload(item);
+                                _showSnackBar(context, 'Đã tải xuống thành công');
+                              } catch (e) {
+                                _showSnackBar(context, e.toString(), isError: true);
+                              }
+                            }
+                          },
+                        ),
+                        _MenuActionTile(
+                          icon: Icons.share,
+                          title: 'Chia sẻ',
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            Share.share(
+                              'Nghe bài hát "${item.title}" - ${item.artist} trên Music App',
+                              subject: 'Chia sẻ bài hát',
+                            );
+                          },
+                        ),
+                        _MenuActionTile(
+                          icon: Icons.info_outline,
+                          title: 'Thông tin bài hát',
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            _showSongInfoDialog(context);
+                          },
+                        ),
+                        _MenuActionTile(
+                          icon: Icons.flag,
+                          title: 'Báo cáo',
+                          iconColor: Colors.redAccent,
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            _showReportDialog(context);
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                    ),
                   );
                 },
               );
