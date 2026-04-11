@@ -15,6 +15,9 @@ import 'package:music_app/pages/player/lyrics_page.dart';
 import 'package:music_app/services/lyrics_service.dart';
 import 'package:music_app/core/di/service_locator.dart';
 import 'package:music_app/data/models/lyric_line.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:music_app/presentation/bloc/comment/comment_cubit.dart';
+import 'package:music_app/presentation/bloc/comment/comment_state.dart';
 
 class PlayerPage extends StatefulWidget {
   final MediaItem song;
@@ -169,11 +172,25 @@ class _PlayerPageState extends State<PlayerPage> {
   void _goToPlayer() => _pageController.animateToPage(0,
       duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
 
+  void _showComments(BuildContext context, String songId) {
+    context.read<CommentCubit>().loadComments(songId);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => BlocProvider.value(
+        value: context.read<CommentCubit>(),
+        child: _CommentsSheet(songId: songId),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -263,6 +280,7 @@ class _PlayerPageState extends State<PlayerPage> {
                                   .read<PlayerBloc>()
                                   .add(const CycleRepeatEvent()),
                               onQueueTap: () => _showQueue(context, state),
+                              onCommentTap: () => _showComments(context, currentSong.id),
                             ),
                             const SizedBox(height: 16),
                           ],
@@ -702,7 +720,7 @@ class _Controls extends StatelessWidget {
   final bool isPlaying, isShuffle;
   final RepeatMode repeatMode;
   final VoidCallback onPlay, onPause, onNext, onPrevious, onShuffle, onRepeat,
-      onQueueTap;
+      onQueueTap, onCommentTap;
 
   const _Controls({
     required this.isPlaying,
@@ -715,39 +733,101 @@ class _Controls extends StatelessWidget {
     required this.onShuffle,
     required this.onRepeat,
     required this.onQueueTap,
+    required this.onCommentTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _IconBtn(
-              icon: Icons.shuffle_rounded,
-              onTap: onShuffle,
-              color: isShuffle ? cs.primary : null,
-              size: 24),
-          _IconBtn(
-              icon: Icons.skip_previous_rounded,
-              onTap: onPrevious,
-              size: 36,
-              color: cs.onSurface),
-          _PlayButton(
-              isPlaying: isPlaying, onPlay: onPlay, onPause: onPause),
-          _IconBtn(
-              icon: Icons.skip_next_rounded,
-              onTap: onNext,
-              size: 36,
-              color: cs.onSurface),
-          _IconBtn(
-              icon: Icons.queue_music_rounded,
-              onTap: onQueueTap,
-              color: cs.onSurface.withValues(alpha: 0.7)),
-        ],
-      ),
+
+    // Xác định icon và màu sắc cho RepeatMode
+    IconData repeatIcon = Icons.repeat_rounded;
+    Color? repeatColor;
+    if (repeatMode == RepeatMode.all) {
+      repeatColor = cs.primary;
+    } else if (repeatMode == RepeatMode.one) {
+      repeatIcon = Icons.repeat_one_rounded;
+      repeatColor = cs.primary;
+    }
+
+    return Column(
+      children: [
+        // HÀNG 1: Trộn bài, Trở lại, Phát/Dừng, Tiếp theo, Lặp lại
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _IconBtn(
+                  icon: Icons.shuffle_rounded,
+                  onTap: onShuffle,
+                  color: isShuffle ? cs.primary : cs.onSurface.withValues(alpha: 0.5),
+                  size: 26),
+              _IconBtn(
+                  icon: Icons.skip_previous_rounded,
+                  onTap: onPrevious,
+                  size: 40,
+                  color: cs.onSurface),
+              _PlayButton(
+                  isPlaying: isPlaying, onPlay: onPlay, onPause: onPause),
+              _IconBtn(
+                  icon: Icons.skip_next_rounded,
+                  onTap: onNext,
+                  size: 40,
+                  color: cs.onSurface),
+              _IconBtn(
+                  icon: repeatIcon,
+                  onTap: onRepeat,
+                  color: repeatColor ?? cs.onSurface.withValues(alpha: 0.5),
+                  size: 26),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        // HÀNG 2: Form Bình luận và Danh sách phát (Queue)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Row(
+            children: [
+              // Nút Danh sách phát
+              Material(
+                color: cs.surfaceTint.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(20),
+                child: InkWell(
+                  onTap: onQueueTap,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                    child: Icon(Icons.queue_music_rounded, size: 24, color: cs.onSurface.withValues(alpha: 0.8)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Nút Bình luận hình form nhập liệu
+              Expanded(
+                child: Material(
+                  color: cs.surfaceTint.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(20),
+                  child: InkWell(
+                    onTap: onCommentTap,
+                    borderRadius: BorderRadius.circular(20),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      child: Row(
+                        children: [
+                          Icon(Icons.chat_bubble_outline_rounded, size: 22, color: cs.onSurface.withValues(alpha: 0.5)),
+                          const SizedBox(width: 12),
+                          Text('Viết bình luận...', style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5), fontSize: 15)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -815,3 +895,234 @@ class _IconBtn extends StatelessWidget {
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────
+// _CommentsSheet – bottom sheet bình luận
+// ─────────────────────────────────────────────────────────────
+class _CommentsSheet extends StatefulWidget {
+  final String songId;
+  const _CommentsSheet({required this.songId});
+
+  @override
+  State<_CommentsSheet> createState() => _CommentsSheetState();
+}
+
+class _CommentsSheetState extends State<_CommentsSheet> {
+  final TextEditingController _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _send(BuildContext context) {
+    final content = _controller.text.trim();
+    if (content.isEmpty) return;
+
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng đăng nhập để bình luận'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final displayName = (user.userMetadata?['name'] as String?)?.isNotEmpty == true
+        ? user.userMetadata!['name'] as String
+        : (user.email ?? 'Anonymous');
+
+    context.read<CommentCubit>().addComment(
+          songId: widget.songId,
+          userId: user.id,
+          displayName: displayName,
+          content: content,
+        );
+    _controller.clear();
+    FocusScope.of(context).unfocus();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.75,
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        children: [
+          // Handle bar
+          Container(
+            margin: const EdgeInsets.only(top: 12, bottom: 8),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          // Header
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: Row(
+              children: [
+                Icon(Icons.chat_bubble_outline_rounded, size: 20),
+                SizedBox(width: 8),
+                Text(
+                  'Bình luận',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+
+          // Comments list
+          Expanded(
+            child: BlocBuilder<CommentCubit, CommentState>(
+              builder: (context, state) {
+                if (state is CommentLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (state is CommentError) {
+                  return Center(
+                    child: Text(
+                      state.message,
+                      style: const TextStyle(color: Colors.redAccent),
+                      textAlign: TextAlign.center,
+                    ),
+                  );
+                }
+                if (state is CommentLoaded) {
+                  if (state.comments.isEmpty) {
+                    return const Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.chat_bubble_outline, size: 48, color: Colors.grey),
+                          SizedBox(height: 12),
+                          Text('Chưa có bình luận nào',
+                              style: TextStyle(color: Colors.grey)),
+                        ],
+                      ),
+                    );
+                  }
+
+                  final currentUserId =
+                      Supabase.instance.client.auth.currentUser?.id;
+
+                  return ListView.separated(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    itemCount: state.comments.length,
+                    separatorBuilder: (_, __) =>
+                        const Divider(height: 1, indent: 72),
+                    itemBuilder: (context, index) {
+                      final comment = state.comments[index];
+                      final isOwner = comment.userId == currentUserId;
+                      return ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: cs.primaryContainer,
+                          child: Text(
+                            comment.displayName.isNotEmpty
+                                ? comment.displayName[0].toUpperCase()
+                                : '?',
+                            style: TextStyle(
+                              color: cs.onPrimaryContainer,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        title: Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                comment.displayName,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 13),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              timeAgo(comment.createdAt),
+                              style: const TextStyle(
+                                  fontSize: 11, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(comment.content),
+                        ),
+                        trailing: isOwner
+                            ? IconButton(
+                                icon: const Icon(Icons.delete_outline,
+                                    size: 20, color: Colors.redAccent),
+                                onPressed: () {
+                                  context.read<CommentCubit>().deleteComment(
+                                        comment.id,
+                                        comment.userId,
+                                        widget.songId,
+                                      );
+                                },
+                              )
+                            : null,
+                      );
+                    },
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+
+          // Input area
+          Padding(
+            padding: EdgeInsets.only(
+              left: 12,
+              right: 12,
+              top: 8,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 12,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    maxLength: 500,
+                    maxLines: null,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (_) => _send(context),
+                    decoration: InputDecoration(
+                      hintText: 'Thêm bình luận...',
+                      counterText: '',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: cs.surfaceContainerHighest,
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton.filled(
+                  onPressed: () => _send(context),
+                  icon: const Icon(Icons.send_rounded),
+                  style: IconButton.styleFrom(backgroundColor: cs.primary),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

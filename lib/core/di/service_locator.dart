@@ -10,6 +10,7 @@ import '../../presentation/bloc/theme/theme_bloc.dart';
 import '../../presentation/bloc/favorite/favorite_cubit.dart';
 import '../../presentation/bloc/download/download_cubit.dart';
 import '../../presentation/bloc/playlist/playlist_cubit.dart';
+import '../../presentation/bloc/history/history_cubit.dart';
 import '../../services/lyrics_service.dart';
 import '../../services/music_player_service.dart';
 import '../../services/playlist_storage_service.dart';
@@ -18,6 +19,15 @@ import '../../services/playlist_storage_service.dart';
 import '../../domain/usecases/get_categories_usecase.dart';
 import '../../domain/usecases/get_songs_by_category_usecase.dart';
 import '../../presentation/bloc/category/category_cubit.dart';
+
+// 👇 IMPORT MỚI CHO ALBUM
+import '../../domain/usecases/get_albums_usecase.dart';
+import '../../presentation/bloc/album/album_cubit.dart';
+
+// 👇 IMPORT CHO COMMENT
+import '../../domain/repositories/comment_repository.dart';
+import '../../data/repositories/comment_repository_impl.dart';
+import '../../presentation/bloc/comment/comment_cubit.dart';
 
 final getIt = GetIt.instance;
 
@@ -54,9 +64,16 @@ Future<void> setupServiceLocator() async {
     () => GetSongsByCategoryUseCase(getIt<MusicRepository>()),
   );
 
+  // ─── Use Cases cho Album (mới) ──────────────────────────────────────────
+  getIt.registerLazySingleton(
+    () => GetAlbumsUsecase(getIt<MusicRepository>()),
+  );
+
   // ─── BLoC / Cubit ─────────────────────────────────────────────────────
-  getIt.registerFactory<PlayerBloc>(
-    () => PlayerBloc(getIt<AudioHandler>()),
+  getIt.registerLazySingleton<HistoryCubit>(() => HistoryCubit());
+
+  getIt.registerLazySingleton<PlayerBloc>(
+    () => PlayerBloc(getIt<AudioHandler>(), getIt<HistoryCubit>()),
   );
 
   getIt.registerFactory<SearchCubit>(
@@ -74,5 +91,17 @@ Future<void> setupServiceLocator() async {
       getCategories: getIt<GetCategoriesUseCase>(),
       getSongsByCategory: getIt<GetSongsByCategoryUseCase>(),
     ),
+  );
+
+  getIt.registerFactory<AlbumCubit>(
+    () => AlbumCubit(getIt<GetAlbumsUsecase>()),
+  );
+
+  // ─── Comment feature ────────────────────────────────────────────────────
+  getIt.registerLazySingleton<CommentRepository>(
+    () => CommentRepositoryImpl(),
+  );
+  getIt.registerFactory<CommentCubit>(
+    () => CommentCubit(getIt<CommentRepository>()),
   );
 }

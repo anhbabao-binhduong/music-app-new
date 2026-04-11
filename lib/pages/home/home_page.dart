@@ -15,6 +15,7 @@ import 'package:music_app/core/di/service_locator.dart';
 import 'package:music_app/presentation/bloc/player/player_bloc.dart';
 import 'package:music_app/presentation/bloc/player/player_event.dart';
 import '../../presentation/bloc/category/category_cubit.dart';
+import 'package:music_app/presentation/bloc/history/history_cubit.dart';
 
 const kBg = Color(0xFF121212);
 const kCard = Color(0xFF1C1C1E);

@@ -9,7 +9,9 @@ import '../../core/errors/failures.dart';
 import '../../domain/entities/playlist_entity.dart';
 import '../../domain/entities/song_entity.dart';
 import '../../domain/entities/category_entity.dart';       // 👈 THÊM
+import '../../domain/entities/album_entity.dart';
 import '../../domain/repositories/music_repository.dart';
+import '../models/album_model.dart';
 import '../models/history_entry_model.dart';
 import '../models/playlist_model.dart';
 import '../models/song_model.dart';
@@ -386,4 +388,27 @@ Future<dz.Either<Failure, List<SongEntity>>> getSongsByCategory(String? slug) as
       return dz.Left(CacheFailure('Failed to fetch songs by category: $e'));
     }
   }
-}
+
+  // ── Albums (Supabase) ────────────────────────────────────────────────────
+  @override
+  Future<List<AlbumEntity>> getAlbums() async {
+    final response = await _supabase
+        .from('albums')
+        .select('*, album_songs(song_id, track_number)')
+        .order('created_at', ascending: false);
+    return (response as List)
+        .map((e) => AlbumModel.fromJson(Map<String, dynamic>.from(e as Map)).toEntity())
+        .toList();
+  }
+
+  @override
+  Future<AlbumEntity?> getAlbumById(String albumId) async {
+    final response = await _supabase
+        .from('albums')
+        .select('*, album_songs(song_id, track_number)')
+        .eq('id', albumId)
+        .maybeSingle();
+    if (response == null) return null;
+    return AlbumModel.fromJson(Map<String, dynamic>.from(response as Map)).toEntity();
+  }
+}

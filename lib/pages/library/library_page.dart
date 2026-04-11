@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:audio_service/audio_service.dart';
 import 'package:music_app/pages/library/favorite_page.dart';
 import 'package:music_app/pages/library/download_page.dart';
+import 'package:music_app/pages/library/history_page.dart';
 import '../../../data/models/playlist_model.dart';
 import '../../../presentation/bloc/playlist/playlist_cubit.dart';
 import '../../../presentation/bloc/favorite/favorite_cubit.dart';
 import '../../../presentation/bloc/download/download_cubit.dart';
+import '../../../presentation/bloc/history/history_cubit.dart';
 import 'playlist_detail_page.dart';
 
 class LibraryPage extends StatefulWidget {
@@ -108,7 +111,6 @@ class _LibraryPageState extends State<LibraryPage> {
     );
   }
 
-  // ── MỚI: Dialog đổi tên playlist ─────────────────────────────────────────
   Future<void> _showRenamePlaylistDialog(PlaylistModel playlist) async {
     final controller = TextEditingController(text: playlist.name);
 
@@ -122,7 +124,6 @@ class _LibraryPageState extends State<LibraryPage> {
           controller: controller,
           style: const TextStyle(color: Colors.white),
           autofocus: true,
-          // Chọn toàn bộ text cũ để người dùng dễ xoá/thay thế
           onTap: () => controller.selection = TextSelection(
             baseOffset: 0,
             extentOffset: controller.text.length,
@@ -145,7 +146,6 @@ class _LibraryPageState extends State<LibraryPage> {
             ),
             onPressed: () async {
               final newName = controller.text.trim();
-              // Không làm gì nếu rỗng hoặc tên không đổi
               if (newName.isEmpty || newName == playlist.name) {
                 Navigator.pop(ctx);
                 return;
@@ -171,7 +171,6 @@ class _LibraryPageState extends State<LibraryPage> {
     );
   }
 
-  // ── MỚI: Bottom sheet tuỳ chọn (giữ để mở) ──────────────────────────────
   void _showPlaylistOptions(PlaylistModel playlist) {
     showModalBottomSheet(
       context: context,
@@ -183,7 +182,6 @@ class _LibraryPageState extends State<LibraryPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Handle bar
             Container(
               margin: const EdgeInsets.only(top: 10, bottom: 4),
               width: 40,
@@ -193,7 +191,6 @@ class _LibraryPageState extends State<LibraryPage> {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            // Tiêu đề playlist
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               child: Row(
@@ -226,7 +223,6 @@ class _LibraryPageState extends State<LibraryPage> {
               ),
             ),
             const Divider(color: Colors.white12, height: 1),
-            // Tuỳ chọn: Đổi tên
             ListTile(
               leading: const Icon(Icons.edit_rounded, color: Colors.white70),
               title: const Text('Đổi tên', style: TextStyle(color: Colors.white)),
@@ -280,164 +276,196 @@ class _LibraryPageState extends State<LibraryPage> {
           if (state is PlaylistLoaded) {
             final playlists = state.playlists.reversed.toList();
 
-            return BlocBuilder<FavoriteCubit, List<String>>(
-              builder: (context, favoriteIds) {
-                return BlocBuilder<DownloadCubit, List<String>>(
-                  builder: (context, downloadIds) {
-                    return RefreshIndicator(
-                      onRefresh: _refreshPlaylists,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-                        itemCount: 4 + (_isPlaylistExpanded ? (playlists.isEmpty ? 1 : playlists.length) : 0),
-                        itemBuilder: (context, index) {
-                          if (index == 0) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: ListTile(
-                                contentPadding: EdgeInsets.zero,
-                                leading: _LibraryThumbnail(
-                                  colors: const [Color(0xFFB71C1C), Color(0xFF880E4F)],
-                                  icon: Icons.favorite_rounded,
-                                  iconColor: Colors.white,
-                                ),
-                                title: const Text('Bài hát yêu thích',
-                                    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                                subtitle: Text('${favoriteIds.length} bài hát',
-                                    style: const TextStyle(color: Colors.white54, fontSize: 13)),
-                                trailing: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey, size: 16),
-                                onTap: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => const FavoritePage()),
-                                ),
-                              ),
-                            );
-                          }
-
-                          if (index == 1) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: ListTile(
-                                contentPadding: EdgeInsets.zero,
-                                leading: _LibraryThumbnail(
-                                  colors: const [Color(0xFF1B5E20), Color(0xFF00695C)],
-                                  icon: Icons.download_done_rounded,
-                                  iconColor: Colors.white,
-                                ),
-                                title: const Text('Nhạc đã tải',
-                                    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                                subtitle: Text('${downloadIds.length} bài hát',
-                                    style: const TextStyle(color: Colors.white54, fontSize: 13)),
-                                trailing: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey, size: 16),
-                                onTap: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => const DownloadPage()),
-                                ),
-                              ),
-                            );
-                          }
-
-                          if (index == 2) {
-                            return const Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Divider(color: Colors.white12),
-                                SizedBox(height: 8),
-                              ],
-                            );
-                          }
-
-                          if (index == 3) {
-                            return ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              leading: _LibraryThumbnail(
-                                colors: const [Color(0xFF4A148C), Color(0xFF1A237E)],
-                                icon: Icons.queue_music_rounded,
-                                iconColor: Colors.white,
-                              ),
-                              title: const Text('Danh sách phát',
-                                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                              subtitle: Padding(
-                                padding: const EdgeInsets.only(top: 4),
-                                child: Text('${playlists.length} danh sách',
-                                    style: const TextStyle(color: Colors.grey, fontSize: 13)),
-                              ),
-                              trailing: Icon(
-                                _isPlaylistExpanded ? Icons.keyboard_arrow_down_rounded : Icons.keyboard_arrow_right_rounded,
-                                color: Colors.grey,
-                                size: 24,
-                              ),
-                              onTap: () {
-                                setState(() {
-                                  _isPlaylistExpanded = !_isPlaylistExpanded;
-                                });
-                              },
-                            );
-                          }
-
-                          if (_isPlaylistExpanded) {
-                            if (playlists.isEmpty) {
-                              return Padding(
-                                padding: const EdgeInsets.only(top: 16, bottom: 32),
-                                child: Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(Icons.library_music_rounded,
-                                          size: 48, color: Colors.white.withValues(alpha: 0.2)),
-                                      const SizedBox(height: 12),
-                                      const Text('Chưa có danh sách phát nào',
-                                          style: TextStyle(color: Colors.grey, fontSize: 14)),
-                                      const SizedBox(height: 4),
-                                      const Text('Nhấn dấu + để tạo',
-                                          style: TextStyle(color: Colors.white38, fontSize: 12)),
-                                    ],
+            return BlocBuilder<HistoryCubit, List<MediaItem>>(
+              builder: (context, history) {
+                return BlocBuilder<FavoriteCubit, List<String>>(
+                  builder: (context, favoriteIds) {
+                    return BlocBuilder<DownloadCubit, List<String>>(
+                      builder: (context, downloadIds) {
+                        return RefreshIndicator(
+                          onRefresh: _refreshPlaylists,
+                          child: ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                            itemCount: 5 + (_isPlaylistExpanded ? (playlists.isEmpty ? 1 : playlists.length) : 0),
+                            itemBuilder: (context, index) {
+                              // index 0: Lịch sử nghe
+                              if (index == 0) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: ListTile(
+                                    contentPadding: EdgeInsets.zero,
+                                    leading: _LibraryThumbnail(
+                                      colors: const [Color(0xFF0D47A1), Color(0xFF1565C0)],
+                                      icon: Icons.history_rounded,
+                                      iconColor: Colors.white,
+                                    ),
+                                    title: const Text('Lịch sử nghe',
+                                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                                    subtitle: Text(
+                                      history.isEmpty ? 'Chưa có bài nào' : '${history.length} bài gần đây',
+                                      style: const TextStyle(color: Colors.white54, fontSize: 13),
+                                    ),
+                                    trailing: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey, size: 16),
+                                    onTap: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const HistoryPage(),
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              );
-                            }
+                                );
+                              }
 
-                            final playlist = playlists[index - 4];
-
-                            return Padding(
-                              padding: const EdgeInsets.only(left: 16, bottom: 12),
-                              child: ListTile(
-                                contentPadding: EdgeInsets.zero,
-                                leading: _LibraryThumbnail(
-                                  colors: const [Color(0xFF1C1C2E), Color(0xFF2A2A3E)],
-                                  icon: Icons.music_note_rounded,
-                                  iconColor: Colors.white54,
-                                ),
-                                title: Text(playlist.name,
-                                    style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600)),
-                                subtitle: Padding(
-                                  padding: const EdgeInsets.only(top: 4),
-                                  child: Text('${playlist.songIds.length} bài hát',
-                                      style: const TextStyle(color: Colors.grey, fontSize: 13)),
-                                ),
-                                trailing: IconButton(
-                                  icon: const Icon(Icons.more_vert_rounded,
-                                      color: Colors.grey, size: 20),
-                                  onPressed: () => _showPlaylistOptions(playlist),
-                                ),
-                                onTap: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        PlaylistDetailPage(playlistId: playlist.id),
+                              // index 1: Bài hát yêu thích
+                              if (index == 1) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: ListTile(
+                                    contentPadding: EdgeInsets.zero,
+                                    leading: _LibraryThumbnail(
+                                      colors: const [Color(0xFFB71C1C), Color(0xFF880E4F)],
+                                      icon: Icons.favorite_rounded,
+                                      iconColor: Colors.white,
+                                    ),
+                                    title: const Text('Bài hát yêu thích',
+                                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                                    subtitle: Text('${favoriteIds.length} bài hát',
+                                        style: const TextStyle(color: Colors.white54, fontSize: 13)),
+                                    trailing: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey, size: 16),
+                                    onTap: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (_) => const FavoritePage()),
+                                    ),
                                   ),
-                                ),
-                                onLongPress: () => _showPlaylistOptions(playlist),
-                              ),
-                            );
-                          }
+                                );
+                              }
 
-                          return const SizedBox.shrink();
-                        },
-                      ),
+                              // index 2: Nhạc đã tải
+                              if (index == 2) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: ListTile(
+                                    contentPadding: EdgeInsets.zero,
+                                    leading: _LibraryThumbnail(
+                                      colors: const [Color(0xFF1B5E20), Color(0xFF00695C)],
+                                      icon: Icons.download_done_rounded,
+                                      iconColor: Colors.white,
+                                    ),
+                                    title: const Text('Nhạc đã tải',
+                                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                                    subtitle: Text('${downloadIds.length} bài hát',
+                                        style: const TextStyle(color: Colors.white54, fontSize: 13)),
+                                    trailing: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey, size: 16),
+                                    onTap: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (_) => const DownloadPage()),
+                                    ),
+                                  ),
+                                );
+                              }
+
+                              // index 3: Divider
+                              if (index == 3) {
+                                return const Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Divider(color: Colors.white12),
+                                    SizedBox(height: 8),
+                                  ],
+                                );
+                              }
+
+                              // index 4: Header Danh sách phát
+                              if (index == 4) {
+                                return ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  leading: _LibraryThumbnail(
+                                    colors: const [Color(0xFF4A148C), Color(0xFF1A237E)],
+                                    icon: Icons.queue_music_rounded,
+                                    iconColor: Colors.white,
+                                  ),
+                                  title: const Text('Danh sách phát',
+                                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                                  subtitle: Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: Text('${playlists.length} danh sách',
+                                        style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                                  ),
+                                  trailing: Icon(
+                                    _isPlaylistExpanded
+                                        ? Icons.keyboard_arrow_down_rounded
+                                        : Icons.keyboard_arrow_right_rounded,
+                                    color: Colors.grey,
+                                    size: 24,
+                                  ),
+                                  onTap: () => setState(() => _isPlaylistExpanded = !_isPlaylistExpanded),
+                                );
+                              }
+
+                              // index 5+: playlist con
+                              if (_isPlaylistExpanded) {
+                                if (playlists.isEmpty) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(top: 16, bottom: 32),
+                                    child: Center(
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.library_music_rounded,
+                                              size: 48, color: Colors.white.withValues(alpha: 0.2)),
+                                          const SizedBox(height: 12),
+                                          const Text('Chưa có danh sách phát nào',
+                                              style: TextStyle(color: Colors.grey, fontSize: 14)),
+                                          const SizedBox(height: 4),
+                                          const Text('Nhấn dấu + để tạo',
+                                              style: TextStyle(color: Colors.white38, fontSize: 12)),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                }
+
+                                final playlist = playlists[index - 5];
+                                return Padding(
+                                  padding: const EdgeInsets.only(left: 16, bottom: 12),
+                                  child: ListTile(
+                                    contentPadding: EdgeInsets.zero,
+                                    leading: _LibraryThumbnail(
+                                      colors: const [Color(0xFF1C1C2E), Color(0xFF2A2A3E)],
+                                      icon: Icons.music_note_rounded,
+                                      iconColor: Colors.white54,
+                                    ),
+                                    title: Text(playlist.name,
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600)),
+                                    subtitle: Padding(
+                                      padding: const EdgeInsets.only(top: 4),
+                                      child: Text('${playlist.songIds.length} bài hát',
+                                          style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                                    ),
+                                    trailing: IconButton(
+                                      icon: const Icon(Icons.more_vert_rounded, color: Colors.grey, size: 20),
+                                      onPressed: () => _showPlaylistOptions(playlist),
+                                    ),
+                                    onTap: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => PlaylistDetailPage(playlistId: playlist.id),
+                                      ),
+                                    ),
+                                    onLongPress: () => _showPlaylistOptions(playlist),
+                                  ),
+                                );
+                              }
+
+                              return const SizedBox.shrink();
+                            },
+                          ),
+                        );
+                      },
                     );
                   },
                 );

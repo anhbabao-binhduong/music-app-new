@@ -2,6 +2,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../../data/models/history_entry_model.dart';
 import '../../data/models/playlist_model.dart';
 import '../../data/models/song_model.dart';
+import '../../data/models/album_model.dart';
 import '../constants/hive_constants.dart';
 
 class HiveInitializer {
@@ -15,6 +16,7 @@ class HiveInitializer {
     if (!Hive.isAdapterRegistered(0)) Hive.registerAdapter(SongModelAdapter());
     if (!Hive.isAdapterRegistered(1)) Hive.registerAdapter(HistoryEntryModelAdapter());
     if (!Hive.isAdapterRegistered(2)) Hive.registerAdapter(PlaylistModelAdapter());
+    if (!Hive.isAdapterRegistered(3)) Hive.registerAdapter(AlbumModelAdapter());
 
     // 3. Open all boxes upfront so they're ready instantly
     await Future.wait([
@@ -22,6 +24,7 @@ class HiveInitializer {
       Hive.openBox<SongModel>(HiveBoxes.favorites),
       Hive.openBox<HistoryEntryModel>(HiveBoxes.history),
       Hive.openBox<PlaylistModel>(HiveBoxes.playlists),
+      Hive.openBox<AlbumModel>(HiveBoxes.albums),
       Hive.openBox<dynamic>(HiveBoxes.settings),
     ]);
   }

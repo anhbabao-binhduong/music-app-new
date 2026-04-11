@@ -7,13 +7,15 @@ import 'player_event.dart';
 import 'player_state.dart';
 import 'package:flutter/foundation.dart';
 import 'package:music_app/core/constants/hive_constants.dart';
+import 'package:music_app/presentation/bloc/history/history_cubit.dart';
 
 class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
   final AudioHandler _audioHandler;
+  final HistoryCubit _historyCubit;
   StreamSubscription? _playerSubscription;
   StreamSubscription? _mediaSubscription;
 
-  PlayerBloc(this._audioHandler) : super(const PlayerInitial()) {
+  PlayerBloc(this._audioHandler, this._historyCubit) : super(const PlayerInitial()) {
     on<LoadPlaylistEvent>(_onLoadPlaylist);
     on<PlayEvent>((event, emit) => _audioHandler.play());
     on<PauseEvent>((event, emit) => _audioHandler.pause());
@@ -252,6 +254,18 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     final duration = mediaItem.duration ?? Duration.zero;
     final position = playbackState.position;
 
+    // Lưu vào lịch sử khi bài đang phát (không lưu khi pause)
+    if (playbackState.playing && mediaItem != null) {
+      _historyCubit.addSong(mediaItem);
+    }
+
+    final isShuffle = playbackState.shuffleMode == AudioServiceShuffleMode.all;
+    final repeatModeState = playbackState.repeatMode == AudioServiceRepeatMode.none
+        ? RepeatMode.none
+        : playbackState.repeatMode == AudioServiceRepeatMode.one
+            ? RepeatMode.one
+            : RepeatMode.all;
+
     if (playbackState.playing) {
       emit(PlayerPlaying(
         song: mediaItem,
@@ -259,6 +273,8 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
         duration: duration,
         queue: queue,
         currentIndex: currentIndex != -1 ? currentIndex : 0,
+        isShuffle: isShuffle,
+        repeatMode: repeatModeState,
       ));
     } else {
       emit(PlayerPaused(
@@ -267,6 +283,8 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
         duration: duration,
         queue: queue,
         currentIndex: currentIndex != -1 ? currentIndex : 0,
+        isShuffle: isShuffle,
+        repeatMode: repeatModeState,
       ));
     }
   }

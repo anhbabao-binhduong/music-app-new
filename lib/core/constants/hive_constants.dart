@@ -7,6 +7,7 @@ class HiveBoxes {
   static const String favorites = 'favorites_box';   // Box<SongModel>
   static const String history   = 'history_box';     // Box<HistoryEntryModel>
   static const String playlists = 'playlists_box';   // Box<PlaylistModel>
+  static const String albums    = 'albums_box';      // Box<AlbumModel>
   static const String settings  = 'settings_box';    // Box<dynamic>
 }
 

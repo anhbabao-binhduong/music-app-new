@@ -3,6 +3,7 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:dartz/dartz.dart';
 import '../../core/errors/failures.dart';
+import '../entities/album_entity.dart';
 import '../entities/category_entity.dart';
 import '../entities/song_entity.dart';
 import '../entities/playlist_entity.dart';
@@ -40,4 +41,8 @@ abstract class MusicRepository {
   // ── Categories (Supabase) ──────────────────────────────
   Future<Either<Failure, List<CategoryEntity>>> getCategories();
   Future<Either<Failure, List<SongEntity>>>     getSongsByCategory(String? slug);
+
+  // ── Albums (Supabase) ─────────────────────────────────
+  Future<List<AlbumEntity>> getAlbums();
+  Future<AlbumEntity?> getAlbumById(String albumId);
 }

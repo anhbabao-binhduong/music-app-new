@@ -15,7 +15,28 @@ class MyAudioHandler extends BaseAudioHandler
   }
 
   void _init() {
-    _player.playbackEventStream.map(_transformEvent).pipe(playbackState);
+    _player.playbackEventStream.listen((event) {
+      final state = _transformEvent(event);
+      playbackState.add(state);
+    });
+
+    _player.shuffleModeEnabledStream.listen((enabled) {
+      playbackState.add(playbackState.value.copyWith(
+        shuffleMode: enabled
+            ? AudioServiceShuffleMode.all
+            : AudioServiceShuffleMode.none,
+      ));
+    });
+
+    _player.loopModeStream.listen((loopMode) {
+      playbackState.add(playbackState.value.copyWith(
+        repeatMode: loopMode == LoopMode.one
+            ? AudioServiceRepeatMode.one
+            : loopMode == LoopMode.all
+                ? AudioServiceRepeatMode.all
+                : AudioServiceRepeatMode.none,
+      ));
+    });
 
     _player.currentIndexStream.listen((index) {
       if (index != null && index < queue.value.length) {
@@ -42,7 +63,6 @@ class MyAudioHandler extends BaseAudioHandler
   @override
   Future<void> stop() async {
     await _player.stop();
-    return super.stop();
   }
 
   @override
@@ -72,6 +92,28 @@ class MyAudioHandler extends BaseAudioHandler
       await _player.seek(Duration.zero, index: index);
     } catch (e) {
       print('Lỗi Seek Audio Web: $e');
+    }
+  }
+
+  @override
+  Future<void> setShuffleMode(AudioServiceShuffleMode shuffleMode) async {
+    final enabled = shuffleMode == AudioServiceShuffleMode.all;
+    await _player.setShuffleModeEnabled(enabled);
+  }
+
+  @override
+  Future<void> setRepeatMode(AudioServiceRepeatMode repeatMode) async {
+    switch (repeatMode) {
+      case AudioServiceRepeatMode.none:
+        await _player.setLoopMode(LoopMode.off);
+        break;
+      case AudioServiceRepeatMode.one:
+        await _player.setLoopMode(LoopMode.one);
+        break;
+      case AudioServiceRepeatMode.all:
+      case AudioServiceRepeatMode.group:
+        await _player.setLoopMode(LoopMode.all);
+        break;
     }
   }
 
@@ -159,6 +201,14 @@ class MyAudioHandler extends BaseAudioHandler
       bufferedPosition: _player.bufferedPosition,
       speed: _player.speed,
       queueIndex: event.currentIndex,
+      shuffleMode: _player.shuffleModeEnabled 
+          ? AudioServiceShuffleMode.all 
+          : AudioServiceShuffleMode.none,
+      repeatMode: _player.loopMode == LoopMode.one
+          ? AudioServiceRepeatMode.one
+          : _player.loopMode == LoopMode.all
+              ? AudioServiceRepeatMode.all
+              : AudioServiceRepeatMode.none,
     );
   }
 }

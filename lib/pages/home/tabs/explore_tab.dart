@@ -23,6 +23,11 @@ import '../../../../presentation/bloc/favorite/favorite_cubit.dart';
 import '../../../../presentation/bloc/player/player_bloc.dart';
 import '../../../../presentation/bloc/player/player_event.dart';
 
+import '../widgets/album_card.dart';
+import '../../library/album_detail_page.dart';
+import '../../../../presentation/bloc/album/album_cubit.dart';
+import '../../../../presentation/bloc/album/album_state.dart';
+
 class ExploreTab extends StatefulWidget {
   final bool isLoggedIn;
   const ExploreTab({super.key, required this.isLoggedIn});
@@ -171,8 +176,9 @@ class _ExploreTabState extends State<ExploreTab> {
 
   Widget _buildPaginationRow(int currentPage, int totalPages, Function(int) onPageChanged) {
     if (totalPages <= 1) return const SizedBox.shrink();
-    return Padding(
+    return Container(
       padding: const EdgeInsets.symmetric(vertical: 16),
+      alignment: Alignment.center,
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
@@ -224,6 +230,69 @@ class _ExploreTabState extends State<ExploreTab> {
           ),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 32)),
+
+        SliverToBoxAdapter(
+          child: BlocProvider(
+            create: (_) => getIt<AlbumCubit>()..loadAlbums(),
+            child: BlocBuilder<AlbumCubit, AlbumState>(
+              builder: (context, state) {
+                if (state is AlbumLoading) {
+                  return const SizedBox(
+                    height: 190,
+                    child: Center(child: CircularProgressIndicator(color: Colors.greenAccent)),
+                  );
+                }
+                if (state is AlbumLoaded && state.albums.isNotEmpty) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Albums',
+                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: -0.3),
+                            ),
+                            TextButton(
+                              onPressed: () {/* TODO: Navigate to all albums */},
+                              child: const Text('Xem tất cả', style: TextStyle(color: Colors.grey)),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      SizedBox(
+                        height: 190,
+                        child: ListView.builder(
+                          physics: const BouncingScrollPhysics(),
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: state.albums.length,
+                          itemBuilder: (context, index) {
+                            final album = state.albums[index];
+                            return AlbumCard(
+                              album: album,
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => AlbumDetailPage(album: album),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                    ],
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        ),
 
         SliverToBoxAdapter(
           child: Column(
@@ -402,7 +471,7 @@ class _ExploreTabState extends State<ExploreTab> {
           },
         ),
 
-        const SliverToBoxAdapter(child: SizedBox(height: 100)),
+        const SliverToBoxAdapter(child: SizedBox(height: 160)),
       ],
     );
   }

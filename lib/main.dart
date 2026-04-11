@@ -15,7 +15,9 @@ import 'package:music_app/presentation/bloc/download/download_cubit.dart';
 import 'package:music_app/presentation/bloc/favorite/favorite_cubit.dart';
 import 'package:music_app/presentation/bloc/playlist/playlist_cubit.dart';
 import 'package:music_app/presentation/bloc/player/player_event.dart';
-import 'package:music_app/presentation/bloc/category/category_cubit.dart'; // 👈 THÊM
+import 'package:music_app/presentation/bloc/category/category_cubit.dart';
+import 'package:music_app/presentation/bloc/history/history_cubit.dart';
+import 'package:music_app/presentation/bloc/comment/comment_cubit.dart';
 
 void _setupAuthListener() {
   final supabase = Supabase.instance.client;
@@ -28,10 +30,14 @@ void _setupAuthListener() {
       getIt<PlayerBloc>().add(ResetPlayerEvent());
       getIt<FavoriteCubit>().emit([]);
       getIt<DownloadCubit>().emit([]);
+      // ✅ Xóa sạch lịch sử khỏi bộ nhớ ngay lập tức
+      getIt<HistoryCubit>().clearLocalData();
     }
-    
-    if (event.event == AuthChangeEvent.signedIn) {
-      // TODO: reload data
+
+    if (event.event == AuthChangeEvent.signedIn ||
+        event.event == AuthChangeEvent.initialSession) {
+      // Tải lại lịch sử của user mới (xóa cũ trước, load mới sau)
+      getIt<HistoryCubit>().reloadForUser();
     }
   });
 }
@@ -90,25 +96,30 @@ Future<void> main() async {
       ],
       child: MultiBlocProvider(
         providers: [
-          BlocProvider<PlayerBloc>(
-            key: UniqueKey(),
-            create: (_) => getIt<PlayerBloc>(),
+          BlocProvider<HistoryCubit>.value(
+            value: getIt<HistoryCubit>(),
           ),
-          BlocProvider<ThemeBloc>(
-            create: (_) => getIt<ThemeBloc>()..add(const LoadThemeEvent()),
+          BlocProvider<PlayerBloc>.value(
+            value: getIt<PlayerBloc>(),
+          ),
+          BlocProvider<ThemeBloc>.value(
+            value: getIt<ThemeBloc>()..add(const LoadThemeEvent()),
           ),
           BlocProvider<SearchCubit>.value(value: searchCubit),
-          BlocProvider<FavoriteCubit>(
-            create: (_) => getIt<FavoriteCubit>(),
+          BlocProvider<FavoriteCubit>.value(
+            value: getIt<FavoriteCubit>(),
           ),
-          BlocProvider<DownloadCubit>(
-            create: (_) => getIt<DownloadCubit>(),
+          BlocProvider<DownloadCubit>.value(
+            value: getIt<DownloadCubit>(),
           ),
-          BlocProvider<PlaylistCubit>(
-            create: (_) => getIt<PlaylistCubit>(),
+          BlocProvider<PlaylistCubit>.value(
+            value: getIt<PlaylistCubit>(),
           ),
           BlocProvider<CategoryCubit>(
             create: (context) => getIt<CategoryCubit>(),
+          ),
+          BlocProvider<CommentCubit>(
+            create: (_) => getIt<CommentCubit>(),
           ),
         ],
         child: const MyApp(),
