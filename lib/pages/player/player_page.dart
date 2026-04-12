@@ -897,11 +897,28 @@ class _IconBtn extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────
+// Public helper: mở bình luận từ bất kỳ nơi nào trong app
+// ─────────────────────────────────────────────────────────────
+void showSongComments(BuildContext context, String songId, {String? songTitle}) {
+  final cubit = getIt<CommentCubit>()..loadComments(songId);
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (ctx) => BlocProvider.value(
+      value: cubit,
+      child: _CommentsSheet(songId: songId, songTitle: songTitle),
+    ),
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
 // _CommentsSheet – bottom sheet bình luận
 // ─────────────────────────────────────────────────────────────
 class _CommentsSheet extends StatefulWidget {
   final String songId;
-  const _CommentsSheet({required this.songId});
+  final String? songTitle;
+  const _CommentsSheet({required this.songId, this.songTitle});
 
   @override
   State<_CommentsSheet> createState() => _CommentsSheetState();
@@ -967,15 +984,30 @@ class _CommentsSheetState extends State<_CommentsSheet> {
             ),
           ),
           // Header
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: Row(
               children: [
-                Icon(Icons.chat_bubble_outline_rounded, size: 20),
-                SizedBox(width: 8),
-                Text(
-                  'Bình luận',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                const Icon(Icons.chat_bubble_outline_rounded, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'Bình luận',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      if (widget.songTitle != null)
+                        Text(
+                          widget.songTitle!,
+                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
+                  ),
                 ),
               ],
             ),

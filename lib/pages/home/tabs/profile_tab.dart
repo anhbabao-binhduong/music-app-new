@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../auth/login_page.dart';
 import '../../auth/register_page.dart';
+import '../../profile/comment_history_page.dart';
 import '../home_page.dart';
 
 class ProfileTab extends StatelessWidget {
   final bool isLoggedIn;
   final String userName;
   final String userEmail;
+  final String? userId; // Thêm biến lưu userId
   final Future<void> Function() onLogout;
   final int favoriteCount;
   final int playlistCount;
@@ -17,6 +19,7 @@ class ProfileTab extends StatelessWidget {
     required this.isLoggedIn,
     required this.userName,
     required this.userEmail,
+    this.userId,
     required this.onLogout,
     this.favoriteCount = 0,
     this.playlistCount = 0,
@@ -29,6 +32,7 @@ class ProfileTab extends StatelessWidget {
         ? _LoggedInProfile(
             userName: userName,
             userEmail: userEmail,
+            userId: userId,
             onLogout: onLogout,
             favoriteCount: favoriteCount,
             playlistCount: playlistCount,
@@ -167,6 +171,7 @@ class _FeatureRow extends StatelessWidget {
 
 class _LoggedInProfile extends StatelessWidget {
   final String userName, userEmail;
+  final String? userId; // Nhận userId
   final Future<void> Function() onLogout;
   final int favoriteCount;
   final int playlistCount;
@@ -175,6 +180,7 @@ class _LoggedInProfile extends StatelessWidget {
   const _LoggedInProfile({
     required this.userName,
     required this.userEmail,
+    this.userId,
     required this.onLogout,
     required this.favoriteCount,
     required this.playlistCount,
@@ -200,7 +206,17 @@ class _LoggedInProfile extends StatelessWidget {
             ..._kMenuItems.map((item) => _MenuItem(
                   icon: item.$1,
                   label: item.$2,
-                  onTap: () {},
+                  onTap: () {
+                    // Xử lý điều hướng khi nhấn vào Lịch sử bình luận
+                    if (item.$2 == 'Lịch sử bình luận' && userId != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => CommentHistoryPage(userId: userId!),
+                        ),
+                      );
+                    }
+                  },
                 )),
             const SizedBox(height: 8),
             _LogoutButton(onLogout: onLogout),
@@ -310,6 +326,7 @@ class _StatChip extends StatelessWidget {
 const _kMenuItems = [
   (Icons.manage_accounts_outlined, 'Chỉnh sửa hồ sơ'),
   (Icons.history_rounded, 'Lịch sử nghe'),
+  (Icons.comment_rounded, 'Lịch sử bình luận'),
   (Icons.notifications_outlined, 'Thông báo'),
   (Icons.settings_outlined, 'Cài đặt'),
   (Icons.help_outline_rounded, 'Trợ giúp & Phản hồi'),

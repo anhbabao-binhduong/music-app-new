@@ -13,4 +13,8 @@ abstract class CommentRepository {
   });
 
   Future<Either<Failure, Unit>> deleteComment(String commentId, String userId);
+
+  Future<Either<Failure, List<CommentEntity>>> getUserComments(String userId);
+
+  Future<Either<Failure, Unit>> editComment(String commentId, String userId, String newContent);
 }

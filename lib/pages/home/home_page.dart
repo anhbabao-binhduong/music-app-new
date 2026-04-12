@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../presentation/bloc/search/search_page.dart';
 import '../../widgets/mini_player_bar.dart';
 import 'tabs/explore_tab.dart';
+import 'tabs/chart_tab.dart';
 import 'tabs/profile_tab.dart';
 import '../library/library_page.dart';
 import 'package:music_app/services/supabase_auth_service.dart';
@@ -85,7 +86,7 @@ class _HomePageState extends State<HomePage> {
       case 0:
         return ExploreTab(isLoggedIn: _isLoggedIn);
       case 1:
-        return const _PlaceholderTab(icon: Icons.radio_rounded, label: 'Radio');
+        return const ChartTab();
       case 2:
         return const LibraryPage();
       case 3:
@@ -95,6 +96,7 @@ class _HomePageState extends State<HomePage> {
           isLoggedIn: _isLoggedIn,
           userName: _userName,
           userEmail: _userEmail,
+          userId: _isLoggedIn ? _user?.id : null,
           favoriteCount: totalFavorites,
           followingCount: totalDownloads,
           onLogout: _onLogout,
@@ -115,7 +117,7 @@ class _HomePageState extends State<HomePage> {
       child: Scaffold(
         backgroundColor: kBg,
         extendBody: true,
-        appBar: _currentNavIndex == 3 ? null : _buildAppBar(),
+        appBar: (_currentNavIndex == 1 || _currentNavIndex == 3) ? null : _buildAppBar(),
         body: AnimatedSwitcher(
           duration: const Duration(milliseconds: 220),
           child: KeyedSubtree(
@@ -201,9 +203,9 @@ class _HomePageState extends State<HomePage> {
         label: 'Khám phá',
       ),
       BottomNavigationBarItem(
-        icon: Icon(Icons.radio_outlined),
-        activeIcon: Icon(Icons.radio_rounded),
-        label: 'Radio',
+        icon: Icon(Icons.bar_chart_outlined),
+        activeIcon: Icon(Icons.bar_chart_rounded),
+        label: '#zingchart',
       ),
       BottomNavigationBarItem(
         icon: Icon(Icons.library_music_outlined),

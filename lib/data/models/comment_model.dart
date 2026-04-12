@@ -7,6 +7,9 @@ class CommentModel {
   final String displayName;
   final String content;
   final DateTime createdAt;
+  final String? songTitle;
+  final String? songArtist;
+  final String? songArtUrl;
 
   const CommentModel({
     required this.id,
@@ -15,6 +18,9 @@ class CommentModel {
     required this.displayName,
     required this.content,
     required this.createdAt,
+    this.songTitle,
+    this.songArtist,
+    this.songArtUrl,
   });
 
   factory CommentModel.fromJson(Map<String, dynamic> json) {
@@ -25,6 +31,9 @@ class CommentModel {
       displayName: json['display_name'] as String? ?? 'Anonymous',
       content: json['content'] as String,
       createdAt: DateTime.parse(json['created_at'] as String),
+      songTitle: json['song_title'] as String?,
+      songArtist: json['song_artist'] as String?,
+      songArtUrl: json['song_art_url'] as String?,
     );
   }
 
@@ -35,6 +44,9 @@ class CommentModel {
         displayName: displayName,
         content: content,
         createdAt: createdAt,
+        songTitle: songTitle,
+        songArtist: songArtist,
+        songArtUrl: songArtUrl,
       );
 
   static Map<String, dynamic> toInsertJson({

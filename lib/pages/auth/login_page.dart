@@ -21,6 +21,7 @@ class _LoginPageState extends State<LoginPage>
 
   bool _obscurePass = true;
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
   late final AnimationController _bgCtrl;
 
   @override
@@ -84,6 +85,28 @@ class _LoginPageState extends State<LoginPage>
         margin: const EdgeInsets.all(16),
       ),
     );
+  }
+
+  Future<void> _signInWithGoogle() async {
+    setState(() => _isGoogleLoading = true);
+    try {
+      final response = await _authService.signInWithGoogle();
+      if (!mounted) return;
+      // response == null nghĩa là web đang redirect → không navigate thủ công
+      if (response != null) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const HomePage()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      final msg = _authService.mapError(e);
+      if (msg != 'Đã huỷ đăng nhập') {
+        _showSnack(msg, isError: true);
+      }
+    } finally {
+      if (mounted) setState(() => _isGoogleLoading = false);
+    }
   }
 
   void _showComingSoon(String provider) {
@@ -274,12 +297,32 @@ class _LoginPageState extends State<LoginPage>
     return Row(
       children: [
         Expanded(
-          child: AuthSocialButton(
-            label: 'Google',
-            icon: Icons.g_mobiledata_rounded,
-            iconColor: const Color(0xFFEA4335),
-            onTap: () => _showComingSoon('Đăng nhập Google'),
-          ),
+          child: _isGoogleLoading
+              ? Container(
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.1)),
+                  ),
+                  child: const Center(
+                    child: SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        valueColor: AlwaysStoppedAnimation(Color(0xFFEA4335)),
+                      ),
+                    ),
+                  ),
+                )
+              : AuthSocialButton(
+                  label: 'Google',
+                  icon: Icons.g_mobiledata_rounded,
+                  iconColor: const Color(0xFFEA4335),
+                  onTap: _signInWithGoogle,
+                ),
         ),
         const SizedBox(width: 14),
         Expanded(

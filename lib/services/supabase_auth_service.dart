@@ -1,7 +1,13 @@
+import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SupabaseAuthService {
   final SupabaseClient _client = Supabase.instance.client;
+
+  // Web Client ID từ Google Cloud Console
+  static const _webClientId =
+      '93955508034-qlhk2essllejnvu3djjikb7pa80b2t66.apps.googleusercontent.com';
 
   User? get currentUser => _client.auth.currentUser;
 
@@ -30,8 +36,49 @@ class SupabaseAuthService {
     return response;
   }
 
+  /// Đăng nhập bằng Google (native picker trên mobile, OAuth redirect trên web)
+  Future<AuthResponse?> signInWithGoogle() async {
+    if (kIsWeb) {
+      // ── Web: dùng OAuth redirect ──────────────────────────────────────
+      await _client.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: Uri.base.origin,
+      );
+      return null; // web tự redirect, không có response ngay
+    }
+
+    // ── Mobile: native Google Account Picker ─────────────────────────
+    final googleSignIn = GoogleSignIn(serverClientId: _webClientId);
+
+    // Đăng xuất session Google cũ để luôn hiện account picker
+    await googleSignIn.signOut();
+
+    final googleUser = await googleSignIn.signIn();
+    if (googleUser == null) {
+      throw Exception('Đăng nhập bị huỷ');
+    }
+
+    final googleAuth = await googleUser.authentication;
+    final idToken = googleAuth.idToken;
+
+    if (idToken == null) {
+      throw Exception('Không lấy được ID Token từ Google');
+    }
+
+    return _client.auth.signInWithIdToken(
+      provider: OAuthProvider.google,
+      idToken: idToken,
+      accessToken: googleAuth.accessToken,
+    );
+  }
+
   // ✅ CHỈ logout, KHÔNG xử lý player ở đây
   Future<void> signOut() async {
+    // Đăng xuất khỏi Google nếu đã đăng nhập bằng Google
+    try {
+      final googleSignIn = GoogleSignIn(serverClientId: _webClientId);
+      await googleSignIn.signOut();
+    } catch (_) {}
     await _client.auth.signOut();
   }
 
@@ -47,6 +94,13 @@ class SupabaseAuthService {
     }
     if (message.contains('network')) {
       return 'Lỗi kết nối mạng';
+    }
+    if (message.contains('cancelled') || message.contains('cancel') ||
+        message.contains('huỷ')) {
+      return 'Đã huỷ đăng nhập';
+    }
+    if (message.contains('id token')) {
+      return 'Đăng nhập Google thất bại, vui lòng thử lại';
     }
 
     return 'Đã xảy ra lỗi: $error';

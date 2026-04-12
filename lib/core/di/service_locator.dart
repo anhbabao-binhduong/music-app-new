@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';   // 👈 THÊM
 
 import '../../data/repositories/music_repository_impl.dart';
 import '../../domain/repositories/music_repository.dart';
+import '../../presentation/bloc/chart/chart_cubit.dart';
 import '../../presentation/bloc/player/player_bloc.dart';
 import '../../presentation/bloc/search/search_cubit.dart';
 import '../../presentation/bloc/theme/theme_bloc.dart';
@@ -79,6 +80,8 @@ Future<void> setupServiceLocator() async {
   getIt.registerFactory<SearchCubit>(
     () => SearchCubit(getIt<MusicRepository>()),
   );
+
+  getIt.registerFactory<ChartCubit>(() => ChartCubit(getIt<MusicRepository>()));
 
   getIt.registerLazySingleton<ThemeBloc>(() => ThemeBloc());
   getIt.registerLazySingleton<FavoriteCubit>(() => FavoriteCubit());

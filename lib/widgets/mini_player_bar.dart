@@ -2,10 +2,12 @@ import 'package:audio_service/audio_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:music_app/data/models/playlist_model.dart';
 import 'package:music_app/pages/player/player_page.dart';
 import 'package:music_app/presentation/bloc/player/player_bloc.dart';
 import 'package:music_app/presentation/bloc/player/player_event.dart';
 import 'package:music_app/presentation/bloc/player/player_state.dart';
+import 'package:music_app/presentation/bloc/playlist/playlist_cubit.dart';
 import 'package:music_app/services/supabase_auth_service.dart';
 
 class MiniPlayerBar extends StatelessWidget {
@@ -161,6 +163,10 @@ class MiniPlayerBar extends StatelessWidget {
                           icon: Icons.queue_music_rounded,
                           onTap: () => showQueueBottomSheet(context),
                         ),
+                        _MiniBtn(
+                          icon: Icons.playlist_add_rounded,
+                          onTap: () => showAddToPlaylistSheet(context, song),
+                        ),
                       ],
                     ),
                   ),
@@ -172,6 +178,260 @@ class MiniPlayerBar extends StatelessWidget {
       },
     );
   }
+}
+
+/// Mở bottom sheet chọn playlist để thêm bài hát đang phát.
+void showAddToPlaylistSheet(BuildContext context, MediaItem song) {
+  final songId = song.id;
+  final controller = TextEditingController();
+
+  void showSnack(String msg, {bool isError = false}) {
+    ScaffoldMessenger.of(context)
+      ..removeCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: Text(msg),
+        backgroundColor: isError ? Colors.redAccent : Colors.green,
+        behavior: SnackBarBehavior.floating,
+      ));
+  }
+
+  void showCreateDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF2A2A2E),
+        title: const Text('Tạo danh sách phát mới',
+            style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            hintText: 'Nhập tên playlist...',
+            hintStyle: TextStyle(color: Colors.grey),
+            enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.grey)),
+            focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.white)),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Huỷ', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final name = controller.text.trim();
+              if (name.isEmpty) return;
+              Navigator.pop(ctx);
+              final result = await context
+                  .read<PlaylistCubit>()
+                  .createPlaylistAndAddSong(name, songId);
+              if (result == null) {
+                showSnack('Đã tạo playlist "$name" và thêm bài hát');
+              } else {
+                showSnack(result, isError: true);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.greenAccent,
+                foregroundColor: Colors.black),
+            child: const Text('Tạo'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: const Color(0xFF1E1E1E),
+    shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+    isScrollControlled: true,
+    builder: (sheetCtx) => SafeArea(
+      child: BlocBuilder<PlaylistCubit, PlaylistState>(
+        builder: (bCtx, state) {
+          final playlists =
+              state is PlaylistLoaded ? state.playlists : <PlaylistModel>[];
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // ── Handle ────────────────────────────────────────────
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // ── Header: thumbnail + tên bài hát ──────────────────
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: CachedNetworkImage(
+                          imageUrl: song.artUri?.toString() ?? '',
+                          width: 44,
+                          height: 44,
+                          fit: BoxFit.cover,
+                          errorWidget: (_, __, ___) => Container(
+                            width: 44,
+                            height: 44,
+                            color: Colors.white10,
+                            child: const Icon(Icons.music_note,
+                                color: Colors.white54),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              song.title,
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              song.artist ?? 'Unknown Artist',
+                              style: const TextStyle(
+                                  color: Colors.white54, fontSize: 12),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.playlist_add_rounded,
+                          color: Colors.white38),
+                    ],
+                  ),
+                ),
+                const Divider(color: Colors.white12, height: 1),
+                // ── Tạo playlist mới ──────────────────────────────────
+                ListTile(
+                  leading: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white10,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.add_rounded,
+                        color: Colors.greenAccent),
+                  ),
+                  title: const Text('Tạo danh sách phát mới',
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.w500)),
+                  onTap: () {
+                    Navigator.pop(sheetCtx);
+                    Future.microtask(() => showCreateDialog());
+                  },
+                ),
+                // ── Danh sách playlist hiện có ────────────────────────
+                if (playlists.isNotEmpty) ...[
+                  const Divider(color: Colors.white12, height: 1),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text('Danh sách phát của bạn',
+                          style:
+                              TextStyle(color: Colors.white38, fontSize: 11)),
+                    ),
+                  ),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 300),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: playlists.length,
+                      itemBuilder: (_, index) {
+                        final p = playlists[index];
+                        final isAdded = p.songIds.contains(songId);
+                        return ListTile(
+                          leading: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: isAdded
+                                  ? Colors.greenAccent.withValues(alpha: 0.15)
+                                  : Colors.white10,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              isAdded
+                                  ? Icons.check_rounded
+                                  : Icons.playlist_play_rounded,
+                              color: isAdded
+                                  ? Colors.greenAccent
+                                  : Colors.white54,
+                              size: 20,
+                            ),
+                          ),
+                          title: Text(p.name,
+                              style: const TextStyle(color: Colors.white)),
+                          subtitle: Text(
+                            '${p.songIds.length} bài',
+                            style: const TextStyle(
+                                color: Colors.white38, fontSize: 11),
+                          ),
+                          trailing: isAdded
+                              ? const Text('Đã thêm',
+                                  style: TextStyle(
+                                      color: Colors.greenAccent, fontSize: 12))
+                              : null,
+                          onTap: () async {
+                            if (isAdded) {
+                              showSnack('Bài hát đã có trong playlist');
+                              Navigator.pop(sheetCtx);
+                              return;
+                            }
+                            final result = await bCtx
+                                .read<PlaylistCubit>()
+                                .addSongToPlaylist(p.id, songId);
+                            if (!bCtx.mounted) return;
+                            Navigator.pop(sheetCtx);
+                            if (result == null) {
+                              showSnack('Đã thêm vào "${p.name}"');
+                            } else {
+                              showSnack(result, isError: true);
+                            }
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ] else ...[
+                  const Divider(color: Colors.white12, height: 1),
+                  const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Text('Chưa có danh sách phát nào',
+                        style: TextStyle(color: Colors.white54)),
+                  ),
+                ],
+              ],
+            ),
+          );
+        },
+      ),
+    ),
+  );
 }
 
 void showQueueBottomSheet(BuildContext context) {

@@ -7,6 +7,10 @@ class CommentEntity extends Equatable {
   final String displayName;
   final String content;
   final DateTime createdAt;
+  // Song info — chỉ có khi query kèm JOIN (lịch sử bình luận)
+  final String? songTitle;
+  final String? songArtist;
+  final String? songArtUrl;
 
   const CommentEntity({
     required this.id,
@@ -15,8 +19,11 @@ class CommentEntity extends Equatable {
     required this.displayName,
     required this.content,
     required this.createdAt,
+    this.songTitle,
+    this.songArtist,
+    this.songArtUrl,
   });
 
   @override
-  List<Object?> get props => [id, songId, userId, displayName, content, createdAt];
+  List<Object?> get props => [id, songId, userId, displayName, content, createdAt, songTitle, songArtist, songArtUrl];
 }

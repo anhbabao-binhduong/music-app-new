@@ -11,6 +11,8 @@ import '../../domain/entities/song_entity.dart';
 import '../../domain/entities/category_entity.dart';       // 👈 THÊM
 import '../../domain/entities/album_entity.dart';
 import '../../domain/repositories/music_repository.dart';
+import '../../domain/entities/chart_top_song.dart';
+import '../../domain/entities/chart_trend_point.dart';
 import '../models/album_model.dart';
 import '../models/history_entry_model.dart';
 import '../models/playlist_model.dart';
@@ -410,5 +412,97 @@ Future<dz.Either<Failure, List<SongEntity>>> getSongsByCategory(String? slug) as
         .maybeSingle();
     if (response == null) return null;
     return AlbumModel.fromJson(Map<String, dynamic>.from(response as Map)).toEntity();
+  }
+
+  // ── Chart (Supabase) ───────────────────────────────────────────────────────
+  @override
+  Future<dz.Either<Failure, List<ChartTopSong>>> getChartTopSongs(int daysAgo) async {
+    try {
+      final currentRes = await _supabase.rpc('get_chart_top_songs', params: {'days_ago': daysAgo});
+      final previousRes = await _supabase.rpc('get_chart_top_songs', params: {'days_ago': daysAgo * 2});
+
+      final prevCountMap = <String, int>{};
+      for (final row in (previousRes as List)) {
+        prevCountMap[row['song_id'] as String] = row['play_count'] as int;
+      }
+
+      final List<String> topSongIds = (currentRes as List).map((r) => r['song_id'] as String).toList();
+      final Map<String, SongEntity> songsMap = {};
+      
+      if (topSongIds.isNotEmpty) {
+        final songsRes = await _supabase.from('songs').select('*').inFilter('id', topSongIds);
+        for (var s in songsRes) {
+          songsMap[s['id'].toString()] = SongEntity(
+            id: s['id'].toString(),
+            title: s['title'] ?? 'Unknown',
+            artist: s['artist'] ?? 'Unknown',
+            album: s['album'] ?? 'Unknown',
+            artUrl: s['art_url'],
+            audioUrl: s['audio_path'],
+            durationMs: (s['duration_seconds'] ?? 0) * 1000,
+          );
+        }
+      }
+
+      final List<ChartTopSong> result = [];
+      for (final row in (currentRes as List)) {
+        final id = row['song_id'] as String;
+        final count = row['play_count'] as int;
+        
+        final prevTotal = prevCountMap[id] ?? 0;
+        final prevPeriodCount = prevTotal - count;
+
+        ChartTrend trend = ChartTrend.same;
+        if (count > prevPeriodCount) trend = ChartTrend.up;
+        else if (count < prevPeriodCount) trend = ChartTrend.down;
+
+        final song = songsMap[id] ?? SongEntity(
+          id: id,
+          title: row['song_title'] as String,
+          artist: row['song_artist'] as String? ?? 'Unknown',
+          album: 'Local Music',
+          artUrl: row['song_art_uri'] as String?,
+          audioUrl: id, // Fallback
+          durationMs: (row['song_duration_ms'] as int?) ?? 0,
+        );
+
+        result.add(ChartTopSong(
+          song: song,
+          playCount: count,
+          trend: trend,
+        ));
+      }
+
+      return dz.Right(result);
+    } catch (e) {
+      return dz.Left(CacheFailure('Failed to fetch chart top songs: $e'));
+    }
+  }
+
+  @override
+  Future<dz.Either<Failure, List<ChartTrendPoint>>> getChartTrends(int daysAgo, List<String> songIds) async {
+    try {
+      final res = await _supabase.rpc('get_chart_trends', params: {
+        'days_ago': daysAgo,
+        'song_ids_csv': songIds.join(','),
+      });
+
+      print("DEBUG GET_CHART_TRENDS: daysAgo=$daysAgo, songIds=$songIds");
+      print("DEBUG GET_CHART_TRENDS RES: $res");
+
+      final List<ChartTrendPoint> result = [];
+      for (final row in (res as List)) {
+        result.add(ChartTrendPoint(
+          songId: row['song_id'] as String,
+          dateLabel: row['play_date'] as String,
+          playCount: (row['play_count'] as num).toInt(),
+        ));
+      }
+      print("DEBUG GET_CHART_TRENDS RESULT length: ${result.length}");
+
+      return dz.Right(result);
+    } catch (e) {
+      return dz.Left(CacheFailure('Failed to fetch chart trends: $e'));
+    }
   }
 }

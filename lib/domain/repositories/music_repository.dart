@@ -7,6 +7,8 @@ import '../entities/album_entity.dart';
 import '../entities/category_entity.dart';
 import '../entities/song_entity.dart';
 import '../entities/playlist_entity.dart';
+import '../entities/chart_top_song.dart';
+import '../entities/chart_trend_point.dart';
 
 /// Pure abstract contract — zero Flutter/Hive imports here.
 /// Presentation layer depends ONLY on this interface.
@@ -45,4 +47,8 @@ abstract class MusicRepository {
   // ── Albums (Supabase) ─────────────────────────────────
   Future<List<AlbumEntity>> getAlbums();
   Future<AlbumEntity?> getAlbumById(String albumId);
+
+  // ── Chart (Supabase) ──────────────────────────────────
+  Future<Either<Failure, List<ChartTopSong>>> getChartTopSongs(int daysAgo);
+  Future<Either<Failure, List<ChartTrendPoint>>> getChartTrends(int daysAgo, List<String> songIds);
 }
