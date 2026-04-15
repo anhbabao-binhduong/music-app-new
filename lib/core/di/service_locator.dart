@@ -30,6 +30,10 @@ import '../../domain/repositories/comment_repository.dart';
 import '../../data/repositories/comment_repository_impl.dart';
 import '../../presentation/bloc/comment/comment_cubit.dart';
 
+import '../../presentation/bloc/upload/upload_cubit.dart';
+import '../../presentation/bloc/user_songs/user_songs_cubit.dart';
+import '../../presentation/bloc/admin/admin_cubit.dart';
+
 final getIt = GetIt.instance;
 
 Future<void> setupServiceLocator() async {
@@ -107,4 +111,11 @@ Future<void> setupServiceLocator() async {
   getIt.registerFactory<CommentCubit>(
     () => CommentCubit(getIt<CommentRepository>()),
   );
-}
+
+  // ─── Upload & UserSongs feature ─────────────────────────────────────────
+  getIt.registerLazySingleton<UploadCubit>(() => UploadCubit());
+  getIt.registerLazySingleton<UserSongsCubit>(() => UserSongsCubit());
+
+  // ─── Admin feature ────────────────────────────────────────────────────────
+  getIt.registerLazySingleton<AdminCubit>(() => AdminCubit());
+}

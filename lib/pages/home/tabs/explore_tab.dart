@@ -18,7 +18,9 @@ import '../widgets/album_card.dart';
 import '../../library/album_detail_page.dart';
 import '../../../../presentation/bloc/album/album_cubit.dart';
 import '../../../../presentation/bloc/album/album_state.dart';
-
+import '../../../../presentation/bloc/user_songs/user_songs_cubit.dart';
+import '../../../../data/models/user_song_model.dart';
+import '../../../../core/constants/colors.dart';
 
 class ExploreTab extends StatefulWidget {
   final bool isLoggedIn;
@@ -30,6 +32,7 @@ class ExploreTab extends StatefulWidget {
 
 class _ExploreTabState extends State<ExploreTab> {
   int _chartPage = 1;
+  late Future<List<UserSongModel>> _approvedSongsFuture;
 
   final BannerData _banner = const BannerData(
     imageUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=800&q=80',
@@ -42,6 +45,7 @@ class _ExploreTabState extends State<ExploreTab> {
   void initState() {
     super.initState();
     context.read<CategoryCubit>().loadAll();
+    _approvedSongsFuture = context.read<UserSongsCubit>().loadApprovedSongs();
   }
 
   @override
@@ -224,6 +228,12 @@ class _ExploreTabState extends State<ExploreTab> {
           // Chart Section
           SliverToBoxAdapter(
             child: _buildChartSection(context),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 32)),
+
+          // Community Songs Section
+          SliverToBoxAdapter(
+            child: _buildCommunitySection(context),
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 32)),
 
@@ -424,6 +434,55 @@ class _ExploreTabState extends State<ExploreTab> {
     );
   }
 
+  Widget _buildCommunitySection(BuildContext context) {
+    return FutureBuilder<List<UserSongModel>>(
+      future: _approvedSongsFuture,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const SizedBox.shrink();
+        final approved = snapshot.data!;
+        if (approved.isEmpty) return const SizedBox.shrink();
+        
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionHeader('Nhạc từ cộng đồng', () {}),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 196,
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                itemCount: approved.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 16),
+                itemBuilder: (ctx, i) => _CommunitySongCard(
+                  song: approved[i],
+                  onTap: () {
+                    Future.microtask(() async {
+                      final playlist = approved.map((s) => MediaItem(
+                        id: s.id,
+                        title: s.title,
+                        artist: s.artist,
+                        album: s.album,
+                        artUri: s.artUrl != null ? Uri.parse(s.artUrl!) : null,
+                        duration: Duration(milliseconds: s.durationMs),
+                        extras: {'url': s.audioUrl},
+                      )).toList();
+                      await getIt<MusicPlayerService>().playPlaylist(
+                        playlist,
+                        startIndex: i,
+                      );
+                    });
+                  },
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildChartSection(BuildContext context) {
     final totalItems = localPlaylist.length;
     final totalPages = (totalItems / 8).ceil();
@@ -528,4 +587,78 @@ class _PaginationButtonState extends State<_PaginationButton> {
       ),
     );
   }
+}
+
+// -- Community Song Card --------------------------------------------------
+class _CommunitySongCard extends StatelessWidget {
+  final UserSongModel song;
+  final VoidCallback onTap;
+  const _CommunitySongCard({required this.song, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: SizedBox(
+        width: 140,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: AspectRatio(
+                    aspectRatio: 1,
+                    child: song.artUrl != null
+                        ? Image.network(
+                            song.artUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => _placeholder(),
+                          )
+                        : _placeholder(),
+                  ),
+                ),
+                Positioned(
+                  bottom: 8,
+                  right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(
+                      color: kAccent,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.play_arrow_rounded,
+                        color: Colors.white, size: 18),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              song.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              song.artist,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Colors.white54, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _placeholder() => Container(
+        color: const Color(0xFF1E1E30),
+        child: const Center(
+          child: Icon(Icons.music_note_rounded, color: Colors.white24, size: 36),
+        ),
+      );
 }

@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:music_app/pages/auth/auth_shared.dart';
 import 'package:music_app/pages/auth/register_page.dart';
-import 'package:music_app/pages/home/home_page.dart';
+import 'package:music_app/pages/root_page.dart';
 import 'package:music_app/services/supabase_auth_service.dart';
 
 class LoginPage extends StatefulWidget {
@@ -65,7 +65,7 @@ class _LoginPageState extends State<LoginPage>
       );
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const HomePage()),
+        MaterialPageRoute(builder: (_) => const RootPage()),
         (route) => false,
       );
     } catch (e) {
@@ -95,7 +95,7 @@ class _LoginPageState extends State<LoginPage>
       // response == null nghĩa là web đang redirect → không navigate thủ công
       if (response != null) {
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const HomePage()),
+          MaterialPageRoute(builder: (_) => const RootPage()),
           (route) => false,
         );
       }

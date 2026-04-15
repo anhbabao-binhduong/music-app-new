@@ -19,7 +19,7 @@ dependencies:
   just_audio_background: ^0.0.1-beta.11
   audio_service: ^0.18.13
   audio_session: ^0.2.2
-  uuid: ^4.3.3
+  uuid: ^4.5.3
 
   # ─── State Management ───────────────────────────────────
   flutter_bloc: ^9.1.1
@@ -27,7 +27,7 @@ dependencies:
   equatable: ^2.0.5
 
   # ─── Data & Storage ─────────────────────────────────────
-  path_provider: ^2.1.1
+  path_provider: ^2.1.5
   shared_preferences: ^2.2.2
 
   # ─── Network ────────────────────────────────────────────
@@ -48,6 +48,7 @@ dependencies:
   fl_chart: ^1.2.0
   intl: ^0.20.2
   shimmer: ^3.0.0
+  file_picker: ^11.0.2
 
 dev_dependencies:
   flutter_test:

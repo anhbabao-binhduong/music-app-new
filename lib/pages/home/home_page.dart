@@ -16,11 +16,7 @@ import 'package:music_app/presentation/bloc/player/player_bloc.dart';
 import 'package:music_app/presentation/bloc/player/player_event.dart';
 import '../../presentation/bloc/category/category_cubit.dart';
 
-const kBg = Color(0xFF0D0D1A);
-const kCard = Color(0xFF161626);
-const kAccent = Color(0xFF9333EA);
-const kAccentPink = Color(0xFFEC4899);
-const kSubText = Color(0xFF9E9E9E);
+import 'package:music_app/core/constants/colors.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});

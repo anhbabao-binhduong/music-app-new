@@ -18,6 +18,9 @@ import 'package:music_app/presentation/bloc/player/player_event.dart';
 import 'package:music_app/presentation/bloc/category/category_cubit.dart';
 import 'package:music_app/presentation/bloc/history/history_cubit.dart';
 import 'package:music_app/presentation/bloc/comment/comment_cubit.dart';
+import 'package:music_app/presentation/bloc/upload/upload_cubit.dart';
+import 'package:music_app/presentation/bloc/user_songs/user_songs_cubit.dart';
+import 'package:music_app/presentation/bloc/admin/admin_cubit.dart';
 
 void _setupAuthListener() {
   final supabase = Supabase.instance.client;
@@ -120,6 +123,15 @@ Future<void> main() async {
           ),
           BlocProvider<CommentCubit>(
             create: (_) => getIt<CommentCubit>(),
+          ),
+          BlocProvider<UploadCubit>.value(
+            value: getIt<UploadCubit>(),
+          ),
+          BlocProvider<UserSongsCubit>.value(
+            value: getIt<UserSongsCubit>(),
+          ),
+          BlocProvider<AdminCubit>.value(
+            value: getIt<AdminCubit>(),
           ),
         ],
         child: const MyApp(),

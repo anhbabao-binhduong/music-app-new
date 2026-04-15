@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../auth/login_page.dart';
 import '../../auth/register_page.dart';
 import '../../profile/comment_history_page.dart';
-import '../home_page.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/constants/colors.dart';
+import '../../../presentation/bloc/admin/admin_cubit.dart';
+import '../../../presentation/bloc/admin/admin_state.dart';
+import '../../admin/admin_dashboard_page.dart';
+import '../../../presentation/bloc/player/player_bloc.dart';
+import '../../../presentation/bloc/player/player_event.dart';
+import '../../../presentation/bloc/user_songs/user_songs_cubit.dart';
+import '../../../data/models/user_song_model.dart';
+import '../../upload/upload_music_sheet.dart';
 
 class ProfileTab extends StatelessWidget {
   final bool isLoggedIn;
@@ -190,38 +200,63 @@ class _LoggedInProfile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.only(bottom: 120),
-        child: Column(
-          children: [
-            _ProfileHeader(
-              userName: userName,
-              userEmail: userEmail,
-              favoriteCount: favoriteCount,
-              playlistCount: playlistCount,
-              followingCount: followingCount,
+      child: Stack(
+        children: [
+          SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.only(bottom: 120),
+            child: Column(
+              children: [
+                _ProfileHeader(
+                  userName: userName,
+                  userEmail: userEmail,
+                  favoriteCount: favoriteCount,
+                  playlistCount: playlistCount,
+                  followingCount: followingCount,
+                ),
+                const SizedBox(height: 8),
+                ..._kMenuItems.map((item) => _MenuItem(
+                      icon: item.$1,
+                      label: item.$2,
+                      onTap: () {
+                        if (item.$2 == 'Lịch sử bình luận' && userId != null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => CommentHistoryPage(userId: userId!),
+                            ),
+                          );
+                        }
+                      },
+                    )),
+                const SizedBox(height: 8),
+
+                // ── Nhạc của tôi ─────────────────────────────────────
+                _MyMusicSection(userId: userId),
+                const SizedBox(height: 8),
+
+                // ── Admin Panel button (only for admin/moderator) ───
+                _AdminSection(),
+                const SizedBox(height: 8),
+
+                _LogoutButton(onLogout: onLogout),
+              ],
             ),
-            const SizedBox(height: 8),
-            ..._kMenuItems.map((item) => _MenuItem(
-                  icon: item.$1,
-                  label: item.$2,
-                  onTap: () {
-                    // Xử lý điều hướng khi nhấn vào Lịch sử bình luận
-                    if (item.$2 == 'Lịch sử bình luận' && userId != null) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => CommentHistoryPage(userId: userId!),
-                        ),
-                      );
-                    }
-                  },
-                )),
-            const SizedBox(height: 8),
-            _LogoutButton(onLogout: onLogout),
-          ],
-        ),
+          ),
+
+          // ── FAB Upload ─────────────────────────────────────────────
+          Positioned(
+            bottom: 24,
+            right: 20,
+            child: FloatingActionButton.extended(
+              onPressed: () => showUploadMusicSheet(context),
+              backgroundColor: kAccent,
+              icon: const Icon(Icons.cloud_upload_rounded, color: Colors.white),
+              label: const Text('Upload nhạc',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -473,5 +508,369 @@ class _AuthButton extends StatelessWidget {
             )),
       ),
     );
+  }
+}
+
+// ── My Music Section ──────────────────────────────────────────────────────────
+
+class _MyMusicSection extends StatefulWidget {
+  final String? userId;
+  const _MyMusicSection({this.userId});
+
+  @override
+  State<_MyMusicSection> createState() => _MyMusicSectionState();
+}
+
+class _MyMusicSectionState extends State<_MyMusicSection> {
+  @override
+  void initState() {
+    super.initState();
+    // Load ngay khi widget hiển thị
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.userId != null) {
+        context.read<UserSongsCubit>().loadMySongs();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.userId == null) return const SizedBox.shrink();
+
+    return BlocBuilder<UserSongsCubit, List<UserSongModel>>(
+      builder: (context, songs) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header row
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 36, height: 36,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(colors: [kAccent, kAccentPink]),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.cloud_done_rounded, color: Colors.white, size: 18),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Nhạc của tôi',
+                            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800)),
+                          Text('${songs.length} bài đã upload',
+                            style: const TextStyle(color: kSubText, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                    // Refresh button
+                    IconButton(
+                      icon: const Icon(Icons.refresh_rounded, color: kSubText, size: 20),
+                      onPressed: () => context.read<UserSongsCubit>().loadMySongs(),
+                    ),
+                  ],
+                ),
+              ),
+
+              if (songs.isEmpty)
+                Container(
+                  margin: const EdgeInsets.only(top: 4, bottom: 8),
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.03),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.music_off_rounded, color: Colors.white.withValues(alpha: 0.2), size: 20),
+                      const SizedBox(width: 8),
+                      Text('Bạn chưa upload bài nào',
+                        style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 13)),
+                    ],
+                  ),
+                )
+              else
+                ...songs.map((song) => _UserSongTile(song: song)),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _UserSongTile extends StatelessWidget {
+  final UserSongModel song;
+  const _UserSongTile({required this.song});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        leading: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: song.artUrl != null
+              ? Image.network(song.artUrl!, width: 48, height: 48, fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => _placeholder())
+              : _placeholder(),
+        ),
+        title: Text(song.title,
+          style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+          maxLines: 1, overflow: TextOverflow.ellipsis),
+        subtitle: Row(
+          children: [
+            Text(song.artist,
+              style: const TextStyle(color: kSubText, fontSize: 11),
+              maxLines: 1, overflow: TextOverflow.ellipsis),
+            const SizedBox(width: 6),
+            _StatusBadge(status: song.status),
+          ],
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Phát nhạc (chỉ khi approved)
+            if (song.isApproved)
+              IconButton(
+                icon: const Icon(Icons.play_circle_rounded, color: kAccent, size: 28),
+                onPressed: () => _playUserSong(context, song),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
+              ),
+            // Menu 3 chấm
+            PopupMenuButton<String>(
+              icon: Icon(Icons.more_vert_rounded, color: Colors.white.withValues(alpha: 0.4), size: 20),
+              color: const Color(0xFF252530),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              itemBuilder: (_) => [
+                const PopupMenuItem(value: 'delete',
+                  child: Row(children: [
+                    Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 18),
+                    SizedBox(width: 10),
+                    Text('Xóa bài', style: TextStyle(color: Colors.redAccent, fontSize: 14)),
+                  ]),
+                ),
+              ],
+              onSelected: (value) async {
+                if (value == 'delete') {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      backgroundColor: const Color(0xFF252530),
+                      title: const Text('Xóa bài hát', style: TextStyle(color: Colors.white)),
+                      content: Text('Xóa "${song.title}" khỏi danh sách của bạn?',
+                        style: const TextStyle(color: kSubText)),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('Hủy', style: TextStyle(color: kSubText))),
+                        TextButton(onPressed: () => Navigator.pop(ctx, true),
+                          child: const Text('Xóa', style: TextStyle(color: Colors.redAccent))),
+                      ],
+                    ),
+                  );
+                  if (confirm == true && context.mounted) {
+                    try {
+                      await context.read<UserSongsCubit>().deleteSong(song);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Đã xóa "${song.title}"'),
+                            backgroundColor: Colors.redAccent,
+                            behavior: SnackBarBehavior.floating),
+                        );
+                      }
+                    } catch (_) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Xóa thất bại, thử lại sau'),
+                            backgroundColor: Colors.orange),
+                        );
+                      }
+                    }
+                  }
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _placeholder() => Container(
+    width: 48, height: 48,
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(colors: [kAccent, kAccentPink]),
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: const Icon(Icons.music_note_rounded, color: Colors.white54, size: 20),
+  );
+
+  void _playUserSong(BuildContext context, UserSongModel song) {
+    final item = song.toMediaItem();
+    context.read<PlayerBloc>().add(LoadPlaylistEvent(
+      [item],
+      startIndex: 0,
+    ));
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  final String status;
+  const _StatusBadge({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, color) = switch (status) {
+      'approved' => ('✓ Đã duyệt', Colors.greenAccent),
+      'rejected' => ('✗ Từ chối', Colors.redAccent),
+      _ => ('⏳ Chờ duyệt', Colors.orange),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 0.8),
+      ),
+      child: Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w600)),
+    );
+  }
+}
+
+// ── Admin Section Widget ───────────────────────────────────
+class _AdminSection extends StatelessWidget {
+  const _AdminSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<AdminCubit, AdminState>(
+      builder: (context, state) {
+        final supabase = Supabase.instance.client;
+        final uid = supabase.auth.currentUser?.id;
+        if (uid == null) return const SizedBox.shrink();
+
+        // Load role from profiles if not yet loaded
+        return FutureBuilder<String>(
+          future: _getRole(uid),
+          builder: (context, snap) {
+            final role = snap.data ?? '';
+            if (role != 'admin' && role != 'moderator') {
+              return const SizedBox.shrink();
+            }
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: InkWell(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => BlocProvider.value(
+                      value: context.read<AdminCubit>(),
+                      child: const AdminDashboardPage(),
+                    ),
+                  ),
+                ),
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        kAccent.withValues(alpha: 0.15),
+                        kAccentPink.withValues(alpha: 0.10),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: kAccent.withValues(alpha: 0.25)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [kAccent, kAccentPink],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.admin_panel_settings_rounded,
+                            color: Colors.white, size: 20),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Trang quản trị',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                              ),
+                            ),
+                            Text(
+                              role == 'admin' ? 'Admin • Toàn quyền' : 'Moderator • Kiểm duyệt nội dung',
+                              style: const TextStyle(
+                                  color: Colors.white54, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: kAccent.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          role.toUpperCase(),
+                          style: const TextStyle(
+                            color: kAccent,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.chevron_right_rounded,
+                          color: Colors.white38, size: 20),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<String> _getRole(String uid) async {
+    try {
+      final res = await Supabase.instance.client
+          .from('profiles')
+          .select('role')
+          .eq('id', uid)
+          .single();
+      return res['role'] as String? ?? 'user';
+    } catch (_) {
+      return 'user';
+    }
   }
 }
