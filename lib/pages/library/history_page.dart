@@ -7,6 +7,8 @@ import 'package:music_app/presentation/bloc/history/history_cubit.dart';
 import 'package:music_app/presentation/bloc/player/player_bloc.dart';
 import 'package:music_app/presentation/bloc/player/player_event.dart';
 import 'package:music_app/pages/player/player_page.dart';
+import 'package:music_app/presentation/bloc/download/download_cubit.dart';
+import 'package:music_app/presentation/bloc/favorite/favorite_cubit.dart';
 
 class HistoryPage extends StatelessWidget {
   const HistoryPage({super.key});
@@ -191,15 +193,91 @@ class HistoryPage extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 trailing: IconButton(
-                  icon: const Icon(Icons.remove_circle_outline_rounded,
-                      color: Colors.white38, size: 20),
-                  onPressed: () => _removeItem(context, item),
+                  icon: const Icon(Icons.more_vert_rounded, color: Colors.white38, size: 20),
+                  onPressed: () => _showSongOptions(context, item),
                 ),
                 onTap: () => _playSongs(context, history, index),
               );
             },
           );
         },
+      ),
+    );
+  }
+
+  void _showSongOptions(BuildContext context, MediaItem song) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1E1E28),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 4),
+              width: 36, height: 4,
+              decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+            ),
+            BlocBuilder<FavoriteCubit, List<String>>(
+              builder: (context, favorites) {
+                final isFav = favorites.contains(song.id);
+                return ListTile(
+                  leading: Icon(
+                    isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                    color: isFav ? const Color(0xFFE91E8C) : Colors.white70,
+                  ),
+                  title: Text(
+                    isFav ? 'Bỏ yêu thích' : 'Thêm vào yêu thích',
+                    style: TextStyle(color: isFav ? const Color(0xFFE91E8C) : Colors.white),
+                  ),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await context.read<FavoriteCubit>().toggleFavorite(song.id);
+                  },
+                );
+              },
+            ),
+            BlocBuilder<DownloadCubit, List<String>>(
+              builder: (context, downloads) {
+                final isDownloaded = downloads.contains(song.id);
+                return ListTile(
+                  leading: Icon(
+                    isDownloaded ? Icons.download_done_rounded : Icons.download_rounded,
+                    color: isDownloaded ? const Color(0xFF1DB954) : Colors.white70,
+                  ),
+                  title: Text(
+                    isDownloaded ? 'Đã tải' : 'Tải nhạc',
+                    style: TextStyle(
+                      color: isDownloaded ? const Color(0xFF1DB954) : Colors.white,
+                    ),
+                  ),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    try {
+                      await context.read<DownloadCubit>().toggleDownload(song);
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+                      }
+                    }
+                  },
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+              title: const Text('Xóa khỏi lịch sử', style: TextStyle(color: Colors.redAccent)),
+              onTap: () {
+                Navigator.pop(context);
+                _removeItem(context, song);
+              },
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
       ),
     );
   }

@@ -145,8 +145,8 @@ class _FeatureRow extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               gradient: LinearGradient(colors: [
-                const Color(0xFF7B1FA2).withValues(alpha: 0.25),
-                const Color(0xFF1565C0).withValues(alpha: 0.25),
+                kAccent.withValues(alpha: 0.25),
+                kAccentPink.withValues(alpha: 0.25),
               ]),
             ),
             child: Icon(icon, color: kAccent, size: 22),
@@ -247,11 +247,7 @@ class _ProfileHeader extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(28, 40, 28, 32),
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF2A0845), Color(0xFF121212)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
+        color: Colors.transparent,
       ),
       child: Column(
         children: [
@@ -261,7 +257,7 @@ class _ProfileHeader extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: const LinearGradient(
-                colors: [Color(0xFF7B1FA2), Color(0xFF1565C0)],
+                colors: [kAccent, kAccentPink],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -449,7 +445,7 @@ class _AuthButton extends StatelessWidget {
         decoration: isPrimary
             ? BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF7B1FA2), Color(0xFF1565C0)],
+                  colors: [kAccent, kAccentPink],
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                 ),

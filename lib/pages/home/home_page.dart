@@ -11,16 +11,15 @@ import 'tabs/chart_tab.dart';
 import 'tabs/profile_tab.dart';
 import '../library/library_page.dart';
 import 'package:music_app/services/supabase_auth_service.dart';
-import 'package:music_app/services/music_player_service.dart';
 import 'package:music_app/core/di/service_locator.dart';
 import 'package:music_app/presentation/bloc/player/player_bloc.dart';
 import 'package:music_app/presentation/bloc/player/player_event.dart';
 import '../../presentation/bloc/category/category_cubit.dart';
-import 'package:music_app/presentation/bloc/history/history_cubit.dart';
 
-const kBg = Color(0xFF121212);
-const kCard = Color(0xFF1C1C1E);
-const kAccent = Colors.deepPurpleAccent;
+const kBg = Color(0xFF0D0D1A);
+const kCard = Color(0xFF161626);
+const kAccent = Color(0xFF9333EA);
+const kAccentPink = Color(0xFFEC4899);
 const kSubText = Color(0xFF9E9E9E);
 
 class HomePage extends StatefulWidget {
@@ -77,6 +76,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _onLogout() async {
     final authService = SupabaseAuthService();
     await authService.signOut();
+    if (!mounted) return;
     context.read<PlayerBloc>().add(const ResetPlayerEvent());
     setState(() {});
   }
@@ -114,8 +114,20 @@ class _HomePageState extends State<HomePage> {
           create: (context) => getIt<CategoryCubit>(),
         ),
       ],
-      child: Scaffold(
-        backgroundColor: kBg,
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF1A0533),
+              Color(0xFF0D0D1A),
+            ],
+            stops: [0.0, 0.4],
+          ),
+        ),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
         extendBody: true,
         appBar: (_currentNavIndex == 1 || _currentNavIndex == 3) ? null : _buildAppBar(),
         body: AnimatedSwitcher(
@@ -127,6 +139,7 @@ class _HomePageState extends State<HomePage> {
         ),
         bottomSheet: const MiniPlayerBar(),
         bottomNavigationBar: _buildBottomNavBar(),
+        ),
       ),
     );
   }
@@ -163,7 +176,7 @@ class _HomePageState extends State<HomePage> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF7B1FA2), Color(0xFF1976D2)],
+                  colors: [kAccent, kAccentPink],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -221,48 +234,14 @@ class _HomePageState extends State<HomePage> {
     return BottomNavigationBar(
       currentIndex: _currentNavIndex,
       onTap: (i) => setState(() => _currentNavIndex = i),
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: const Color(0xFF0D0D1A),
+      elevation: 8,
       type: BottomNavigationBarType.fixed,
       selectedItemColor: kAccent,
       unselectedItemColor: kSubText,
       selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 11),
       unselectedLabelStyle: const TextStyle(fontSize: 11),
       items: items,
-    );
-  }
-}
-
-class _PlaceholderTab extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  const _PlaceholderTab({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 64, color: Colors.white.withValues(alpha: 0.12)),
-          const SizedBox(height: 16),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.3),
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Tính năng đang phát triển',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.15),
-              fontSize: 13,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

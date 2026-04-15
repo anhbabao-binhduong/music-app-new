@@ -7,6 +7,8 @@ import '../../data/local_music_data.dart';
 import '../../presentation/bloc/player/player_bloc.dart';
 import '../../presentation/bloc/player/player_event.dart';
 import '../../presentation/bloc/playlist/playlist_cubit.dart';
+import '../../presentation/bloc/favorite/favorite_cubit.dart';
+import '../../presentation/bloc/download/download_cubit.dart';
 import '../player/player_page.dart';
 
 class PlaylistDetailPage extends StatelessWidget {
@@ -152,28 +154,9 @@ class PlaylistDetailPage extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               IconButton(
-                                icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
+                                icon: const Icon(Icons.more_vert_rounded, color: Colors.white54, size: 20),
                                 onPressed: () {
-                                  showDialog(
-                                    context: context,
-                                    builder: (ctx) => AlertDialog(
-                                      backgroundColor: const Color(0xFF2A2A2E),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                      title: const Text("Xóa bài hát?", style: TextStyle(color: Colors.white)),
-                                      content: const Text("Bạn có chắc chắn muốn xóa bài hát này khỏi danh sách phát không?", style: TextStyle(color: Colors.grey)),
-                                      actions: [
-                                        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Hủy", style: TextStyle(color: Colors.grey))),
-                                        ElevatedButton(
-                                          style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-                                          onPressed: () {
-                                            context.read<PlaylistCubit>().removeSongFromPlaylist(playlistId, songId);
-                                            Navigator.pop(ctx); // Đóng dialog
-                                          },
-                                          child: const Text("Xóa", style: TextStyle(color: Colors.white)),
-                                        ),
-                                      ],
-                                    ),
-                                  );
+                                  _showSongOptions(context, song!, playlistId);
                                 },
                               ),
                               const Icon(Icons.drag_handle_rounded, color: Colors.white24),
@@ -244,6 +227,130 @@ class PlaylistDetailPage extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+
+  void _showSongOptions(BuildContext context, MediaItem song, String pId) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1E1E28),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 4),
+              width: 36, height: 4,
+              decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+            ),
+            _OptionTile(
+              icon: Icons.play_arrow_rounded,
+              label: 'Phát ngay',
+              onTap: () {
+                Navigator.pop(context);
+                context.read<PlayerBloc>().add(LoadPlaylistEvent([song], startIndex: 0));
+              },
+            ),
+            BlocBuilder<FavoriteCubit, List<String>>(
+              builder: (context, favorites) {
+                final isFav = favorites.contains(song.id);
+                return _OptionTile(
+                  icon: isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                  iconColor: isFav ? const Color(0xFFE91E8C) : Colors.white70,
+                  label: isFav ? 'Bỏ yêu thích' : 'Thêm vào yêu thích',
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await context.read<FavoriteCubit>().toggleFavorite(song.id);
+                  },
+                );
+              },
+            ),
+            BlocBuilder<DownloadCubit, List<String>>(
+              builder: (context, downloads) {
+                final isDownloaded = downloads.contains(song.id);
+                return _OptionTile(
+                  icon: isDownloaded ? Icons.download_done_rounded : Icons.download_rounded,
+                  iconColor: isDownloaded ? const Color(0xFF1DB954) : Colors.white70,
+                  label: isDownloaded ? 'Đã tải' : 'Tải nhạc',
+                  textColor: isDownloaded ? const Color(0xFF1DB954) : Colors.white,
+                  onTap: () async {
+                    Navigator.pop(context);
+                    try {
+                      await context.read<DownloadCubit>().toggleDownload(song);
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+                      }
+                    }
+                  },
+                );
+              },
+            ),
+            _OptionTile(
+              icon: Icons.delete_outline_rounded,
+              iconColor: Colors.redAccent,
+              label: 'Xóa khỏi playlist',
+              textColor: Colors.redAccent,
+              onTap: () {
+                Navigator.pop(context);
+                _showRemoveConfirm(context, song.id, pId);
+              },
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showRemoveConfirm(BuildContext context, String sId, String pId) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF2A2A2E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text("Xóa bài hát?", style: TextStyle(color: Colors.white)),
+        content: const Text("Bạn có chắc chắn muốn xóa bài hát này khỏi danh sách phát không?", style: TextStyle(color: Colors.grey)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Hủy", style: TextStyle(color: Colors.grey))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () {
+              context.read<PlaylistCubit>().removeSongFromPlaylist(pId, sId);
+              Navigator.pop(ctx);
+            },
+            child: const Text("Xóa", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OptionTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final Color? iconColor;
+  final Color? textColor;
+
+  const _OptionTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.iconColor,
+    this.textColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(icon, color: iconColor ?? Colors.white70),
+      title: Text(label, style: TextStyle(color: textColor ?? Colors.white, fontSize: 15)),
+      onTap: onTap,
     );
   }
 }

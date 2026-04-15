@@ -14,10 +14,10 @@ import 'package:music_app/presentation/bloc/player/player_bloc.dart';
 import 'package:music_app/presentation/bloc/player/player_event.dart';
 
 // ── Design tokens ─────────────────────────────────────────────────────
-const _kBg = Color(0xFF0D0D0D);
-const _kCard = Color(0xFF161618);
+const _kBg = Colors.transparent;
+const _kCard = Color(0xFF161626);
 const _kDivider = Color(0xFF2A2A2E);
-const _kAccentGlow = Color(0xFFAB47BC);
+const _kAccentGlow = Color(0xFFEC4899);
 
 // Line colors for top 3 songs
 const _kLine1 = Color(0xFF4A90E2); // Blue
@@ -156,7 +156,7 @@ class _ChartViewState extends State<_ChartView> with SingleTickerProviderStateMi
         duration: const Duration(milliseconds: 250), curve: Curves.easeInOut,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
         decoration: BoxDecoration(
-          gradient: on ? const LinearGradient(colors: [Color(0xFFAB47BC), Color(0xFF7B1FA2)]) : null,
+          gradient: on ? const LinearGradient(colors: [Color(0xFF9333EA), Color(0xFFEC4899)]) : null,
           borderRadius: BorderRadius.circular(24),
           border: on ? null : Border.all(color: Colors.white.withValues(alpha: 0.15)),
         ),
@@ -438,9 +438,19 @@ class _ChartViewState extends State<_ChartView> with SingleTickerProviderStateMi
   ));
 
   Widget _rankList(ChartLoaded state) {
-    if (state.topSongs.isEmpty) return SliverToBoxAdapter(child: Padding(
-      padding: const EdgeInsets.all(32), child: Center(child: Text(
-        'Không có dữ liệu', style: TextStyle(color: Colors.white.withValues(alpha: 0.3))))));
+    if (state.topSongs.isEmpty) {
+      return SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Center(
+            child: Text(
+              'Không có dữ liệu',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+            ),
+          ),
+        ),
+      );
+    }
 
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 16),

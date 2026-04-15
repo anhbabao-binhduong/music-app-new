@@ -1,11 +1,7 @@
-import 'dart:async';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:share_plus/share_plus.dart';
 import '../../../../data/local_music_data.dart';
-import '../../../../widgets/auth_guard.dart';
-import '../home_page.dart';
 import '../widgets/banner_carousel.dart';
 import '../widgets/chart_tile.dart';
 import '../widgets/see_all_page.dart';
@@ -14,19 +10,15 @@ import '../../../../presentation/bloc/category/category_cubit.dart';
 import '../../../../presentation/bloc/category/category_state.dart';
 import '../../../../widgets/category_chip_row.dart';
 import '../../../../domain/entities/song_entity.dart';
+import '../../../../domain/entities/album_entity.dart';
 import '../../../../services/music_player_service.dart';
 import '../../../../core/di/service_locator.dart';
-import '../../../../presentation/bloc/download/download_cubit.dart';
-import '../../../../presentation/bloc/playlist/playlist_cubit.dart';
-import '../../../../data/models/playlist_model.dart';
-import '../../../../presentation/bloc/favorite/favorite_cubit.dart';
-import '../../../../presentation/bloc/player/player_bloc.dart';
-import '../../../../presentation/bloc/player/player_event.dart';
 
 import '../widgets/album_card.dart';
 import '../../library/album_detail_page.dart';
 import '../../../../presentation/bloc/album/album_cubit.dart';
 import '../../../../presentation/bloc/album/album_state.dart';
+
 
 class ExploreTab extends StatefulWidget {
   final bool isLoggedIn;
@@ -37,39 +29,23 @@ class ExploreTab extends StatefulWidget {
 }
 
 class _ExploreTabState extends State<ExploreTab> {
-  int _bannerIndex = 0;
-  late final PageController _pageController;
-  Timer? _bannerTimer;
-
   int _chartPage = 1;
-  final Map<String, int> _categoryPageMap = {};
 
-  final List<BannerData> _banners = const [
-    BannerData(gradient: [Color(0xFF6A1B9A), Color(0xFF1565C0)], label: 'Nhạc Hot Tháng 5',  sub: 'Cập nhật mỗi ngày'),
-    BannerData(gradient: [Color(0xFF00897B), Color(0xFF1B5E20)], label: 'V-Pop Trending',     sub: 'Bảng xếp hạng mới nhất'),
-    BannerData(gradient: [Color(0xFFB71C1C), Color(0xFF4A148C)], label: 'Top Hits 2024',      sub: 'Những bài hát đình đám'),
-  ];
+  final BannerData _banner = const BannerData(
+    imageUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=800&q=80',
+    gradient: [Color(0xFF7C3AED), Color(0xFF4F46E5)], 
+    label: 'Nhạc Hot Tháng 5',  
+    sub: 'Tuyển tập những bài hát sôi động nhất',
+  );
 
   @override
   void initState() {
     super.initState();
     context.read<CategoryCubit>().loadAll();
-    _pageController = PageController(viewportFraction: 0.88);
-    _bannerTimer = Timer.periodic(const Duration(seconds: 4), (_) {
-      if (!mounted) return;
-      final next = (_bannerIndex + 1) % _banners.length;
-      _pageController.animateToPage(
-        next,
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
-      );
-    });
   }
 
   @override
   void dispose() {
-    _bannerTimer?.cancel();
-    _pageController.dispose();
     super.dispose();
   }
 
@@ -142,7 +118,6 @@ class _ExploreTabState extends State<ExploreTab> {
     });
   }
 
-  /// Chuyển SongEntity → MediaItem để dùng chung với bottom sheet
   MediaItem _songEntityToMediaItem(SongEntity s) {
     return MediaItem(
       id:       s.id,
@@ -155,19 +130,26 @@ class _ExploreTabState extends State<ExploreTab> {
     );
   }
 
-  Widget _buildCategoryHeader(String title, VoidCallback onSeeAll) {
+  Widget _buildSectionHeader(String title, VoidCallback onSeeAll) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(title,
+          Flexible(
+            child: Text(
+              title,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.3,
-              )),
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 12),
           SeeAllButton(onTap: onSeeAll),
         ],
       ),
@@ -177,7 +159,7 @@ class _ExploreTabState extends State<ExploreTab> {
   Widget _buildPaginationRow(int currentPage, int totalPages, Function(int) onPageChanged) {
     if (totalPages <= 1) return const SizedBox.shrink();
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.symmetric(vertical: 24),
       alignment: Alignment.center,
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -186,27 +168,10 @@ class _ExploreTabState extends State<ExploreTab> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(totalPages, (index) {
             final page = index + 1;
-            final isSelected = page == currentPage;
-            return GestureDetector(
+            return _PaginationButton(
+              page: page,
+              isSelected: page == currentPage,
               onTap: () => onPageChanged(page),
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                width: 32,
-                height: 32,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: isSelected ? Colors.white : Colors.transparent,
-                  border: Border.all(color: Colors.white, width: isSelected ? 0 : 1),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Text(
-                  '$page',
-                  style: TextStyle(
-                    color: isSelected ? Colors.black : Colors.white,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  ),
-                ),
-              ),
             );
           }),
         ),
@@ -216,777 +181,348 @@ class _ExploreTabState extends State<ExploreTab> {
 
   @override
   Widget build(BuildContext context) {
-    return CustomScrollView(
-      physics: const BouncingScrollPhysics(),
-      slivers: [
-        const SliverToBoxAdapter(child: SizedBox(height: 16)),
+    return Container(
+      color: Colors.transparent,
+      child: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          const SliverToBoxAdapter(child: SizedBox(height: 16)),
 
-        SliverToBoxAdapter(
-          child: BannerCarousel(
-            banners: _banners,
-            controller: _pageController,
-            currentIndex: _bannerIndex,
-            onPageChanged: (i) => setState(() => _bannerIndex = i),
+          // Hero Banner
+          SliverToBoxAdapter(
+            child: HeroBanner(data: _banner),
           ),
-        ),
-        const SliverToBoxAdapter(child: SizedBox(height: 32)),
+          const SliverToBoxAdapter(child: SizedBox(height: 32)),
 
-        SliverToBoxAdapter(
-          child: BlocProvider(
-            create: (_) => getIt<AlbumCubit>()..loadAlbums(),
-            child: BlocBuilder<AlbumCubit, AlbumState>(
-              builder: (context, state) {
-                if (state is AlbumLoading) {
-                  return const SizedBox(
-                    height: 190,
-                    child: Center(child: CircularProgressIndicator(color: Colors.greenAccent)),
-                  );
-                }
-                if (state is AlbumLoaded && state.albums.isNotEmpty) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'Albums',
-                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: -0.3),
-                            ),
-                            TextButton(
-                              onPressed: () {/* TODO: Navigate to all albums */},
-                              child: const Text('Xem tất cả', style: TextStyle(color: Colors.grey)),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      SizedBox(
-                        height: 190,
-                        child: ListView.builder(
-                          physics: const BouncingScrollPhysics(),
-                          scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: state.albums.length,
-                          itemBuilder: (context, index) {
-                            final album = state.albums[index];
-                            return AlbumCard(
-                              album: album,
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => AlbumDetailPage(album: album),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                    ],
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-          ),
-        ),
-
-        SliverToBoxAdapter(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildCategoryHeader('Gợi ý cho bạn', () =>
-                Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => const SeeAllPage(title: 'Gợi ý cho bạn'),
-                )),
-              ),
-              const SizedBox(height: 14),
-              SizedBox(
-                height: 210,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: localPlaylist.length.clamp(0, 10),
-                  itemBuilder: (ctx, i) => HorizontalSongCard(
-                    item: localPlaylist[i],
-                    onTap: () => _playSongFromMediaItems(localPlaylist, i),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SliverToBoxAdapter(child: SizedBox(height: 32)),
-
-        ...(() {
-          final totalItems = localPlaylist.length;
-          final totalPages = (totalItems / 8).ceil();
-          final startIdx = (_chartPage - 1) * 8;
-          final pageItems = localPlaylist.skip(startIdx).take(8).toList();
-
-          return [
-            SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildCategoryHeader('Bảng xếp hạng', () =>
-                    Navigator.of(context).push(MaterialPageRoute(
-                      builder: (_) => const SeeAllPage(title: 'Bảng xếp hạng'),
-                    )),
-                  ),
-                  const SizedBox(height: 14),
-                ],
-              ),
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (ctx, i) {
-                    final isFirst = i == 0;
-                    return Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (!isFirst)
-                          Divider(color: Colors.white.withValues(alpha: 0.06), height: 1, indent: 72),
-                        ChartTile(
-                          item: pageItems[i],
-                          rank: startIdx + i + 1,
-                          onTap: () => _playSongFromMediaItems(localPlaylist, startIdx + i),
-                        ),
-                      ],
+          // Album Section
+          SliverToBoxAdapter(
+            child: BlocProvider(
+              create: (_) => getIt<AlbumCubit>()..loadAlbums(),
+              child: BlocBuilder<AlbumCubit, AlbumState>(
+                builder: (context, state) {
+                  if (state is AlbumLoading) {
+                    return const SizedBox(
+                      height: 240,
+                      child: Center(child: CircularProgressIndicator(color: Color(0xFF7C3AED))),
                     );
-                  },
-                  childCount: pageItems.length,
-                ),
+                  }
+                  if (state is AlbumLoaded && state.albums.isNotEmpty) {
+                    return _buildAlbumSection(context, state.albums);
+                  }
+                  return const SizedBox.shrink();
+                },
               ),
             ),
-            SliverToBoxAdapter(
-              child: _buildPaginationRow(_chartPage, totalPages, (page) {
-                setState(() => _chartPage = page);
-              }),
-            ),
-          ];
-        })(),
-        const SliverToBoxAdapter(child: SizedBox(height: 32)),
+          ),
 
-        const SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
-            child: Text('Khám phá theo tâm trạng',
+          // Suggestions Section
+          SliverToBoxAdapter(
+            child: _buildSuggestionsSection(context),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 32)),
+
+          // Chart Section
+          SliverToBoxAdapter(
+            child: _buildChartSection(context),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 32)),
+
+          // Mood Section Header
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'Khám phá theo tâm trạng',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.3,
-                )),
-          ),
-        ),
-        const SliverToBoxAdapter(child: SizedBox(height: 12)),
-
-        SliverToBoxAdapter(
-          child: Container(
-            height: 48,
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            child: BlocBuilder<CategoryCubit, CategoryState>(
-              builder: (context, state) {
-                if (state is CategoryLoaded) {
-                  return CategoryChipRow(
-                    categories: state.categories,
-                    selectedSlug: state.selectedSlug,
-                    onTap: (slug) =>
-                        context.read<CategoryCubit>().selectCategory(slug),
-                  );
-                }
-                return const _CategoryChipSkeleton();
-              },
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
+                ),
+              ),
             ),
           ),
-        ),
-        const SliverToBoxAdapter(child: SizedBox(height: 16)),
+          const SliverToBoxAdapter(child: SizedBox(height: 16)),
 
-        BlocBuilder<CategoryCubit, CategoryState>(
-          builder: (context, state) {
-            if (state is CategoryLoading) {
-              return const SliverToBoxAdapter(
-                child: Center(child: Padding(
-                  padding: EdgeInsets.all(32),
-                  child: CircularProgressIndicator(),
-                )),
-              );
-            }
-            if (state is CategoryError) {
-              return SliverToBoxAdapter(
-                child: Center(child: Padding(
-                  padding: const EdgeInsets.all(32),
-                  child: Text(state.message,
-                      style: const TextStyle(color: Colors.grey),
-                      textAlign: TextAlign.center),
-                )),
-              );
-            }
-            if (state is CategoryLoaded) {
-              if (state.songs.isEmpty) {
+          // Mood Chips
+          SliverToBoxAdapter(
+            child: Container(
+              height: 48,
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              child: BlocBuilder<CategoryCubit, CategoryState>(
+                builder: (context, state) {
+                  if (state is CategoryLoaded) {
+                    return CategoryChipRow(
+                      categories: state.categories,
+                      selectedSlug: state.selectedSlug,
+                      onTap: (slug) =>
+                          context.read<CategoryCubit>().selectCategory(slug),
+                    );
+                  }
+                  return const _CategoryChipSkeleton();
+                },
+              ),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 16)),
+
+          // Category Content
+          BlocBuilder<CategoryCubit, CategoryState>(
+            builder: (context, state) {
+              if (state is CategoryLoading) {
                 return const SliverToBoxAdapter(
                   child: Center(child: Padding(
                     padding: EdgeInsets.all(32),
-                    child: Text('Chưa có bài hát trong danh mục này',
-                        style: TextStyle(color: Colors.grey)),
+                    child: CircularProgressIndicator(color: Color(0xFF7C3AED)),
                   )),
                 );
               }
-
-              final slug = state.selectedSlug ?? '';
-              final totalItems = state.songs.length;
-              final totalPages = (totalItems / 8).ceil();
-              final currentPage = _categoryPageMap[slug] ?? 1;
-              final startIdx = (currentPage - 1) * 8;
-              final pageItems = state.songs.skip(startIdx).take(8).toList();
-
-              return SliverMainAxisGroup(
-                slivers: [
-                  SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (ctx, i) => _SongTile(
-                        song: pageItems[i],
-                        mediaItem: _songEntityToMediaItem(pageItems[i]),
-                        onTap: () => _playSongFromCategory(state.songs, startIdx + i),
+                  if (state is CategoryLoaded) {
+                final songs = state.songs;
+                if (songs.isEmpty) {
+                  return const SliverToBoxAdapter(
+                    child: Center(child: Padding(
+                      padding: EdgeInsets.all(32),
+                      child: Text(
+                        'Không có bài hát nào',
+                        style: TextStyle(color: Colors.white54),
                       ),
-                      childCount: pageItems.length,
-                    ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: _buildPaginationRow(currentPage, totalPages, (page) {
-                      setState(() => _categoryPageMap[slug] = page);
-                    }),
-                  ),
-                ],
-              );
-            }
-            return const SliverToBoxAdapter(child: SizedBox.shrink());
-          },
-        ),
-
-        const SliverToBoxAdapter(child: SizedBox(height: 160)),
-      ],
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// _SongTile – có nút 3 chấm với đầy đủ chức năng như ChartTile
-// ---------------------------------------------------------------------------
-
-class _SongTile extends StatelessWidget {
-  final SongEntity song;
-  final MediaItem mediaItem;
-  final VoidCallback onTap;
-
-  const _SongTile({
-    required this.song,
-    required this.mediaItem,
-    required this.onTap,
-  });
-
-  // ── Snack bar helper ──────────────────────────────────────────────────────
-  void _showSnackBar(BuildContext context, String message,
-      {bool isError = false}) {
-    ScaffoldMessenger.of(context).removeCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: Duration(milliseconds: isError ? 2000 : 1500),
-        backgroundColor: isError ? Colors.redAccent : Colors.green,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  // ── Playlist selection bottom sheet ──────────────────────────────────────
-  void _showPlaylistSelection(BuildContext context) {
-    final songId = mediaItem.id;
-    final controller = TextEditingController();
-
-    void showCreateDialog() {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: const Color(0xFF2A2A2E),
-          title: const Text('Tạo danh sách phát',
-              style: TextStyle(color: Colors.white)),
-          content: TextField(
-            controller: controller,
-            style: const TextStyle(color: Colors.white),
-            decoration: const InputDecoration(
-              hintText: 'Nhập tên playlist...',
-              hintStyle: TextStyle(color: Colors.grey),
-              enabledBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: Colors.grey),
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Hủy', style: TextStyle(color: Colors.grey)),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final name = controller.text.trim();
-                if (name.isEmpty) return;
-                Navigator.pop(ctx);
-                final result = await context
-                    .read<PlaylistCubit>()
-                    .createPlaylistAndAddSong(name, songId);
-                if (result == null) {
-                  _showSnackBar(context, 'Đã tạo playlist "$name"');
-                } else {
-                  _showSnackBar(context, result, isError: true);
+                    )),
+                  );
                 }
-              },
-              child: const Text('Tạo'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF1E1E1E),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (bottomSheetContext) => SafeArea(
-        child: BlocBuilder<PlaylistCubit, PlaylistState>(
-          builder: (context, state) {
-            final playlists = state is PlaylistLoaded
-                ? state.playlists
-                : <PlaylistModel>[];
-
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text(
-                    'Thêm vào danh sách phát',
-                    style: TextStyle(color: Colors.white, fontSize: 18),
-                  ),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.add, color: Colors.white),
-                  title: const Text('Tạo danh sách phát mới',
-                      style: TextStyle(color: Colors.white)),
-                  onTap: () {
-                    Navigator.pop(bottomSheetContext);
-                    Future.microtask(() => showCreateDialog());
-                  },
-                ),
-                const Divider(color: Colors.white12),
-                if (playlists.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Text('Chưa có playlist nào',
-                        style: TextStyle(color: Colors.grey)),
-                  )
-                else
-                  Flexible(
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: playlists.length,
-                      itemBuilder: (context, index) {
-                        final p = playlists[index];
-                        final isAdded = p.songIds.contains(songId);
-                        return ListTile(
-                          leading: Icon(
-                            isAdded ? Icons.check_circle : Icons.playlist_play,
-                            color: isAdded ? Colors.greenAccent : Colors.white70,
-                          ),
-                          title: Text(p.name,
-                              style: const TextStyle(color: Colors.white)),
-                          trailing: isAdded
-                              ? const Text('Đã thêm',
-                                  style: TextStyle(color: Colors.greenAccent))
-                              : null,
-                          onTap: () async {
-                            if (isAdded) {
-                              _showSnackBar(context, 'Bài hát đã có trong playlist');
-                              Navigator.pop(context);
-                              return;
-                            }
-                            final result = await context
-                                .read<PlaylistCubit>()
-                                .addSongToPlaylist(p.id, songId);
-                            if (!context.mounted) return;
-                            Navigator.pop(context);
-                            if (result == null) {
-                              _showSnackBar(context, 'Đã thêm vào "${p.name}"');
-                            } else {
-                              _showSnackBar(context, result, isError: true);
-                            }
-                          },
+                return SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (ctx, i) {
+                        final song = songs[i];
+                        return CompactSongTile(
+                          item: _songEntityToMediaItem(song),
+                          onTap: () => _playSongFromCategory(songs, i),
+                          rank: i + 1,
                         );
                       },
+                      childCount: songs.length.clamp(0, 20),
                     ),
                   ),
-                const SizedBox(height: 12),
-              ],
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  // ── Song info dialog ──────────────────────────────────────────────────────
-  void _showSongInfoDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF2A2A2E),
-        title: Row(
-          children: const [
-            Icon(Icons.info_outline, color: Colors.white),
-            SizedBox(width: 8),
-            Text('Thông tin bài hát', style: TextStyle(color: Colors.white)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _infoRow('Tên bài hát', mediaItem.title),
-            const SizedBox(height: 8),
-            _infoRow('Nghệ sĩ', mediaItem.artist ?? 'Không rõ'),
-            const SizedBox(height: 8),
-            _infoRow('Album', mediaItem.album ?? 'Không rõ'),
-            const SizedBox(height: 8),
-            _infoRow('Thời lượng', _formatDuration(mediaItem.duration ?? Duration.zero)),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Đóng', style: TextStyle(color: Colors.grey)),
+                );
+              }
+              return const SliverToBoxAdapter(child: SizedBox.shrink());
+            },
           ),
+          const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
     );
   }
 
-  Widget _infoRow(String label, String value) {
-    return Row(
+  Widget _buildAlbumSection(BuildContext context, List<AlbumEntity> albums) {
+    // Chỉ lấy đúng 5 item, ẩn phần còn lại
+    final displayAlbums = albums.take(5).toList();
+
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 80,
-          child: Text(label,
-              style: const TextStyle(color: Colors.grey, fontSize: 13)),
-        ),
-        Expanded(
-          child: Text(value,
-              style: const TextStyle(color: Colors.white, fontSize: 13)),
+        _buildSectionHeader('Album mới phát hành', () {
+          Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => SeeAllPage(
+              title: 'Album mới phát hành',
+              type: SeeAllType.albums,
+            ),
+          ));
+        }),
+        const SizedBox(height: 20),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            const hPadding = 16.0;
+            const gapCount = 4; // khoảng cách giữa 5 item
+            const gap = 12.0;
+            final totalWidth = constraints.maxWidth - hPadding * 2;
+            final itemWidth = (totalWidth - gap * gapCount) / 5;
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: hPadding),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: List.generate(displayAlbums.length, (index) {
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: itemWidth,
+                        child: AlbumCard(
+                          album: displayAlbums[index],
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  AlbumDetailPage(album: displayAlbums[index]),
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (index < displayAlbums.length - 1)
+                        const SizedBox(width: gap),
+                    ],
+                  );
+                }),
+              ),
+            );
+          },
         ),
       ],
     );
   }
 
-  String _formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    final minutes = twoDigits(duration.inMinutes.remainder(60));
-    final seconds = twoDigits(duration.inSeconds.remainder(60));
-    return '$minutes:$seconds';
-  }
+  Widget _buildSuggestionsSection(BuildContext context) {
+    // Chỉ lấy đúng 5 item, ẩn phần còn lại
+    final displayItems = localPlaylist.take(5).toList();
 
-  // ── Report dialog ─────────────────────────────────────────────────────────
-  void _showReportDialog(BuildContext context) {
-    const reasons = [
-      'Nội dung không phù hợp',
-      'Bản quyền',
-      'Thông tin sai lệch',
-      'Chất lượng âm thanh kém',
-      'Lý do khác',
-    ];
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF2A2A2E),
-        title: const Text('Báo cáo bài hát',
-            style: TextStyle(color: Colors.white)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: reasons
-              .map((reason) => ListTile(
-                    title: Text(reason,
-                        style: const TextStyle(color: Colors.white)),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      _showSnackBar(
-                          context, 'Cảm ơn bạn đã báo cáo. Chúng tôi sẽ xem xét.');
-                    },
-                  ))
-              .toList(),
-        ),
-      ),
-    );
-  }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader('Gợi ý cho bạn', () {
+          Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => SeeAllPage(title: 'Gợi ý cho bạn'),
+          ));
+        }),
+        const SizedBox(height: 20),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            const hPadding = 16.0;
+            const gapCount = 4;
+            const gap = 12.0;
+            final totalWidth = constraints.maxWidth - hPadding * 2;
+            final itemWidth = (totalWidth - gap * gapCount) / 5;
 
-  // ── Main options bottom sheet ─────────────────────────────────────────────
-  void _showOptionsBottomSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF1E1E1E),
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: BlocBuilder<FavoriteCubit, List<String>>(
-          builder: (_, favState) {
-            final isFavorite = favState.contains(mediaItem.id);
-            return BlocBuilder<DownloadCubit, List<String>>(
-              builder: (_, downState) {
-                final isDownloaded = downState.contains(mediaItem.id);
-                return SingleChildScrollView(
-                  child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: 8),
-                    // ── Song header preview ──────────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      child: Row(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: song.artUrl != null
-                                ? Image.network(song.artUrl!,
-                                    width: 48,
-                                    height: 48,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) =>
-                                        _placeholderIcon())
-                                : _placeholderIcon(),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(song.title,
-                                    style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w600),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis),
-                                Text(song.artist,
-                                    style: const TextStyle(
-                                        color: Colors.white54, fontSize: 13),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis),
-                              ],
-                            ),
-                          ),
-                        ],
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: hPadding),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: List.generate(displayItems.length, (i) {
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: itemWidth,
+                        child: HorizontalSongCard(
+                          width: itemWidth,
+                          item: displayItems[i],
+                          onTap: () => _playSongFromMediaItems(localPlaylist, i),
+                        ),
                       ),
-                    ),
-                    const Divider(color: Colors.white12, height: 1),
-                    const SizedBox(height: 4),
-                    // ── Actions ──────────────────────────────────────────
-                    _MenuActionTile(
-                      icon: Icons.playlist_play,
-                      title: 'Phát tiếp theo',
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        context.read<PlayerBloc>().add(PlayNextEvent(mediaItem));
-                        _showSnackBar(
-                            context, 'Đã thêm "${mediaItem.title}" vào hàng chờ');
-                      },
-                    ),
-                    _MenuActionTile(
-                      icon: Icons.queue_music,
-                      title: 'Thêm vào playlist',
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        _showPlaylistSelection(context);
-                      },
-                    ),
-                    _MenuActionTile(
-                      icon: isFavorite ? Icons.favorite : Icons.favorite_border,
-                      title: isFavorite ? 'Bỏ yêu thích' : 'Yêu thích',
-                      iconColor: isFavorite ? Colors.redAccent : null,
-                      onTap: () async {
-                        Navigator.pop(ctx);
-                        try {
-                          await context
-                              .read<FavoriteCubit>()
-                              .toggleFavorite(mediaItem.id);
-                          _showSnackBar(
-                              context,
-                              isFavorite
-                                  ? 'Đã xóa khỏi yêu thích'
-                                  : 'Đã thêm vào yêu thích');
-                        } catch (e) {
-                          _showSnackBar(context, e.toString(), isError: true);
-                        }
-                      },
-                    ),
-                    _MenuActionTile(
-                      icon: isDownloaded ? Icons.download_done : Icons.download,
-                      title: isDownloaded ? 'Đã tải' : 'Tải nhạc',
-                      iconColor: isDownloaded ? Colors.greenAccent : null,
-                      onTap: () async {
-                        Navigator.pop(ctx);
-                        if (isDownloaded) {
-                          _showSnackBar(context, 'Bài hát đã được tải');
-                        } else {
-                          try {
-                            await context
-                                .read<DownloadCubit>()
-                                .toggleDownload(mediaItem);
-                            _showSnackBar(context, 'Đã tải xuống thành công');
-                          } catch (e) {
-                            _showSnackBar(context, e.toString(), isError: true);
-                          }
-                        }
-                      },
-                    ),
-                    _MenuActionTile(
-                      icon: Icons.share,
-                      title: 'Chia sẻ',
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        Share.share(
-                          'Nghe bài hát "${mediaItem.title}" - ${mediaItem.artist} trên Music App',
-                          subject: 'Chia sẻ bài hát',
-                        );
-                      },
-                    ),
-                    _MenuActionTile(
-                      icon: Icons.info_outline,
-                      title: 'Thông tin bài hát',
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        _showSongInfoDialog(context);
-                      },
-                    ),
-                    _MenuActionTile(
-                      icon: Icons.flag,
-                      title: 'Báo cáo',
-                      iconColor: Colors.redAccent,
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        _showReportDialog(context);
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                  ), // Column
-                ); // SingleChildScrollView
-              },
+                      if (i < displayItems.length - 1)
+                        const SizedBox(width: gap),
+                    ],
+                  );
+                }),
+              ),
             );
           },
         ),
-      ),
+      ],
     );
   }
 
-  // ── Build ─────────────────────────────────────────────────────────────────
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: song.artUrl != null
-            ? Image.network(song.artUrl!,
-                width: 48,
-                height: 48,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _placeholderIcon())
-            : _placeholderIcon(),
-      ),
-      title: Text(song.title,
-          style: const TextStyle(
-              color: Colors.white, fontWeight: FontWeight.w500),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis),
-      subtitle: Text(song.artist,
-          style: const TextStyle(color: Colors.white54),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis),
-      trailing: IconButton(
-        icon: const Icon(Icons.more_vert, color: Colors.white70),
-        onPressed: () => _showOptionsBottomSheet(context),
-      ),
-      onTap: onTap,
-    );
-  }
+  Widget _buildChartSection(BuildContext context) {
+    final totalItems = localPlaylist.length;
+    final totalPages = (totalItems / 8).ceil();
+    final startIdx = (_chartPage - 1) * 8;
+    final pageItems = localPlaylist.skip(startIdx).take(8).toList();
 
-  Widget _placeholderIcon() => Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          color: Colors.white10,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: const Icon(Icons.music_note, color: Colors.white54),
-      );
-}
-
-// ---------------------------------------------------------------------------
-// Shared menu tile (identical to ChartTile's _MenuActionTile)
-// ---------------------------------------------------------------------------
-
-class _MenuActionTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final VoidCallback onTap;
-  final Color? iconColor;
-
-  const _MenuActionTile({
-    required this.icon,
-    required this.title,
-    required this.onTap,
-    this.iconColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(icon, color: iconColor ?? Colors.white),
-      title: Text(title, style: const TextStyle(color: Colors.white)),
-      onTap: onTap,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader('Bảng xếp hạng', () {
+          Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => SeeAllPage(title: 'Bảng xếp hạng'),
+          ));
+        }),
+        const SizedBox(height: 12),
+        ...List.generate(pageItems.length, (i) {
+          final isFirst = i == 0;
+          return Padding(
+            padding: EdgeInsets.only(top: isFirst ? 0 : 6),
+            child: ChartTile(
+              item: pageItems[i],
+              rank: startIdx + i + 1,
+              onTap: () => _playSongFromMediaItems(localPlaylist, startIdx + i),
+            ),
+          );
+        }),
+        _buildPaginationRow(_chartPage, totalPages, (page) {
+          setState(() => _chartPage = page);
+        }),
+      ],
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Category chip skeleton (unchanged)
-// ---------------------------------------------------------------------------
 
 class _CategoryChipSkeleton extends StatelessWidget {
   const _CategoryChipSkeleton();
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 40,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: 5,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (_, __) => Container(
-          width: 88,
+    return ListView.builder(
+      scrollDirection: Axis.horizontal,
+      itemCount: 6,
+      itemBuilder: (_, __) => Container(
+        width: 100,
+        height: 36,
+        margin: const EdgeInsets.only(right: 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(18),
+        ),
+      ),
+    );
+  }
+}
+
+class _PaginationButton extends StatefulWidget {
+  final int page;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _PaginationButton({
+    required this.page,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  State<_PaginationButton> createState() => _PaginationButtonState();
+}
+
+class _PaginationButtonState extends State<_PaginationButton> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit: (_) => setState(() => _isHovered = false),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          width: 36,
+          height: 36,
+          alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: Colors.grey.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(20),
+            color: widget.isSelected
+                ? const Color(0xFF7C3AED)
+                : (_isHovered ? const Color(0xFF242424) : const Color(0xFF1A1A1A)),
+            shape: BoxShape.circle,
+          ),
+          child: Text(
+            '${widget.page}',
+            style: TextStyle(
+              color: widget.isSelected ? Colors.white : Colors.white.withValues(alpha: 0.7),
+              fontWeight: widget.isSelected ? FontWeight.bold : FontWeight.normal,
+              fontSize: 14,
+            ),
           ),
         ),
       ),

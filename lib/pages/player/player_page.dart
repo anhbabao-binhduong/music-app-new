@@ -18,6 +18,7 @@ import 'package:music_app/data/models/lyric_line.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:music_app/presentation/bloc/comment/comment_cubit.dart';
 import 'package:music_app/presentation/bloc/comment/comment_state.dart';
+import 'package:music_app/presentation/bloc/download/download_cubit.dart';
 
 class PlayerPage extends StatefulWidget {
   final MediaItem song;
@@ -122,34 +123,67 @@ class _PlayerPageState extends State<PlayerPage> {
                                       context
                                           .read<PlayerBloc>()
                                           .add(PrioritizeSongEvent(index));
+                                    } else if (value == 'download') {
+                                      context
+                                          .read<DownloadCubit>()
+                                          .toggleDownload(item);
                                     } else if (value == 'delete') {
                                       context
                                           .read<PlayerBloc>()
                                           .add(RemoveFromQueueEvent(index));
                                     }
                                   },
-                                  itemBuilder: (context) => [
-                                    const PopupMenuItem(
-                                      value: 'up',
-                                      child: Row(children: [
-                                        Icon(Icons.vertical_align_top_rounded,
-                                            size: 20),
-                                        SizedBox(width: 12),
-                                        Text('Ưu tiên phát')
-                                      ]),
-                                    ),
-                                    const PopupMenuItem(
-                                      value: 'delete',
-                                      child: Row(children: [
-                                        Icon(Icons.delete_outline_rounded,
-                                            size: 20, color: Colors.redAccent),
-                                        SizedBox(width: 12),
-                                        Text('Xóa khỏi danh sách',
+                                  itemBuilder: (context) {
+                                    final isDownloaded = context
+                                        .read<DownloadCubit>()
+                                        .state
+                                        .contains(item.id);
+                                    return [
+                                      const PopupMenuItem(
+                                        value: 'up',
+                                        child: Row(children: [
+                                          Icon(Icons.vertical_align_top_rounded,
+                                              size: 20),
+                                          SizedBox(width: 12),
+                                          Text('Ưu tiên phát')
+                                        ]),
+                                      ),
+                                      PopupMenuItem(
+                                        value: 'download',
+                                        child: Row(children: [
+                                          Icon(
+                                            isDownloaded
+                                                ? Icons.download_done_rounded
+                                                : Icons.download_rounded,
+                                            size: 20,
+                                            color: isDownloaded
+                                                ? const Color(0xFF1DB954)
+                                                : null,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Text(
+                                            isDownloaded ? 'Đã tải' : 'Tải nhạc',
                                             style: TextStyle(
-                                                color: Colors.redAccent))
-                                      ]),
-                                    ),
-                                  ],
+                                              color: isDownloaded
+                                                  ? const Color(0xFF1DB954)
+                                                  : null,
+                                            ),
+                                          )
+                                        ]),
+                                      ),
+                                      const PopupMenuItem(
+                                        value: 'delete',
+                                        child: Row(children: [
+                                          Icon(Icons.delete_outline_rounded,
+                                              size: 20, color: Colors.redAccent),
+                                          SizedBox(width: 12),
+                                          Text('Xóa khỏi danh sách',
+                                              style: TextStyle(
+                                                  color: Colors.redAccent))
+                                        ]),
+                                      ),
+                                    ];
+                                  },
                                 ),
                               ],
                             ),

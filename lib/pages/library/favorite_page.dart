@@ -7,8 +7,10 @@ import 'package:music_app/pages/player/player_page.dart';
 
 // Import Cubit và biến localPlaylist chứa danh sách nhạc tổng
 import 'package:music_app/presentation/bloc/favorite/favorite_cubit.dart';
-import 'package:music_app/data/local_music_data.dart'; 
-import 'package:music_app/pages/home/widgets/song_cards.dart'; // Để dùng ArtImage nếu có
+import 'package:music_app/data/local_music_data.dart';
+import 'package:music_app/pages/home/widgets/song_cards.dart'; 
+import 'package:music_app/presentation/bloc/download/download_cubit.dart';
+import 'package:music_app/presentation/bloc/playlist/playlist_cubit.dart';
 
 class FavoritePage extends StatefulWidget {
   const FavoritePage({super.key});
@@ -98,7 +100,12 @@ class _FavoritePageState extends State<FavoritePage> {
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 leading: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: ArtImage(uri: item.artUri, size: 56), // Widget ArtImage của bạn
+                  child: item.artUri != null
+                      ? Image.network(item.artUri.toString(), width: 56, height: 56, fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(width: 56, height: 56, color: const Color(0xFF2A2A2E),
+                              child: const Icon(Icons.music_note, color: Colors.white30)))
+                      : Container(width: 56, height: 56, color: const Color(0xFF2A2A2E),
+                          child: const Icon(Icons.music_note, color: Colors.white30)),
                 ),
                 title: Text(
                   item.title,
@@ -113,35 +120,72 @@ class _FavoritePageState extends State<FavoritePage> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 trailing: IconButton(
-                  icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        backgroundColor: const Color(0xFF2A2A2E),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        title: const Text("Xóa bài hát?", style: TextStyle(color: Colors.white)),
-                        content: const Text("Bạn có chắc chắn muốn xóa bài hát này khỏi danh sách yêu thích không?", style: TextStyle(color: Colors.grey)),
-                        actions: [
-                          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Hủy", style: TextStyle(color: Colors.grey))),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-                            onPressed: () {
-                              context.read<FavoriteCubit>().toggleFavorite(item.id);
-                              Navigator.pop(ctx);
-                            },
-                            child: const Text("Xóa", style: TextStyle(color: Colors.white)),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+                  icon: const Icon(Icons.more_vert_rounded, color: Colors.white54, size: 20),
+                  onPressed: () => _showSongOptions(context, item),
                 ),
                 onTap: () => _playSongs(favoriteSongs, index),
               );
             },
           );
         },
+      ),
+    );
+  }
+
+  void _showSongOptions(BuildContext context, MediaItem song) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1E1E28),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 4),
+              width: 36, height: 4,
+              decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+            ),
+            ListTile(
+              leading: const Icon(Icons.favorite_rounded, color: Color(0xFFE91E8C)),
+              title: const Text('Bỏ yêu thích', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(context);
+                context.read<FavoriteCubit>().toggleFavorite(song.id);
+              },
+            ),
+            BlocBuilder<DownloadCubit, List<String>>(
+              builder: (context, downloads) {
+                final isDownloaded = downloads.contains(song.id);
+                return ListTile(
+                  leading: Icon(
+                    isDownloaded ? Icons.download_done_rounded : Icons.download_rounded,
+                    color: isDownloaded ? const Color(0xFF1DB954) : Colors.white70,
+                  ),
+                  title: Text(
+                    isDownloaded ? 'Đã tải' : 'Tải nhạc',
+                    style: TextStyle(
+                      color: isDownloaded ? const Color(0xFF1DB954) : Colors.white,
+                    ),
+                  ),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    try {
+                      await context.read<DownloadCubit>().toggleDownload(song);
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+                      }
+                    }
+                  },
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
       ),
     );
   }

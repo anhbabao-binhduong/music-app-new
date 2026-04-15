@@ -9,6 +9,7 @@ import 'package:music_app/presentation/bloc/player/player_event.dart';
 import 'package:music_app/presentation/bloc/player/player_state.dart';
 import 'package:music_app/presentation/bloc/playlist/playlist_cubit.dart';
 import 'package:music_app/services/supabase_auth_service.dart';
+import 'package:music_app/presentation/bloc/download/download_cubit.dart';
 
 class MiniPlayerBar extends StatelessWidget {
   const MiniPlayerBar({super.key});
@@ -27,6 +28,11 @@ class MiniPlayerBar extends StatelessWidget {
 
         // Ẩn nếu không có bài đang phát
         if (state is! PlayerPlaying && state is! PlayerPaused) {
+          return const SizedBox.shrink();
+        }
+
+        // Nếu mới mở app, queue được load nhưng chưa từng phát nhạc (position = 0s)
+        if (state is PlayerPaused && state.position.inMilliseconds == 0) {
           return const SizedBox.shrink();
         }
 
@@ -577,43 +583,82 @@ void showQueueBottomSheet(BuildContext context) {
                                           if (value == 'up') {
                                             context.read<PlayerBloc>().add(
                                                 PrioritizeSongEvent(index));
+                                          } else if (value == 'download') {
+                                            context
+                                                .read<DownloadCubit>()
+                                                .toggleDownload(item);
                                           } else if (value == 'delete') {
                                             context.read<PlayerBloc>().add(
                                                 RemoveFromQueueEvent(index));
                                           }
                                         },
-                                        itemBuilder: (context) => [
-                                          const PopupMenuItem(
-                                            value: 'up',
-                                            child: Row(
-                                              children: [
-                                                Icon(
-                                                    Icons
-                                                        .vertical_align_top_rounded,
-                                                    size: 20),
-                                                SizedBox(width: 12),
-                                                Text('Ưu tiên phát'),
-                                              ],
+                                        itemBuilder: (context) {
+                                          final isDownloaded = context
+                                              .read<DownloadCubit>()
+                                              .state
+                                              .contains(item.id);
+                                          return [
+                                            const PopupMenuItem(
+                                              value: 'up',
+                                              child: Row(
+                                                children: [
+                                                  Icon(
+                                                      Icons
+                                                          .vertical_align_top_rounded,
+                                                      size: 20),
+                                                  SizedBox(width: 12),
+                                                  Text('Ưu tiên phát'),
+                                                ],
+                                              ),
                                             ),
-                                          ),
-                                          const PopupMenuItem(
-                                            value: 'delete',
-                                            child: Row(
-                                              children: [
-                                                Icon(
-                                                    Icons
-                                                        .delete_outline_rounded,
+                                            PopupMenuItem(
+                                              value: 'download',
+                                              child: Row(
+                                                children: [
+                                                  Icon(
+                                                    isDownloaded
+                                                        ? Icons
+                                                            .download_done_rounded
+                                                        : Icons.download_rounded,
                                                     size: 20,
-                                                    color: Colors.redAccent),
-                                                SizedBox(width: 12),
-                                                Text('Xóa khỏi danh sách',
+                                                    color: isDownloaded
+                                                        ? const Color(0xFF1DB954)
+                                                        : null,
+                                                  ),
+                                                  const SizedBox(width: 12),
+                                                  Text(
+                                                    isDownloaded
+                                                        ? 'Đã tải'
+                                                        : 'Tải nhạc',
                                                     style: TextStyle(
-                                                        color:
-                                                            Colors.redAccent)),
-                                              ],
+                                                      color: isDownloaded
+                                                          ? const Color(
+                                                              0xFF1DB954)
+                                                          : null,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
                                             ),
-                                          ),
-                                        ],
+                                            const PopupMenuItem(
+                                              value: 'delete',
+                                              child: Row(
+                                                children: [
+                                                  Icon(
+                                                      Icons
+                                                          .delete_outline_rounded,
+                                                      size: 20,
+                                                      color: Colors.redAccent),
+                                                  SizedBox(width: 12),
+                                                  Text('Xóa khỏi danh sách',
+                                                      style: TextStyle(
+                                                          color: Colors
+                                                              .redAccent)),
+                                                ],
+                                              ),
+                                            ),
+                                          ];
+                                        },
                                       ),
                                     ],
                                   ),

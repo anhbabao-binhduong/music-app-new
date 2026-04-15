@@ -5,7 +5,6 @@ import 'package:music_app/presentation/bloc/player/player_bloc.dart';
 import 'package:music_app/presentation/bloc/player/player_event.dart';
 import 'package:music_app/pages/player/player_page.dart';
 import 'package:music_app/data/local_music_data.dart';
-import 'package:music_app/pages/home/widgets/song_cards.dart';
 import 'package:music_app/presentation/bloc/download/download_cubit.dart';
 
 class DownloadPage extends StatefulWidget {
@@ -37,17 +36,9 @@ class _DownloadPageState extends State<DownloadPage> {
     );
   }
 
-  String _normalizeAudioUrl(String? url) {
-    if (url == null || url.isEmpty) return '';
-    if (url.startsWith('http')) return url.trim();
-    const base = 'https://pdbkojvgjrvnzqmerwmz.supabase.co/storage/v1/object/public/songs/';
-    return '$base${url.trim()}';
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -92,7 +83,12 @@ class _DownloadPageState extends State<DownloadPage> {
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 leading: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: ArtImage(uri: item.artUri, size: 56),
+                  child: item.artUri != null
+                      ? Image.network(item.artUri.toString(), width: 56, height: 56, fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(width: 56, height: 56, color: const Color(0xFF2A2A2E),
+                              child: const Icon(Icons.music_note, color: Colors.white30)))
+                      : Container(width: 56, height: 56, color: const Color(0xFF2A2A2E),
+                          child: const Icon(Icons.music_note, color: Colors.white30)),
                 ),
                 title: Text(
                   item.title,

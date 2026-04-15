@@ -1,114 +1,245 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../home_page.dart';
+import '../../../../data/local_music_data.dart';
+import '../../../../widgets/auth_guard.dart';
 
 class BannerData {
+  final String imageUrl;
   final List<Color> gradient;
-  final String label, sub;
-  const BannerData({required this.gradient, required this.label, required this.sub});
-}
+  final String label;
+  final String sub;
 
-class BannerCarousel extends StatelessWidget {
-  final List<BannerData> banners;
-  final PageController controller;
-  final int currentIndex;
-  final ValueChanged<int> onPageChanged;
-
-  const BannerCarousel({
-    super.key,
-    required this.banners,
-    required this.controller,
-    required this.currentIndex,
-    required this.onPageChanged,
+  const BannerData({
+    required this.imageUrl,
+    required this.gradient,
+    required this.label,
+    required this.sub,
   });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        SizedBox(
-          height: 180,
-          child: PageView.builder(
-            controller: controller,
-            itemCount: banners.length,
-            onPageChanged: onPageChanged,
-            itemBuilder: (_, i) => _BannerCard(data: banners[i]),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(banners.length, (i) {
-            final active = i == currentIndex;
-            return AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              margin: const EdgeInsets.symmetric(horizontal: 3),
-              width: active ? 20 : 6, height: 6,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(3),
-                color: active ? kAccent : Colors.white.withValues(alpha: 0.3),
-              ),
-            );
-          }),
-        ),
-      ],
-    );
-  }
 }
 
-class _BannerCard extends StatelessWidget {
+class HeroBanner extends StatefulWidget {
   final BannerData data;
-  const _BannerCard({required this.data});
+  const HeroBanner({super.key, required this.data});
+
+  @override
+  State<HeroBanner> createState() => _HeroBannerState();
+}
+
+class _HeroBannerState extends State<HeroBanner>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _fadeAnim;
+  late Animation<Offset> _slideAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _fadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeOut),
+    );
+    _slideAnim = Tween<Offset>(
+      begin: const Offset(0, 0.1),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+    _ctrl.forward();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 6),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: LinearGradient(
-            colors: data.gradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
-        boxShadow: [BoxShadow(
-          color: data.gradient.first.withValues(alpha: 0.45),
-          blurRadius: 20, offset: const Offset(0, 8),
-        )],
-      ),
-      child: Stack(
-        children: [
-          Positioned(right: -20, top: -20,
-            child: Container(width: 120, height: 120,
-              decoration: BoxDecoration(shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.08)))),
-          Positioned(right: 40, bottom: -30,
-            child: Container(width: 80, height: 80,
-              decoration: BoxDecoration(shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.05)))),
-          Padding(
-            padding: const EdgeInsets.all(22),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
+    final screenWidth = MediaQuery.of(context).size.width;
+    final bannerHeight = screenWidth > 750 ? 320.0 : 240.0;
+
+    return FadeTransition(
+      opacity: _fadeAnim,
+      child: SlideTransition(
+        position: _slideAnim,
+        child: Container(
+          height: bannerHeight,
+          width: double.infinity,
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Stack(
+              fit: StackFit.expand,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(20)),
-                  child: const Text('NỔI BẬT',
-                      style: TextStyle(color: Colors.white, fontSize: 10,
-                          fontWeight: FontWeight.w700, letterSpacing: 1.2)),
+                // Background image
+                Image.network(
+                  widget.data.imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: widget.data.gradient,
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 8),
-                Text(data.label,
-                    style: const TextStyle(color: Colors.white, fontSize: 22,
-                        fontWeight: FontWeight.w800, letterSpacing: -0.5)),
-                const SizedBox(height: 4),
-                Text(data.sub,
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.75), fontSize: 13)),
+                // Blur overlay
+                BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                  child: Container(
+                    color: Colors.black.withValues(alpha: 0.2),
+                  ),
+                ),
+                // Gradient overlay - stronger at bottom
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.3),
+                        Colors.black.withValues(alpha: 0.7),
+                      ],
+                      stops: const [0.0, 0.5, 1.0],
+                    ),
+                  ),
+                ),
+                // Content
+                Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Label badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF7C3AED),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          'FEATURED',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Title
+                      Text(
+                        widget.data.label,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 36,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -1,
+                          height: 1.1,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black45,
+                              blurRadius: 10,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      // Subtitle
+                      Text(
+                        widget.data.sub,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 20),
+                      // Action buttons
+                      Row(
+                        children: [
+                          _PlayButton(),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 }
+
+class _PlayButton extends StatefulWidget {
+  @override
+  State<_PlayButton> createState() => _PlayButtonState();
+}
+
+class _PlayButtonState extends State<_PlayButton> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        child: ElevatedButton.icon(
+          onPressed: () {
+            if (localPlaylist.isNotEmpty) {
+              playWithAuthGuard(context, playlist: localPlaylist, index: 0);
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Chưa có bài hát nào để phát'),
+                  backgroundColor: Colors.grey.shade800,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              );
+            }
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _isHovered
+                ? const Color(0xFF8B5CF6)
+                : const Color(0xFF7C3AED),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(30),
+            ),
+            elevation: _isHovered ? 8 : 4,
+          ),
+          icon: const Icon(Icons.play_arrow_rounded, size: 24),
+          label: const Text(
+            'Phát ngay',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
