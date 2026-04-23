@@ -21,6 +21,7 @@ class LibraryPage extends StatefulWidget {
 class _LibraryPageState extends State<LibraryPage> {
   bool _isPlaylistExpanded = true;
 
+  // ignore: non_constant_identifier_names
   Widget _LibraryThumbnail({
     required List<Color> colors,
     required IconData icon,

@@ -2,10 +2,13 @@ import 'dart:async';
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
 
+// ignore: deprecated_member_use
 class MyAudioHandler extends BaseAudioHandler
     with QueueHandler, SeekHandler {
   final AudioPlayer _player = AudioPlayer();
-  final ConcatenatingAudioSource _playlist =
+  // ignore: deprecated_member_use
+  late final ConcatenatingAudioSource _playlist =
+      // ignore: deprecated_member_use
       ConcatenatingAudioSource(children: []);
 
   late final Stream<Duration> positionStream;
@@ -87,10 +90,13 @@ class MyAudioHandler extends BaseAudioHandler
   Future<void> skipToQueueItem(int index) async {
     if (index < 0 ||
         index >= queue.value.length ||
-        _playlist.length == 0) return;
+        _playlist.length == 0) {
+      return;
+    }
     try {
       await _player.seek(Duration.zero, index: index);
     } catch (e) {
+      // ignore: avoid_print
       print('Lỗi Seek Audio Web: $e');
     }
   }
@@ -120,12 +126,13 @@ class MyAudioHandler extends BaseAudioHandler
   // ─── Queue management ─────────────────────────────────────
 
   @override
-  Future<void> updateQueue(List<MediaItem> newQueue) async {
-    final audioSources = newQueue.map(_mediaItemToAudioSource).toList();
+  // ignore: avoid_renaming_method_parameters
+  Future<void> updateQueue(List<MediaItem> queue) async {
+    final audioSources = queue.map(_mediaItemToAudioSource).toList();
     if (_player.playing) await _player.pause();
     await _playlist.clear();
     await _playlist.addAll(audioSources);
-    queue.add(newQueue);
+    this.queue.add(queue);
   }
 
   @override
@@ -164,6 +171,7 @@ class MyAudioHandler extends BaseAudioHandler
     final url = item.extras?['url']?.toString() ?? '';
 
     if (url.isEmpty || !url.startsWith('http')) {
+      // ignore: avoid_print
       print('❌ URL null: ${item.id}');
       return AudioSource.uri(
         Uri.parse('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'),

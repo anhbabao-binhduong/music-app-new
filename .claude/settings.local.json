@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(**)",
+
+      "Write(lib/**)",
+      "Write(test/**)",
+      "Write(integration_test/**)",
+      "Write(**/*.dart)",
+      "Write(**/*.yaml)",
+      "Write(**/*.yml)",
+      "Write(**/*.json)",
+      "Write(**/*.md)",
+      "Write(pubspec.yaml)",
+      "Write(pubspec.lock)",
+      "Write(analysis_options.yaml)",
+      "Write(.env)",
+
+      "Bash(flutter *)",
+      "Bash(dart *)",
+      "Bash(git *)",
+      "Bash(pwd)",
+      "Bash(ls)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(mkdir *)",
+      "Bash(mv *)",
+      "Bash(cp *)",
+      "Bash(rm *)",
+      "Bash(find *)",
+      "Bash(grep *)",
+      "Bash(echo *)",
+      "Bash(touch *)"
+    ],
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(sudo *)",
+      "Write(android/app/google-services.json)",
+      "Write(ios/Runner/GoogleService-Info.plist)"
+    ]
+  },
+  "autoApprove": true
+}

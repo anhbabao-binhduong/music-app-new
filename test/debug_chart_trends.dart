@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_print, no_leading_underscores_for_local_identifiers
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:io';
@@ -9,8 +10,8 @@ void main() {
       url: 'https://pdbkojvgjrvnzqmerwmz.supabase.co',
       anonKey: 'ey...', // I don't know the anon key!
     );
-    final _supabase = Supabase.instance.client;
-    final res = await _supabase.rpc('get_chart_trends', params: {
+    final supabase = Supabase.instance.client;
+    final res = await supabase.rpc('get_chart_trends', params: {
       'days_ago': 1,
       'song_id_list': ['155', '153', '154'],
     });

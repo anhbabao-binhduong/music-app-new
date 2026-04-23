@@ -31,8 +31,8 @@ void _setupAuthListener() {
       await musicService.stop();
       await musicService.handler.updateQueue([]);
       getIt<PlayerBloc>().add(ResetPlayerEvent());
-      getIt<FavoriteCubit>().emit([]);
-      getIt<DownloadCubit>().emit([]);
+      getIt<FavoriteCubit>().clear();
+      getIt<DownloadCubit>().clear();
       // ✅ Xóa sạch lịch sử khỏi bộ nhớ ngay lập tức
       getIt<HistoryCubit>().clearLocalData();
     }

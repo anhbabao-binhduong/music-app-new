@@ -212,12 +212,13 @@ class CompactSongTile extends StatefulWidget {
 class _CompactSongTileState extends State<CompactSongTile> {
   bool _isHovered = false;
 
-  void _showOptionsSheet(BuildContext context) {
+  void _showOptionsSheet(BuildContext pageCtx) {
+    final pageContext = context;
     final favCubit = context.read<FavoriteCubit>();
     final playlistCubit = context.read<PlaylistCubit>();
 
     showModalBottomSheet(
-      context: context,
+      context: pageCtx,
       backgroundColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -326,10 +327,21 @@ class _CompactSongTileState extends State<CompactSongTile> {
                     label: isCurrentlyFav
                         ? 'Bỏ yêu thích'
                         : 'Thêm vào yêu thích',
-                    onTap: () async {
+                                        onTap: () async {
                       Navigator.pop(ctx);
+                      final wasFav = favCubit.state.contains(widget.item.id);
                       try {
                         await favCubit.toggleFavorite(widget.item.id);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(wasFav ? 'Đã bỏ khỏi yêu thích' : 'Đã thêm vào yêu thích'),
+                              backgroundColor: wasFav ? Colors.grey.shade700 : const Color(0xFFE91E8C),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          );
+                        }
                       } catch (e) {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -359,7 +371,7 @@ class _CompactSongTileState extends State<CompactSongTile> {
                       textColor: isInAnyPlaylist ? const Color(0xFF7C3AED) : Colors.white,
                       onTap: () {
                         Navigator.pop(ctx);
-                        _showAddToPlaylistSheet(context, playlistCubit);
+                        _showAddToPlaylistSheet(pageContext, playlistCubit);
                       },
                     );
                   },
@@ -373,13 +385,24 @@ class _CompactSongTileState extends State<CompactSongTile> {
                       iconColor: isDownloaded ? const Color(0xFF1DB954) : Colors.white70,
                       label: isDownloaded ? 'Đã tải' : 'Tải nhạc',
                       textColor: isDownloaded ? const Color(0xFF1DB954) : Colors.white,
-                      onTap: () async {
+                                            onTap: () async {
                         Navigator.pop(ctx);
+                        final wasDown = downloadedIds.contains(widget.item.id);
                         try {
-                          await context.read<DownloadCubit>().toggleDownload(widget.item);
+                          await pageContext.read<DownloadCubit>().toggleDownload(widget.item);
+                          if (pageContext.mounted) {
+                            ScaffoldMessenger.of(pageContext).showSnackBar(
+                              SnackBar(
+                                content: Text(wasDown ? 'Đã xóa khỏi tải về' : 'Đã tải bài hát'),
+                                backgroundColor: const Color(0xFF1DB954),
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            );
+                          }
                         } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
+                          if (pageContext.mounted) {
+                            ScaffoldMessenger.of(pageContext).showSnackBar(
                               SnackBar(
                                 content: Text(e.toString().replaceFirst('Exception: ', '')),
                                 backgroundColor: Colors.red.shade700,
@@ -417,9 +440,9 @@ class _CompactSongTileState extends State<CompactSongTile> {
     );
   }
 
-  void _showAddToPlaylistSheet(BuildContext context, PlaylistCubit playlistCubit) {
+  void _showAddToPlaylistSheet(BuildContext pageContext, PlaylistCubit playlistCubit) {
     showModalBottomSheet(
-      context: context,
+      context: pageContext,
       backgroundColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -506,14 +529,14 @@ class _CompactSongTileState extends State<CompactSongTile> {
                               title: Text(
                                 pl.name,
                                 style: TextStyle(
-                                    color: isAdded ? const Color(0xFF7C3AED) : Colors.white, 
-                                    fontSize: 14, 
+                                    color: isAdded ? const Color(0xFF7C3AED) : Colors.white,
+                                    fontSize: 14,
                                     fontWeight: FontWeight.w500),
                               ),
                               subtitle: Text(
                                 '${pl.songIds.length} bài',
                                 style: TextStyle(
-                                    color: isAdded ? const Color(0xFF7C3AED).withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.4), 
+                                    color: isAdded ? const Color(0xFF7C3AED).withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.4),
                                     fontSize: 12),
                               ),
                               trailing: isAdded
@@ -525,8 +548,8 @@ class _CompactSongTileState extends State<CompactSongTile> {
                                   pl.id,
                                   widget.item.id,
                                 );
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
+                                if (pageContext.mounted) {
+                                  ScaffoldMessenger.of(pageContext).showSnackBar(
                                     SnackBar(
                                       content: Text(
                                         err == null

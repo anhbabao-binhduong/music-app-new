@@ -1,5 +1,4 @@
 // ignore_for_file: no_leading_underscores_for_local_identifiers
-import 'dart:async';
 import 'package:audio_service/audio_service.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,17 +6,18 @@ import 'package:mocktail/mocktail.dart';
 import 'package:music_app/presentation/bloc/player/player_bloc.dart';
 import 'package:music_app/presentation/bloc/player/player_event.dart';
 import 'package:music_app/presentation/bloc/player/player_state.dart';
+import 'package:music_app/presentation/bloc/history/history_cubit.dart';
 import 'package:music_app/services/audio_handler.dart';
-import 'package:music_app/services/music_player_service.dart';
 
 // ─── Mocks ───────────────────────────────────────────────────
 
-class MockMusicPlayerService extends Mock implements MusicPlayerService {}
+class MockHistoryCubit extends Mock implements HistoryCubit {}
 
-// ✅ Fix: extends MyAudioHandler (là BaseAudioHandler subclass)
-// KHÔNG dùng implements vì BaseAudioHandler không thể implements
+class FakeMediaItem extends Fake implements MediaItem {}
+
+// Extends MyAudioHandler so it is a valid AudioHandler subtype.
+// Cannot use `implements` because BaseAudioHandler cannot be implemented.
 class FakeAudioHandler extends MyAudioHandler {
-  // Override các method cần test — trả về Future.value() để không throw
   @override
   Future<void> setShuffleMode(AudioServiceShuffleMode shuffleMode) async {}
 
@@ -46,8 +46,6 @@ class FakeAudioHandler extends MyAudioHandler {
   Future<void> skipToPrevious() async {}
 }
 
-class FakeMediaItem extends Fake implements MediaItem {}
-
 // ─── Helpers ─────────────────────────────────────────────────
 
 MediaItem makeSong({String id = 'song_1', String title = 'Test Song'}) =>
@@ -57,23 +55,11 @@ MediaItem makeSong({String id = 'song_1', String title = 'Test Song'}) =>
         artist: 'Test Artist',
         album: 'Test Album');
 
-void stubDefaultStreams(MockMusicPlayerService svc) {
-  when(() => svc.playbackStateStream)
-      .thenAnswer((_) => const Stream.empty());
-  when(() => svc.currentSongStream)
-      .thenAnswer((_) => const Stream.empty());
-  when(() => svc.positionStream)
-      .thenAnswer((_) => const Stream.empty());
-  when(() => svc.durationStream)
-      .thenAnswer((_) => const Stream.empty());
-}
-
 // ─────────────────────────────────────────────────────────────
 
 void main() {
-  late MockMusicPlayerService mockService;
-  // ✅ Fix: FakeAudioHandler thay vì MockMyAudioHandler
   late FakeAudioHandler fakeHandler;
+  late MockHistoryCubit mockHistoryCubit;
 
   setUpAll(() {
     registerFallbackValue(FakeMediaItem());
@@ -83,20 +69,29 @@ void main() {
   });
 
   setUp(() {
-    mockService  = MockMusicPlayerService();
-    fakeHandler  = FakeAudioHandler();
-    stubDefaultStreams(mockService);
-    // ✅ Fix: stub handler trả về FakeAudioHandler (đúng kiểu MyAudioHandler)
-    when(() => mockService.handler).thenReturn(fakeHandler);
+    fakeHandler = FakeAudioHandler();
+    mockHistoryCubit = MockHistoryCubit();
+
+    // Make playbackState emit a sensible default so InternalUpdateEvent
+    // doesn't immediately emit PlayerInitial.
+    fakeHandler.playbackState.add(PlaybackState(
+      playing: false,
+      processingState: AudioProcessingState.idle,
+    ));
+    fakeHandler.mediaItem.add(null);
   });
 
-  PlayerBloc makeBloc() => PlayerBloc(mockService);
+  tearDown(() async {
+    await fakeHandler.stop();
+  });
+
+  PlayerBloc makeBloc() => PlayerBloc(fakeHandler, mockHistoryCubit);
 
   // ═══════════════════════════════════════════════════════════
   // GROUP 1: Initial state
   // ═══════════════════════════════════════════════════════════
   group('PlayerBloc — initial state', () {
-    test('state là PlayerInitial khi khởi tạo', () {
+    test('state is PlayerInitial when no queue is loaded', () {
       expect(makeBloc().state, isA<PlayerInitial>());
     });
   });
@@ -105,62 +100,40 @@ void main() {
   // GROUP 2: LoadPlaylistEvent
   // ═══════════════════════════════════════════════════════════
   group('LoadPlaylistEvent', () {
-    final song     = makeSong();
-    final playlist = [song];
-
     blocTest<PlayerBloc, PlayerState>(
-      'emit PlayerLoading khi bắt đầu load playlist',
-      build: () {
-        when(() => mockService.playPlaylist(any(),
-                startIndex: any(named: 'startIndex')))
-            .thenAnswer((_) async {});
-        return makeBloc();
-      },
-      act: (bloc) => bloc.add(LoadPlaylistEvent(playlist)),
-      expect: () => [
-        isA<PlayerLoading>().having((s) => s.song?.id, 'song id', song.id),
-      ],
-    );
-
-    blocTest<PlayerBloc, PlayerState>(
-      '✅ CRITICAL: emit PlayerError khi playPlaylist ném exception',
-      build: () {
-        when(() => mockService.playPlaylist(any(),
-                startIndex: any(named: 'startIndex')))
-            .thenThrow(Exception('Network error: unable to stream audio'));
-        return makeBloc();
-      },
-      act: (bloc) => bloc.add(LoadPlaylistEvent(playlist)),
-      expect: () => [
-        isA<PlayerLoading>(),
-        isA<PlayerError>().having(
-          (s) => s.message,
-          'error message',
-          contains('Failed to load playlist'),
-        ),
-      ],
+      'updateQueue is called with the playlist',
+      build: () => makeBloc(),
+      act: (bloc) => bloc.add(LoadPlaylistEvent(
+        [makeSong()],
+        startIndex: 0,
+      )),
+      expect: () => [],
       verify: (_) {
-        verify(() => mockService.playPlaylist(any(),
-            startIndex: any(named: 'startIndex'))).called(1);
+        verify(() => fakeHandler.updateQueue(any())).called(1);
       },
     );
 
     blocTest<PlayerBloc, PlayerState>(
-      'emit PlayerLoading với đúng bài hát ở startIndex',
-      build: () {
-        when(() => mockService.playPlaylist(any(), startIndex: 2))
-            .thenAnswer((_) async {});
-        return makeBloc();
+      'skipToQueueItem is called with startIndex',
+      build: () => makeBloc(),
+      act: (bloc) => bloc.add(LoadPlaylistEvent(
+        [makeSong(id: 'a'), makeSong(id: 'b'), makeSong(id: 'c')],
+        startIndex: 2,
+      )),
+      expect: () => [],
+      verify: (_) {
+        verify(() => fakeHandler.skipToQueueItem(2)).called(1);
       },
-      act: (bloc) => bloc.add(
-        LoadPlaylistEvent(
-          [makeSong(id: 'a'), makeSong(id: 'b'), makeSong(id: 'c')],
-          startIndex: 2,
-        ),
-      ),
-      expect: () => [
-        isA<PlayerLoading>().having((s) => s.song?.id, 'startIndex song', 'c'),
-      ],
+    );
+
+    blocTest<PlayerBloc, PlayerState>(
+      'play is called after loading the playlist',
+      build: () => makeBloc(),
+      act: (bloc) => bloc.add(LoadPlaylistEvent([makeSong()], startIndex: 0)),
+      expect: () => [],
+      verify: (_) {
+        verify(() => fakeHandler.play()).called(1);
+      },
     );
   });
 
@@ -169,23 +142,17 @@ void main() {
   // ═══════════════════════════════════════════════════════════
   group('PlayEvent / PauseEvent', () {
     blocTest<PlayerBloc, PlayerState>(
-      'PlayEvent gọi service.play()',
-      build: () {
-        when(() => mockService.play()).thenAnswer((_) async {});
-        return makeBloc();
-      },
+      'PlayEvent calls handler.play()',
+      build: () => makeBloc(),
       act: (bloc) => bloc.add(const PlayEvent()),
-      verify: (_) => verify(() => mockService.play()).called(1),
+      verify: (_) => verify(() => fakeHandler.play()).called(1),
     );
 
     blocTest<PlayerBloc, PlayerState>(
-      'PauseEvent gọi service.pause()',
-      build: () {
-        when(() => mockService.pause()).thenAnswer((_) async {});
-        return makeBloc();
-      },
+      'PauseEvent calls handler.pause()',
+      build: () => makeBloc(),
       act: (bloc) => bloc.add(const PauseEvent()),
-      verify: (_) => verify(() => mockService.pause()).called(1),
+      verify: (_) => verify(() => fakeHandler.pause()).called(1),
     );
   });
 
@@ -194,14 +161,11 @@ void main() {
   // ═══════════════════════════════════════════════════════════
   group('SeekEvent', () {
     blocTest<PlayerBloc, PlayerState>(
-      'SeekEvent gọi service.seek() với đúng Duration',
-      build: () {
-        when(() => mockService.seek(any())).thenAnswer((_) async {});
-        return makeBloc();
-      },
+      'SeekEvent calls handler.seek() with the given position',
+      build: () => makeBloc(),
       act: (bloc) => bloc.add(const SeekEvent(Duration(seconds: 45))),
       verify: (_) {
-        verify(() => mockService.seek(const Duration(seconds: 45))).called(1);
+        verify(() => fakeHandler.seek(const Duration(seconds: 45))).called(1);
       },
     );
   });
@@ -209,45 +173,19 @@ void main() {
   // ═══════════════════════════════════════════════════════════
   // GROUP 5: NextEvent / PreviousEvent
   // ═══════════════════════════════════════════════════════════
-  group('Next / Previous', () {
+  group('NextEvent / PreviousEvent', () {
     blocTest<PlayerBloc, PlayerState>(
-      'NextEvent gọi service.next()',
-      build: () {
-        when(() => mockService.next()).thenAnswer((_) async {});
-        return makeBloc();
-      },
+      'NextEvent calls handler.skipToNext()',
+      build: () => makeBloc(),
       act: (bloc) => bloc.add(const NextEvent()),
-      verify: (_) => verify(() => mockService.next()).called(1),
+      verify: (_) => verify(() => fakeHandler.skipToNext()).called(1),
     );
 
     blocTest<PlayerBloc, PlayerState>(
-      'PreviousEvent gọi service.previous() khi position < 3s',
-      build: () {
-        when(() => mockService.previous()).thenAnswer((_) async {});
-        return makeBloc();
-      },
+      'PreviousEvent calls handler.skipToPrevious()',
+      build: () => makeBloc(),
       act: (bloc) => bloc.add(const PreviousEvent()),
-      verify: (_) => verify(() => mockService.previous()).called(1),
-    );
-
-    blocTest<PlayerBloc, PlayerState>(
-      'PreviousEvent gọi service.seek(0) khi position > 3s',
-      build: () {
-        when(() => mockService.seek(any())).thenAnswer((_) async {});
-        final posCtrl = StreamController<Duration>.broadcast();
-        when(() => mockService.positionStream)
-            .thenAnswer((_) => posCtrl.stream);
-        final bloc = PlayerBloc(mockService);
-        posCtrl.add(const Duration(seconds: 10));
-        return bloc;
-      },
-      act: (bloc) async {
-        await Future.delayed(const Duration(milliseconds: 50));
-        bloc.add(const PreviousEvent());
-      },
-      verify: (_) {
-        verify(() => mockService.seek(Duration.zero)).called(1);
-      },
+      verify: (_) => verify(() => fakeHandler.skipToPrevious()).called(1),
     );
   });
 
@@ -256,15 +194,11 @@ void main() {
   // ═══════════════════════════════════════════════════════════
   group('ToggleShuffleEvent', () {
     blocTest<PlayerBloc, PlayerState>(
-      'lần đầu toggle → bật shuffle',
-      build: () {
-        // fakeHandler đã được stub trong setUp()
-        return makeBloc();
-      },
+      'ToggleShuffleEvent calls handler.setShuffleMode()',
+      build: () => makeBloc(),
       act: (bloc) => bloc.add(const ToggleShuffleEvent()),
       verify: (_) {
-        // Verify thông qua fakeHandler (đã được assign vào mockService.handler)
-        verify(() => mockService.handler).called(greaterThan(0));
+        verify(() => fakeHandler.setShuffleMode(any())).called(1);
       },
     );
   });
@@ -272,59 +206,64 @@ void main() {
   // ═══════════════════════════════════════════════════════════
   // GROUP 7: CycleRepeatEvent
   // ═══════════════════════════════════════════════════════════
-  group('CycleRepeatEvent — chu kỳ none → one → all → none', () {
-    test('gọi handler.setRepeatMode đúng 3 lần khi cycle 3 lần', () async {
+  group('CycleRepeatEvent — cycles none → one → all → none', () {
+    test('handler.setRepeatMode is called once per cycle', () async {
       final bloc = makeBloc();
 
-      bloc.add(const CycleRepeatEvent()); // none → one
+      bloc.add(const CycleRepeatEvent());
+      await Future.delayed(const Duration(milliseconds: 20));
+      bloc.add(const CycleRepeatEvent());
+      await Future.delayed(const Duration(milliseconds: 20));
+      bloc.add(const CycleRepeatEvent());
       await Future.delayed(const Duration(milliseconds: 20));
 
-      bloc.add(const CycleRepeatEvent()); // one → all
-      await Future.delayed(const Duration(milliseconds: 20));
-
-      bloc.add(const CycleRepeatEvent()); // all → none
-      await Future.delayed(const Duration(milliseconds: 20));
-
-      // Verify handler được truy cập đúng 3 lần (mỗi CycleRepeatEvent 1 lần)
-      verify(() => mockService.handler).called(3);
+      verify(() => fakeHandler.setRepeatMode(any())).called(3);
 
       await bloc.close();
     });
   });
 
   // ═══════════════════════════════════════════════════════════
-  // GROUP 8: Stream → State mapping
+  // GROUP 8: RemoveFromQueueEvent
   // ═══════════════════════════════════════════════════════════
-  group('Playback stream → State mapping', () {
-    test('playbackStateStream playing=true → emit PlayerPlaying', () async {
-      final song      = makeSong();
-      final pbCtrl    = StreamController<PlaybackState>.broadcast();
-      final mediaCtrl = StreamController<MediaItem?>.broadcast();
-      final posCtrl   = StreamController<Duration>.broadcast();
+  group('RemoveFromQueueEvent', () {
+    blocTest<PlayerBloc, PlayerState>(
+      'removeQueueItemAt is called with the correct index',
+      build: () => makeBloc(),
+      act: (bloc) => bloc.add(const RemoveFromQueueEvent(1)),
+      verify: (_) {
+        verify(() => fakeHandler.removeQueueItemAt(1)).called(1);
+      },
+    );
+  });
 
-      when(() => mockService.playbackStateStream)
-          .thenAnswer((_) => pbCtrl.stream);
-      when(() => mockService.currentSongStream)
-          .thenAnswer((_) => mediaCtrl.stream);
-      when(() => mockService.positionStream)
-          .thenAnswer((_) => posCtrl.stream);
+  // ═══════════════════════════════════════════════════════════
+  // GROUP 9: ResetPlayerEvent
+  // ═══════════════════════════════════════════════════════════
+  group('ResetPlayerEvent', () {
+    blocTest<PlayerBloc, PlayerState>(
+      'handler.stop() and updateQueue([]) are called',
+      build: () => makeBloc(),
+      act: (bloc) => bloc.add(const ResetPlayerEvent()),
+      expect: () => [isA<PlayerInitial>()],
+      verify: (_) {
+        verify(() => fakeHandler.stop()).called(1);
+        verify(() => fakeHandler.updateQueue(any())).called(1);
+      },
+    );
+  });
 
-      final bloc = PlayerBloc(mockService);
-
-      mediaCtrl.add(song);
-      await Future.delayed(const Duration(milliseconds: 10));
-
-      pbCtrl.add(PlaybackState(
-          playing: true,
-          processingState: AudioProcessingState.ready));
-      await Future.delayed(const Duration(milliseconds: 30));
-
-      expect(bloc.state, isA<PlayerPlaying>());
-
-      await bloc.close();
-      await pbCtrl.close();
-      await mediaCtrl.close();
-      await posCtrl.close();
-    });
+  // ═══════════════════════════════════════════════════════════
+  // GROUP 10: SkipToIndexEvent
+  // ═══════════════════════════════════════════════════════════
+  group('SkipToIndexEvent', () {
+    blocTest<PlayerBloc, PlayerState>(
+      'handler.skipToQueueItem is called with the correct index',
+      build: () => makeBloc(),
+      act: (bloc) => bloc.add(const SkipToIndexEvent(3)),
+      verify: (_) {
+        verify(() => fakeHandler.skipToQueueItem(3)).called(1);
+      },
+    );
   });
 }

@@ -215,7 +215,7 @@ class HistoryCubit extends Cubit<List<MediaItem>> {
             .select();
 
         if (kDebugMode) {
-          if (response != null && (response as List).isNotEmpty) {
+          if ((response as List).isNotEmpty) {
             print('[HistoryCubit] successfully removed from Supabase');
           } else {
             print('[HistoryCubit] no rows deleted in Supabase (check RLS or IDs)');

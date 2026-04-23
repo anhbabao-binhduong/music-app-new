@@ -14,11 +14,12 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:music_app/pages/player/lyrics_page.dart';
 import 'package:music_app/services/lyrics_service.dart';
 import 'package:music_app/core/di/service_locator.dart';
-import 'package:music_app/data/models/lyric_line.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:music_app/presentation/bloc/comment/comment_cubit.dart';
 import 'package:music_app/presentation/bloc/comment/comment_state.dart';
 import 'package:music_app/presentation/bloc/download/download_cubit.dart';
+import 'package:music_app/presentation/bloc/playlist/playlist_cubit.dart';
+import 'package:share_plus/share_plus.dart';
 
 class PlayerPage extends StatefulWidget {
   final MediaItem song;
@@ -32,12 +33,9 @@ class _PlayerPageState extends State<PlayerPage> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  late final Stream<Duration> _positionStream;
-
   @override
   void initState() {
     super.initState();
-    _positionStream = context.read<MusicPlayerService>().positionStream;
   }
 
   void _showQueue(BuildContext context, PlayerState state) {
@@ -232,10 +230,7 @@ class _PlayerPageState extends State<PlayerPage> {
       backgroundColor: Colors.transparent,
       body: BlocBuilder<PlayerBloc, PlayerState>(
         builder: (context, state) {
-          final MediaItem? currentSong = state.song ?? widget.song;
-          if (currentSong == null) {
-            return const Center(child: CircularProgressIndicator());
-          }
+          final MediaItem currentSong = state.song ?? widget.song;
 
           final isPlaying = state is PlayerPlaying;
           final isShuffle = state is PlayerPlaying
@@ -260,10 +255,10 @@ class _PlayerPageState extends State<PlayerPage> {
                         Column(
                           children: [
                             _TopBar(
-                                isOnPlayerPage: true,
-                                onActionTap: _goToLyrics,
-                                title: currentSong.title), // ✅ truyền title
-                            const SizedBox(height: 16),
+                              isOnPlayerPage: true,
+                              onActionTap: _goToLyrics,
+                              title: currentSong.title,
+                            ),
                             Expanded(
                               flex: 5,
                               child: _VinylDisc(
@@ -272,13 +267,16 @@ class _PlayerPageState extends State<PlayerPage> {
                                 isPlaying: isPlaying,
                               ),
                             ),
-                            const SizedBox(height: 28),
+                            const SizedBox(height: 16),
                             Padding(
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 32),
                               child: _SongInfo(song: currentSong),
                             ),
-                            const SizedBox(height: 24),
+                            const SizedBox(height: 12),
+                            // ── Action Row: Favorite · Playlist · Download · Share ──
+                            _ActionRow(song: currentSong),
+                            const SizedBox(height: 16),
                             Padding(
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 24),
@@ -290,7 +288,7 @@ class _PlayerPageState extends State<PlayerPage> {
                                     .add(SeekEvent(pos)),
                               ),
                             ),
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 16),
                             _Controls(
                               isPlaying: isPlaying,
                               isShuffle: isShuffle,
@@ -316,7 +314,6 @@ class _PlayerPageState extends State<PlayerPage> {
                               onQueueTap: () => _showQueue(context, state),
                               onCommentTap: () => _showComments(context, currentSong.id),
                             ),
-                            const SizedBox(height: 16),
                           ],
                         ),
 
@@ -324,15 +321,16 @@ class _PlayerPageState extends State<PlayerPage> {
                         Column(
                           children: [
                             _TopBar(
-                                isOnPlayerPage: false,
-                                onActionTap: _goToPlayer,
-                                title: currentSong.title), // ✅ truyền title
+                              isOnPlayerPage: false,
+                              onActionTap: _goToPlayer,
+                              title: currentSong.title,
+                            ),
                             Expanded(
                               child: LyricsPage(
-                                  song: currentSong,
-                                  lyricsService: getIt<LyricsService>(),
-                                  positionStream: getIt<MusicPlayerService>().positionStream,
-                                  onSeek: (position) => context.read<PlayerBloc>().add(SeekEvent(position)),
+                                song: currentSong,
+                                lyricsService: getIt<LyricsService>(),
+                                positionStream: getIt<MusicPlayerService>().positionStream,
+                                onSeek: (position) => context.read<PlayerBloc>().add(SeekEvent(position)),
                               ),
                             ),
                           ],
@@ -343,7 +341,9 @@ class _PlayerPageState extends State<PlayerPage> {
 
                   // Page indicator dots
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).padding.bottom + 8,
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: List.generate(2, (i) {
@@ -619,27 +619,23 @@ class _PlayerBackground extends StatelessWidget {
 class _TopBar extends StatelessWidget {
   final bool isOnPlayerPage;
   final VoidCallback onActionTap;
-  final String title; // ✅ thêm dòng này
+  final String title;
 
   const _TopBar({
     required this.isOnPlayerPage,
     required this.onActionTap,
-    required this.title, // ✅ required
+    required this.title,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.45),
-        border: Border(
-          bottom: BorderSide(
-            color: Colors.white.withOpacity(0.08),
-            width: 1,
-          ),
-        ),
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 8,
+        bottom: 8,
+        left: 8,
+        right: 8,
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
           _IconBtn(
@@ -655,19 +651,22 @@ class _TopBar extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white54,
+                    color: Colors.white70,
                     letterSpacing: 3,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  title, // ✅ dùng biến thay vì hardcode
+                  title,
                   style: const TextStyle(
                     fontSize: 14,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     color: Colors.white,
                     letterSpacing: 0.3,
                   ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -702,50 +701,542 @@ class _SongInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
-    final favoriteIds = context.watch<FavoriteCubit>().state;
-    final isFavorite = favoriteIds.contains(song.id);
 
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Expanded(
+        Text(
+          song.title,
+          style: tt.displayMedium,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 6),
+        Text(
+          song.artist ?? 'Unknown Artist',
+          style: tt.titleMedium,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Action Row: Yêu thích · Playlist · Download · Chia sẻ
+// ─────────────────────────────────────────────────────────────
+class _ActionRow extends StatelessWidget {
+  final MediaItem song;
+  const _ActionRow({required this.song});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 28),
+      child: BlocBuilder<DownloadCubit, List<String>>(
+        builder: (context, downloadedIds) {
+          final isDownloaded = downloadedIds.contains(song.id);
+          return BlocBuilder<PlaylistCubit, PlaylistState>(
+            builder: (context, plState) {
+              bool inAnyPlaylist = false;
+              if (plState is PlaylistLoaded) {
+                inAnyPlaylist = plState.playlists.any((p) => p.songIds.contains(song.id));
+              }
+              return BlocBuilder<FavoriteCubit, List<String>>(
+                builder: (context, favIds) {
+                  final isFavorite = favIds.contains(song.id);
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _ActionBtn(
+                        icon: isFavorite
+                            ? Icons.favorite_rounded
+                            : Icons.favorite_border_rounded,
+                        label: 'Yêu thích',
+                        color: isFavorite ? const Color(0xFFE91E8C) : Colors.white70,
+                        onTap: () async {
+                          final wasFav = favIds.contains(song.id);
+                          try {
+                            await context.read<FavoriteCubit>().toggleFavorite(song.id);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context)
+                                ..removeCurrentSnackBar()
+                                ..showSnackBar(SnackBar(
+                                  content: Text(wasFav
+                                      ? 'Đã bỏ khỏi yêu thích'
+                                      : 'Đã thêm vào yêu thích'),
+                                  backgroundColor: wasFav
+                                      ? Colors.grey.shade700
+                                      : const Color(0xFFE91E8C),
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ));
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context)
+                                ..removeCurrentSnackBar()
+                                ..showSnackBar(SnackBar(
+                                  content: Text(e.toString().replaceFirst('Exception: ', '')),
+                                  backgroundColor: Colors.red.shade700,
+                                  behavior: SnackBarBehavior.floating,
+                                ));
+                            }
+                          }
+                        },
+                      ),
+                      _ActionBtn(
+                        icon: inAnyPlaylist
+                            ? Icons.playlist_add_check_rounded
+                            : Icons.playlist_add_rounded,
+                        label: 'Playlist',
+                        color: inAnyPlaylist ? const Color(0xFF7C3AED) : Colors.white70,
+                        onTap: () => _showPlaylistSheet(context),
+                      ),
+                      _ActionBtn(
+                        icon: isDownloaded
+                            ? Icons.download_done_rounded
+                            : Icons.download_rounded,
+                        label: isDownloaded ? 'Đã tải' : 'Tải nhạc',
+                        color: isDownloaded ? const Color(0xFF1DB954) : Colors.white70,
+                        onTap: () async {
+                          final wasDown = downloadedIds.contains(song.id);
+                          try {
+                            await context.read<DownloadCubit>().toggleDownload(song);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context)
+                                ..removeCurrentSnackBar()
+                                ..showSnackBar(SnackBar(
+                                  content: Text(wasDown
+                                      ? 'Đã xóa khỏi tải về'
+                                      : 'Đã tải bài hát'),
+                                  backgroundColor: const Color(0xFF1DB954),
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ));
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context)
+                                ..removeCurrentSnackBar()
+                                ..showSnackBar(SnackBar(
+                                  content: Text(e.toString().replaceFirst('Exception: ', '')),
+                                  backgroundColor: Colors.red.shade700,
+                                  behavior: SnackBarBehavior.floating,
+                                ));
+                            }
+                          }
+                        },
+                      ),
+                      _ActionBtn(
+                        icon: Icons.share_rounded,
+                        label: 'Chia sẻ',
+                        color: Colors.white70,
+                        onTap: () => _showShareSheet(context),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  void _showPlaylistSheet(BuildContext pageContext) {
+    final playlistCubit = pageContext.read<PlaylistCubit>();
+    showModalBottomSheet(
+      context: pageContext,
+      backgroundColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      isScrollControlled: true,
+      builder: (ctx) {
+        return Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF1E1E28),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            border: Border(
+              top: BorderSide(color: Colors.white.withValues(alpha: 0.12), width: 1),
+            ),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: BlocBuilder<PlaylistCubit, PlaylistState>(
+                builder: (context, state) {
+                  final playlists = state is PlaylistLoaded ? state.playlists : [];
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 36, height: 4,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.queue_music_rounded,
+                                color: Color(0xFF7C3AED), size: 22),
+                            const SizedBox(width: 10),
+                            const Text(
+                              'Thêm vào playlist',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      if (playlists.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.all(32),
+                          child: Column(
+                            children: [
+                              Icon(Icons.playlist_add_rounded,
+                                  size: 48, color: Colors.white.withValues(alpha: 0.3)),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Bạn chưa có playlist nào',
+                                style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.5)),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 300),
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: playlists.length,
+                            itemBuilder: (_, i) {
+                              final pl = playlists[i];
+                              final isAdded = pl.songIds.contains(song.id);
+                              return ListTile(
+                                leading: Container(
+                                  width: 40, height: 40,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF7C3AED).withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(Icons.queue_music_rounded,
+                                      color: Color(0xFF7C3AED), size: 20),
+                                ),
+                                title: Text(
+                                  pl.name,
+                                  style: TextStyle(
+                                    color: isAdded ? const Color(0xFF7C3AED) : Colors.white,
+                                    fontSize: 14, fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  '${pl.songIds.length} bài',
+                                  style: TextStyle(
+                                    color: isAdded
+                                        ? const Color(0xFF7C3AED).withValues(alpha: 0.6)
+                                        : Colors.white.withValues(alpha: 0.4),
+                                  ),
+                                ),
+                                trailing: isAdded
+                                    ? const Icon(Icons.check_circle_rounded,
+                                        color: Color(0xFF7C3AED), size: 22)
+                                    : null,
+                                onTap: () async {
+                                  Navigator.pop(ctx);
+                                  final err = await playlistCubit.addSongToPlaylist(pl.id, song.id);
+                                  if (pageContext.mounted) {
+                                    ScaffoldMessenger.of(pageContext)
+                                      ..removeCurrentSnackBar()
+                                      ..showSnackBar(SnackBar(
+                                        content: Text(
+                                          err == null
+                                              ? 'Đã thêm vào "${pl.name}"'
+                                              : (err == 'Đã tồn tại'
+                                                  ? 'Bài hát đã có trong playlist'
+                                                  : err),
+                                        ),
+                                        backgroundColor: err == null
+                                            ? const Color(0xFF7C3AED)
+                                            : Colors.red.shade700,
+                                        behavior: SnackBarBehavior.floating,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                      ));
+                                  }
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      const SizedBox(height: 8),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showShareSheet(BuildContext pageContext) {
+    showModalBottomSheet(
+      context: pageContext,
+      backgroundColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF1E1E28),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            border: Border(
+              top: BorderSide(color: Colors.white.withValues(alpha: 0.12), width: 1),
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 24),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Text(song.title,
-                  style: tt.displayMedium,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis),
+              Container(
+                width: 36, height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                child: Row(
+                  children: [
+                    const Icon(Icons.share_rounded, color: Color(0xFF9333EA), size: 22),
+                    const SizedBox(width: 10),
+                    const Text(
+                      'Chia sẻ bài hát',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Song info preview
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: SizedBox(
+                        width: 48, height: 48,
+                        child: song.artUri != null
+                            ? CachedNetworkImage(
+                                imageUrl: song.artUri.toString(),
+                                fit: BoxFit.cover,
+                                errorWidget: (_, __, ___) => Container(
+                                  color: const Color(0xFF2A2A2E),
+                                  child: const Icon(Icons.music_note_rounded,
+                                      color: Colors.white30, size: 24),
+                                ),
+                              )
+                            : Container(
+                                color: const Color(0xFF2A2A2E),
+                                child: const Icon(Icons.music_note_rounded,
+                                    color: Colors.white30, size: 24),
+                              ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            song.title,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            song.artist ?? 'Unknown Artist',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.55),
+                              fontSize: 13,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Share options
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    _ShareOption(
+                      icon: Icons.link_rounded,
+                      label: 'Sao chép link',
+                      color: const Color(0xFF9333EA),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(pageContext)
+                          ..removeCurrentSnackBar()
+                          ..showSnackBar(const SnackBar(
+                            content: Text('Link đã được sao chép!'),
+                            backgroundColor: Color(0xFF9333EA),
+                            behavior: SnackBarBehavior.floating,
+                          ));
+                      },
+                    ),
+                    const SizedBox(width: 12),
+                    _ShareOption(
+                      icon: Icons.share_rounded,
+                      label: 'Chia sẻ',
+                      color: const Color(0xFF9333EA),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        SharePlus.instance.share(
+                          ShareParams(
+                            text: '🎵 "${song.title}" - ${song.artist ?? ''} trên Music App!',
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ShareOption extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+  const _ShareOption({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Material(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            child: Column(
+              children: [
+                Icon(icon, color: color, size: 24),
+                const SizedBox(height: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Single Action Button
+// ─────────────────────────────────────────────────────────────
+class _ActionBtn extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ActionBtn({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: color, size: 24),
               const SizedBox(height: 4),
-              Text(song.artist ?? 'Unknown Artist',
-                  style: tt.titleMedium,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis),
+              Text(
+                label,
+                style: TextStyle(
+                  color: color.withValues(alpha: 0.9),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.2,
+                ),
+              ),
             ],
           ),
         ),
-        _IconBtn(
-          icon: isFavorite
-              ? Icons.favorite_rounded
-              : Icons.favorite_border_rounded,
-          onTap: () async {
-            try {
-              await context.read<FavoriteCubit>().toggleFavorite(song.id);
-            } catch (e) {
-              if (!context.mounted) return;
-              ScaffoldMessenger.of(context)
-                ..removeCurrentSnackBar()
-                ..showSnackBar(SnackBar(
-                  content: Text(
-                      e.toString().replaceFirst('Exception: ', '')),
-                  backgroundColor: Colors.redAccent,
-                  behavior: SnackBarBehavior.floating,
-                ));
-            }
-          },
-          color: isFavorite ? Colors.redAccent : null,
-          size: 28,
-        ),
-      ],
+      ),
     );
   }
 }
@@ -817,12 +1308,41 @@ class _Controls extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 24),
-        // HÀNG 2: Form Bình luận và Danh sách phát (Queue)
+        const SizedBox(height: 20),
+        // HÀNG 2: Bình luận · Danh sách phát
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              // Nút Bình luận
+              Material(
+                color: cs.surfaceTint.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(20),
+                child: InkWell(
+                  onTap: onCommentTap,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.chat_bubble_outline_rounded,
+                            size: 20, color: cs.onSurface.withValues(alpha: 0.7)),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Bình luận',
+                          style: TextStyle(
+                              color: cs.onSurface.withValues(alpha: 0.7),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
               // Nút Danh sách phát
               Material(
                 color: cs.surfaceTint.withValues(alpha: 0.08),
@@ -831,29 +1351,21 @@ class _Controls extends StatelessWidget {
                   onTap: onQueueTap,
                   borderRadius: BorderRadius.circular(20),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                    child: Icon(Icons.queue_music_rounded, size: 24, color: cs.onSurface.withValues(alpha: 0.8)),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Nút Bình luận hình form nhập liệu
-              Expanded(
-                child: Material(
-                  color: cs.surfaceTint.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(20),
-                  child: InkWell(
-                    onTap: onCommentTap,
-                    borderRadius: BorderRadius.circular(20),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      child: Row(
-                        children: [
-                          Icon(Icons.chat_bubble_outline_rounded, size: 22, color: cs.onSurface.withValues(alpha: 0.5)),
-                          const SizedBox(width: 12),
-                          Text('Viết bình luận...', style: TextStyle(color: cs.onSurface.withValues(alpha: 0.5), fontSize: 15)),
-                        ],
-                      ),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.queue_music_rounded,
+                            size: 20, color: cs.onSurface.withValues(alpha: 0.7)),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Danh sách phát',
+                          style: TextStyle(
+                              color: cs.onSurface.withValues(alpha: 0.7),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500),
+                        ),
+                      ],
                     ),
                   ),
                 ),

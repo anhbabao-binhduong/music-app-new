@@ -8,9 +8,7 @@ import 'package:music_app/pages/player/player_page.dart';
 // Import Cubit và biến localPlaylist chứa danh sách nhạc tổng
 import 'package:music_app/presentation/bloc/favorite/favorite_cubit.dart';
 import 'package:music_app/data/local_music_data.dart';
-import 'package:music_app/pages/home/widgets/song_cards.dart'; 
 import 'package:music_app/presentation/bloc/download/download_cubit.dart';
-import 'package:music_app/presentation/bloc/playlist/playlist_cubit.dart';
 
 class FavoritePage extends StatefulWidget {
   const FavoritePage({super.key});
@@ -41,14 +39,7 @@ class _FavoritePageState extends State<FavoritePage> {
     );
   }
 
-  String _normalizeAudioUrl(String? url) {
-    if (url == null || url.isEmpty) return '';
-    if (url.startsWith('http')) return url.trim();
-    const base = 'https://pdbkojvgjrvnzqmerwmz.supabase.co/storage/v1/object/public/songs/';
-    return '$base${url.trim()}';
-  }
-
-  @override
+@override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF121212), // Màu kBg của bạn

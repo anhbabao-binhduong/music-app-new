@@ -222,7 +222,8 @@ class _SeeAllPageState extends State<SeeAllPage> {
   Widget _buildSongsDesktopLayout(BuildContext context) {
     final imgUrl = widget.imageUrl ?? fallbackImageUrl;
     final desc = widget.description ?? fallbackDescription;
-    final TextStyle _headerStyle = TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.5);
+    // ignore: no_leading_underscores_for_local_identifiers
+    final _headerStyle = TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.5);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 20.0),
@@ -603,8 +604,19 @@ class _ZingMusicTableRowState extends State<_ZingMusicTableRow> {
                                 size: 16,
                               ),
                               onPressed: () async {
+                                final wasFav = context.read<FavoriteCubit>().state.contains(widget.item.id);
                                 try {
                                   await context.read<FavoriteCubit>().toggleFavorite(widget.item.id);
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(wasFav ? 'Đã thêm vào yêu thích' : 'Đã bỏ khỏi yêu thích'),
+                                        backgroundColor: wasFav ? const Color(0xFFE91E8C) : Colors.grey.shade700,
+                                        behavior: SnackBarBehavior.floating,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      ),
+                                    );
+                                  }
                                 } catch (e) {
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
@@ -623,8 +635,9 @@ class _ZingMusicTableRowState extends State<_ZingMusicTableRow> {
                             IconButton(
                               icon: const Icon(Icons.more_horiz, color: Colors.white70, size: 16),
                               onPressed: () {
+                                final pageContext = context;
                                 showModalBottomSheet(
-                                  context: context,
+                                  context: pageContext,
                                   backgroundColor: const Color(0xFF1E1E28),
                                   shape: const RoundedRectangleBorder(
                                     borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -662,7 +675,17 @@ class _ZingMusicTableRowState extends State<_ZingMusicTableRow> {
                                                     color: isInAnyPlaylist ? const Color(0xFF7C3AED) : Colors.white,
                                                   ),
                                                 ),
-                                                onTap: () => Navigator.pop(ctx),
+                                                onTap: () {
+                                                  Navigator.pop(ctx);
+                                                  ScaffoldMessenger.of(pageContext).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text(isInAnyPlaylist ? 'Bài hát đã có trong playlist' : 'Vui lòng chọn playlist từ mục Thư viện'),
+                                                      backgroundColor: const Color(0xFF7C3AED),
+                                                      behavior: SnackBarBehavior.floating,
+                                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                    ),
+                                                  );
+                                                },
                                               );
                                             },
                                           ),
@@ -687,13 +710,33 @@ class _ZingMusicTableRowState extends State<_ZingMusicTableRow> {
                                                     color: isDownloaded ? const Color(0xFF1DB954) : Colors.white,
                                                   ),
                                                 ),
-                                                onTap: () async {
+                                                                                                onTap: () async {
                                                   Navigator.pop(ctx);
                                                   try {
-                                                    await context.read<DownloadCubit>().toggleDownload(widget.item);
+                                                    final downloadCubit = pageContext.read<DownloadCubit>();
+                                                    await downloadCubit.toggleDownload(widget.item);
+                                                    final isNowDown = downloadCubit.state.contains(widget.item.id);
+                                                    if (pageContext.mounted) {
+                                                      ScaffoldMessenger.of(pageContext).showSnackBar(
+                                                        SnackBar(
+                                                          content: Text(
+                                                            isNowDown
+                                                                ? 'Đã tải bài hát'
+                                                                : 'Đã xóa khỏi tải về',
+                                                          ),
+                                                          backgroundColor:
+                                                              const Color(0xFF1DB954),
+                                                          behavior:
+                                                              SnackBarBehavior.floating,
+                                                          shape: RoundedRectangleBorder(
+                                                              borderRadius:
+                                                                  BorderRadius.circular(12)),
+                                                        ),
+                                                      );
+                                                    }
                                                   } catch (e) {
-                                                    if (context.mounted) {
-                                                      ScaffoldMessenger.of(context).showSnackBar(
+                                                    if (pageContext.mounted) {
+                                                      ScaffoldMessenger.of(pageContext).showSnackBar(
                                                         SnackBar(
                                                           content: Text(e.toString().replaceFirst('Exception: ', '')),
                                                           backgroundColor: Colors.red.shade700,

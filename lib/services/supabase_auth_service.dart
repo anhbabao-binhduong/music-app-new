@@ -43,6 +43,9 @@ class SupabaseAuthService {
       await _client.auth.signInWithOAuth(
         OAuthProvider.google,
         redirectTo: Uri.base.origin,
+        queryParams: {
+          'prompt': 'select_account', // Bắt buộc Google hiện bảng chọn lại tài khoản
+        },
       );
       return null; // web tự redirect, không có response ngay
     }
@@ -51,7 +54,17 @@ class SupabaseAuthService {
     final googleSignIn = GoogleSignIn(serverClientId: _webClientId);
 
     // Đăng xuất session Google cũ để luôn hiện account picker
-    await googleSignIn.signOut();
+    try {
+      final isSignedIn = await googleSignIn.isSignedIn();
+      if (!isSignedIn) {
+        await googleSignIn.signInSilently();
+      }
+      await googleSignIn.disconnect();
+    } catch (_) {}
+
+    try {
+      await googleSignIn.signOut();
+    } catch (_) {}
 
     final googleUser = await googleSignIn.signIn();
     if (googleUser == null) {
@@ -77,8 +90,18 @@ class SupabaseAuthService {
     // Đăng xuất khỏi Google nếu đã đăng nhập bằng Google
     try {
       final googleSignIn = GoogleSignIn(serverClientId: _webClientId);
+      final isSignedIn = await googleSignIn.isSignedIn();
+      if (!isSignedIn) {
+        await googleSignIn.signInSilently();
+      }
+      await googleSignIn.disconnect();
+    } catch (_) {}
+
+    try {
+      final googleSignIn = GoogleSignIn(serverClientId: _webClientId);
       await googleSignIn.signOut();
     } catch (_) {}
+
     await _client.auth.signOut();
   }
 

@@ -39,12 +39,13 @@ class _ChartTileState extends State<ChartTile> {
     }
   }
 
-  void _showOptionsSheet(BuildContext context) {
+  void _showOptionsSheet(BuildContext pageCtx) {
+    final pageContext = context;
     final favCubit = context.read<FavoriteCubit>();
     final playlistCubit = context.read<PlaylistCubit>();
 
     showModalBottomSheet(
-      context: context,
+      context: pageCtx,
       backgroundColor: const Color(0xFF1E1E28),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -141,10 +142,21 @@ class _ChartTileState extends State<ChartTile> {
                     label: isCurrentlyFav
                         ? 'Bỏ yêu thích'
                         : 'Thêm vào yêu thích',
-                    onTap: () async {
+                                        onTap: () async {
                       Navigator.pop(ctx);
+                      final wasFav = favCubit.state.contains(widget.item.id);
                       try {
                         await favCubit.toggleFavorite(widget.item.id);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(wasFav ? 'Đã bỏ khỏi yêu thích' : 'Đã thêm vào yêu thích'),
+                              backgroundColor: wasFav ? Colors.grey.shade700 : const Color(0xFFE91E8C),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          );
+                        }
                       } catch (e) {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -176,7 +188,7 @@ class _ChartTileState extends State<ChartTile> {
                       textColor: isInAnyPlaylist ? const Color(0xFF7C3AED) : Colors.white,
                       onTap: () {
                         Navigator.pop(ctx);
-                        _showAddToPlaylistSheet(context, playlistCubit);
+                        _showAddToPlaylistSheet(pageContext, playlistCubit);
                       },
                     );
                   },
@@ -191,13 +203,24 @@ class _ChartTileState extends State<ChartTile> {
                       iconColor: isDownloaded ? const Color(0xFF1DB954) : Colors.white70,
                       label: isDownloaded ? 'Đã tải' : 'Tải nhạc',
                       textColor: isDownloaded ? const Color(0xFF1DB954) : Colors.white,
-                      onTap: () async {
+                                            onTap: () async {
                         Navigator.pop(ctx);
+                        final wasDown = downloadedIds.contains(widget.item.id);
                         try {
-                          await context.read<DownloadCubit>().toggleDownload(widget.item);
+                          await pageContext.read<DownloadCubit>().toggleDownload(widget.item);
+                          if (pageContext.mounted) {
+                            ScaffoldMessenger.of(pageContext).showSnackBar(
+                              SnackBar(
+                                content: Text(wasDown ? 'Đã xóa khỏi tải về' : 'Đã tải bài hát'),
+                                backgroundColor: const Color(0xFF1DB954),
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            );
+                          }
                         } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
+                          if (pageContext.mounted) {
+                            ScaffoldMessenger.of(pageContext).showSnackBar(
                               SnackBar(
                                 content: Text(e.toString().replaceFirst('Exception: ', '')),
                                 backgroundColor: Colors.red.shade700,
@@ -235,9 +258,9 @@ class _ChartTileState extends State<ChartTile> {
     );
   }
 
-  void _showAddToPlaylistSheet(BuildContext context, PlaylistCubit playlistCubit) {
+  void _showAddToPlaylistSheet(BuildContext pageContext, PlaylistCubit playlistCubit) {
     showModalBottomSheet(
-      context: context,
+      context: pageContext,
       backgroundColor: const Color(0xFF1E1E28),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -267,7 +290,7 @@ class _ChartTileState extends State<ChartTile> {
                       child: Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
-                          'Chá»n playlist',
+                          'Chọn playlist',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 16,
@@ -281,7 +304,7 @@ class _ChartTileState extends State<ChartTile> {
                       Padding(
                         padding: const EdgeInsets.all(24),
                         child: Text(
-                          'Báº¡n chÆ°a cĂ³ playlist nĂ o',
+                          'Bạn chưa có playlist nào',
                           style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
                         ),
                       )
@@ -314,7 +337,7 @@ class _ChartTileState extends State<ChartTile> {
                                     fontWeight: FontWeight.w500),
                               ),
                               subtitle: Text(
-                                '${pl.songIds.length} bĂ i',
+                                '${pl.songIds.length} bài',
                                 style: TextStyle(
                                     color: isAdded ? const Color(0xFF7C3AED).withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.4), 
                                     fontSize: 12),
@@ -328,14 +351,14 @@ class _ChartTileState extends State<ChartTile> {
                                   pl.id,
                                   widget.item.id,
                                 );
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
+                                if (pageContext.mounted) {
+                                  ScaffoldMessenger.of(pageContext).showSnackBar(
                                     SnackBar(
                                       content: Text(
                                         err == null
-                                            ? 'ÄĂ£ thĂªm vĂ o "${pl.name}"'
-                                            : (err == 'ÄĂ£ tá»“n táº¡i'
-                                                ? 'BĂ i hĂ¡t Ä‘Ă£ cĂ³ trong playlist'
+                                            ? 'Đã thêm vào "${pl.name}"'
+                                            : (err == 'Đã tồn tại'
+                                                ? 'Bài hát đã có trong playlist'
                                                 : err),
                                       ),
                                       backgroundColor: err == null

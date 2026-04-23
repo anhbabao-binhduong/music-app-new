@@ -35,9 +35,11 @@ class SongRepository {
         }
 
         final publicUrl = resolveAudioUrl(audioPath.toString());
+        // ignore: avoid_print
         print('🎵 Resolved URL: $publicUrl');
 
         if (publicUrl.isEmpty) {
+          // ignore: avoid_print
           print("❌ URL rỗng: $audioPath");
           return null;
         }
@@ -66,6 +68,7 @@ class SongRepository {
 
       return songs;
     } catch (e) {
+      // ignore: avoid_print
       print('Lỗi khi tải nhạc: $e');
       return [];
     }

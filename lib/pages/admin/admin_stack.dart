@@ -9,6 +9,7 @@ import 'package:music_app/pages/auth/login_page.dart';
 import 'package:music_app/presentation/bloc/admin/admin_cubit.dart';
 import 'package:music_app/presentation/bloc/admin/admin_state.dart';
 import 'package:music_app/services/supabase_auth_service.dart';
+import 'package:music_app/widgets/mini_player_bar.dart';
 
 /// Top-level admin navigator — completely separate from UserStack.
 class AdminStack extends StatefulWidget {
@@ -100,9 +101,17 @@ class _AdminStackState extends State<AdminStack> {
         onRefresh: () => context.read<AdminCubit>().loadAll(),
         onLogout: _logout,
       ),
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 200),
-        child: KeyedSubtree(key: ValueKey(_index), child: _buildPage()),
+      body: Column(
+        children: [
+          Expanded(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: KeyedSubtree(key: ValueKey(_index), child: _buildPage()),
+            ),
+          ),
+          // MiniPlayer nằm trên bottom nav, không dùng bottomSheet tránh conflict
+          const MiniPlayerBar(),
+        ],
       ),
       bottomNavigationBar: _AdminBottomNav(
         current: _index,

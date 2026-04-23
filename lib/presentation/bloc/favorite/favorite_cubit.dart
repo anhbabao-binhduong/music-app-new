@@ -65,4 +65,6 @@ class FavoriteCubit extends Cubit<List<String>> {
       rethrow;
     }
   }
+
+  void clear() => emit([]);
 }

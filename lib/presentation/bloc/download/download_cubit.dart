@@ -69,4 +69,6 @@ class DownloadCubit extends Cubit<List<String>> {
 
     await _loadDownloads();
   }
+
+  void clear() => emit([]);
 }

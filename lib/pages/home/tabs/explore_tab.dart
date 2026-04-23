@@ -20,7 +20,6 @@ import '../../../../presentation/bloc/album/album_cubit.dart';
 import '../../../../presentation/bloc/album/album_state.dart';
 import '../../../../presentation/bloc/user_songs/user_songs_cubit.dart';
 import '../../../../data/models/user_song_model.dart';
-import '../../../../core/constants/colors.dart';
 
 class ExploreTab extends StatefulWidget {
   final bool isLoggedIn;
@@ -438,49 +437,150 @@ class _ExploreTabState extends State<ExploreTab> {
     return FutureBuilder<List<UserSongModel>>(
       future: _approvedSongsFuture,
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const SizedBox.shrink();
+        if (!snapshot.hasData) return const _CommunitySectionSkeleton();
         final approved = snapshot.data!;
         if (approved.isEmpty) return const SizedBox.shrink();
-        
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionHeader('Nhạc từ cộng đồng', () {}),
-            const SizedBox(height: 16),
+            // ═══ HERO HEADER ═══════════════════════════════════════════════
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  // Icon badge with gradient glow
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF9333EA), Color(0xFFEC4899)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF9333EA).withValues(alpha: 0.5),
+                          blurRadius: 16,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(Icons.people_rounded, color: Colors.white, size: 26),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ShaderMask(
+                          shaderCallback: (bounds) => const LinearGradient(
+                            colors: [Color(0xFF9333EA), Color(0xFFEC4899)],
+                          ).createShader(bounds),
+                          child: const Text(
+                            'Nhạc từ cộng đồng',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${approved.length} bài hát từ cộng đồng',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.5),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // See all button
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF9333EA), Color(0xFF7C3AED)],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF9333EA).withValues(alpha: 0.35),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Text(
+                          'Xem tất cả',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        SizedBox(width: 4),
+                        Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 14),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // ═══ FEATURED + SCROLL ════════════════════════════════════════
             SizedBox(
-              height: 196,
+              height: 260,
               child: ListView.separated(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 scrollDirection: Axis.horizontal,
                 physics: const BouncingScrollPhysics(),
                 itemCount: approved.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 16),
-                itemBuilder: (ctx, i) => _CommunitySongCard(
-                  song: approved[i],
-                  onTap: () {
-                    Future.microtask(() async {
-                      final playlist = approved.map((s) => MediaItem(
-                        id: s.id,
-                        title: s.title,
-                        artist: s.artist,
-                        album: s.album,
-                        artUri: s.artUrl != null ? Uri.parse(s.artUrl!) : null,
-                        duration: Duration(milliseconds: s.durationMs),
-                        extras: {'url': s.audioUrl},
-                      )).toList();
-                      await getIt<MusicPlayerService>().playPlaylist(
-                        playlist,
-                        startIndex: i,
-                      );
-                    });
-                  },
-                ),
+                separatorBuilder: (_, __) => const SizedBox(width: 14),
+                itemBuilder: (ctx, i) {
+                  if (i == 0) {
+                    return _CommunityFeaturedCard(
+                      song: approved[i],
+                      onTap: () => _playCommunitySong(approved, i),
+                    );
+                  }
+                  return _CommunitySongCard(
+                    song: approved[i],
+                    rank: i + 1,
+                    onTap: () => _playCommunitySong(approved, i),
+                  );
+                },
               ),
             ),
           ],
         );
       },
     );
+  }
+
+  Future<void> _playCommunitySong(List<UserSongModel> songs, int index) async {
+    Future.microtask(() async {
+      final playlist = songs.map((s) => MediaItem(
+        id: s.id.hashCode.abs().toString(),
+        title: s.title,
+        artist: s.artist,
+        album: s.album,
+        artUri: s.artUrl != null ? Uri.parse(s.artUrl!) : null,
+        duration: Duration(milliseconds: s.durationMs),
+        extras: {'url': s.audioUrl},
+      )).toList();
+      await getIt<MusicPlayerService>().playPlaylist(playlist, startIndex: index);
+    });
   }
 
   Widget _buildChartSection(BuildContext context) {
@@ -589,76 +689,519 @@ class _PaginationButtonState extends State<_PaginationButton> {
   }
 }
 
-// -- Community Song Card --------------------------------------------------
-class _CommunitySongCard extends StatelessWidget {
-  final UserSongModel song;
-  final VoidCallback onTap;
-  const _CommunitySongCard({required this.song, required this.onTap});
+// ─── COMMUNITY SECTION SKELETON ───────────────────────────────────────
+class _CommunitySectionSkeleton extends StatelessWidget {
+  const _CommunitySectionSkeleton();
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: SizedBox(
-        width: 140,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Stack(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 180,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    width: 120,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.04),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        SizedBox(
+          height: 240,
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            scrollDirection: Axis.horizontal,
+            itemCount: 4,
+            separatorBuilder: (_, __) => const SizedBox(width: 14),
+            itemBuilder: (_, __) => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: AspectRatio(
-                    aspectRatio: 1,
-                    child: song.artUrl != null
-                        ? Image.network(
-                            song.artUrl!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => _placeholder(),
-                          )
-                        : _placeholder(),
+                Container(
+                  width: 160,
+                  height: 160,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                 ),
-                Positioned(
-                  bottom: 8,
-                  right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: const BoxDecoration(
-                      color: kAccent,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.play_arrow_rounded,
-                        color: Colors.white, size: 18),
+                const SizedBox(height: 10),
+                Container(
+                  width: 120,
+                  height: 13,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Container(
+                  width: 80,
+                  height: 11,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.04),
+                    borderRadius: BorderRadius.circular(4),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            Text(
-              song.title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-            ),
-            const SizedBox(height: 3),
-            Text(
-              song.artist,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Colors.white54, fontSize: 12),
-            ),
-          ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── FEATURED COMMUNITY CARD (Hero item) ──────────────────────────────
+class _CommunityFeaturedCard extends StatefulWidget {
+  final UserSongModel song;
+  final VoidCallback onTap;
+
+  const _CommunityFeaturedCard({required this.song, required this.onTap});
+
+  @override
+  State<_CommunityFeaturedCard> createState() => _CommunityFeaturedCardState();
+}
+
+class _CommunityFeaturedCardState extends State<_CommunityFeaturedCard>
+    with SingleTickerProviderStateMixin {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _isPressed = false),
+      child: AnimatedScale(
+        scale: _isPressed ? 0.94 : 1.0,
+        duration: const Duration(milliseconds: 150),
+        child: SizedBox(
+          width: 172,
+          height: 252,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Album art — fixed 172x172 to avoid unbounded Stack
+              SizedBox(
+                width: 172,
+                height: 172,
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+                      child: widget.song.artUrl != null
+                          ? Image.network(widget.song.artUrl!,
+                              width: 172, height: 172,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => _featuredPlaceholder())
+                          : _featuredPlaceholder(),
+                    ),
+                    // Rank #1 badge
+                    Positioned(
+                      top: 10,
+                      left: 10,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFF59E0B).withValues(alpha: 0.5),
+                              blurRadius: 8,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(Icons.star_rounded, color: Colors.white, size: 11),
+                            SizedBox(width: 3),
+                            Text(
+                              'TOP 1',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Play button
+                    Positioned(
+                      bottom: 10,
+                      right: 10,
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF9333EA), Color(0xFFEC4899)],
+                          ),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF9333EA).withValues(alpha: 0.6),
+                              blurRadius: 12,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(Icons.play_arrow_rounded,
+                            color: Colors.white, size: 24),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Info section — SizedBox(height: 80) cố định tránh overflow
+              SizedBox(
+                height: 80,
+                child: Container(
+                  width: 172,
+                  padding: const EdgeInsets.all(10),
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF1A0E2E), Color(0xFF2D1450)],
+                    ),
+                    borderRadius: BorderRadius.vertical(bottom: Radius.circular(22)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        widget.song.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          height: 1.2,
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEC4899).withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Icon(Icons.person_rounded,
+                                color: Color(0xFFEC4899), size: 10),
+                          ),
+                          const SizedBox(width: 5),
+                          Expanded(
+                            child: Text(
+                              widget.song.artist,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.7),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (widget.song.durationMs > 0)
+                        Row(
+                          children: [
+                            const Icon(Icons.access_time_rounded,
+                                color: Color(0xFF9333EA), size: 9),
+                            const SizedBox(width: 3),
+                            Text(
+                              _formatDuration(Duration(milliseconds: widget.song.durationMs)),
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.45),
+                                fontSize: 9,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _placeholder() => Container(
-        color: const Color(0xFF1E1E30),
+  Widget _featuredPlaceholder() => Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF2D1450), Color(0xFF1A0E2E)],
+          ),
+        ),
         child: const Center(
-          child: Icon(Icons.music_note_rounded, color: Colors.white24, size: 36),
+          child: Icon(Icons.music_note_rounded, color: Colors.white24, size: 48),
         ),
       );
+}
+
+// ─── COMMUNITY SONG CARD ───────────────────────────────────────────────
+class _CommunitySongCard extends StatefulWidget {
+  final UserSongModel song;
+  final VoidCallback onTap;
+  final int? rank;
+
+  const _CommunitySongCard({
+    required this.song,
+    required this.onTap,
+    this.rank,
+  });
+
+  @override
+  State<_CommunitySongCard> createState() => _CommunitySongCardState();
+}
+
+class _CommunitySongCardState extends State<_CommunitySongCard> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _isPressed = false),
+      child: AnimatedScale(
+        scale: _isPressed ? 0.93 : 1.0,
+        duration: const Duration(milliseconds: 150),
+        child: SizedBox(
+          width: 150,
+          height: 230,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Album art — fixed 150x150
+              SizedBox(
+                width: 150,
+                height: 150,
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(19)),
+                      child: widget.song.artUrl != null
+                          ? Image.network(widget.song.artUrl!,
+                              width: 150, height: 150,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => _cardPlaceholder())
+                          : _cardPlaceholder(),
+                    ),
+                    // Gradient overlay
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(19)),
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withValues(alpha: 0.0),
+                              Colors.black.withValues(alpha: 0.5),
+                            ],
+                            stops: const [0.4, 0.7, 1.0],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Rank badge
+                    if (widget.rank != null)
+                      Positioned(
+                        top: 8,
+                        left: 8,
+                        child: Container(
+                          width: 26,
+                          height: 26,
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.6),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: _getRankColor(widget.rank!).withValues(alpha: 0.6),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${widget.rank}',
+                              style: TextStyle(
+                                color: _getRankColor(widget.rank!),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    // Play button
+                    Positioned(
+                      bottom: 8,
+                      right: 8,
+                      child: Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF9333EA), Color(0xFFEC4899)],
+                          ),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF9333EA).withValues(alpha: 0.5),
+                              blurRadius: 10,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(Icons.play_arrow_rounded,
+                            color: Colors.white, size: 20),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Info section — SizedBox(height: 70) cố định tránh overflow
+              SizedBox(
+                height: 70,
+                child: Container(
+                  width: 150,
+                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF161626),
+                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(19)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.07),
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        widget.song.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          height: 1.2,
+                        ),
+                      ),
+                      if (widget.song.artist.isNotEmpty)
+                        Text(
+                          widget.song.artist,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFF9333EA),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      if (widget.song.durationMs > 0)
+                        Row(
+                          children: [
+                            Icon(Icons.access_time_rounded,
+                                color: Colors.white.withValues(alpha: 0.35), size: 9),
+                            const SizedBox(width: 3),
+                            Text(
+                              _formatDuration(Duration(milliseconds: widget.song.durationMs)),
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.35),
+                                fontSize: 9,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _cardPlaceholder() => Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              const Color(0xFF1E1E30),
+              const Color(0xFF161626),
+            ],
+          ),
+        ),
+        child: const Center(
+          child: Icon(Icons.music_note_rounded, color: Colors.white12, size: 36),
+        ),
+      );
+
+  Color _getRankColor(int rank) {
+    if (rank == 2) return const Color(0xFF94A3B8); // Silver
+    if (rank == 3) return const Color(0xFFCD7F32); // Bronze
+    return Colors.white.withValues(alpha: 0.7);
+  }
+}
+
+String _formatDuration(Duration d) {
+  final min = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+  final sec = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+  return '$min:$sec';
 }

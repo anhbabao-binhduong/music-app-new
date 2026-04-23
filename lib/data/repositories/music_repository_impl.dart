@@ -1,8 +1,9 @@
+import 'dart:convert';
 import 'package:audio_service/audio_service.dart';
 import 'package:dartz/dartz.dart' as dz;
 import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
-import 'package:supabase_flutter/supabase_flutter.dart'; // 👈 THÊM
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/constants/hive_constants.dart';
 import '../../core/errors/failures.dart';
@@ -429,8 +430,10 @@ Future<dz.Either<Failure, List<SongEntity>>> getSongsByCategory(String? slug) as
       final List<String> topSongIds = (currentRes as List).map((r) => r['song_id'] as String).toList();
       final Map<String, SongEntity> songsMap = {};
       
-      if (topSongIds.isNotEmpty) {
-        final songsRes = await _supabase.from('songs').select('*').inFilter('id', topSongIds);
+      final validSongIds = topSongIds.where((id) => int.tryParse(id) != null).toList();
+
+      if (validSongIds.isNotEmpty) {
+        final songsRes = await _supabase.from('songs').select('*').inFilter('id', validSongIds);
         for (var s in songsRes) {
           songsMap[s['id'].toString()] = SongEntity(
             id: s['id'].toString(),
@@ -445,7 +448,7 @@ Future<dz.Either<Failure, List<SongEntity>>> getSongsByCategory(String? slug) as
       }
 
       final List<ChartTopSong> result = [];
-      for (final row in (currentRes as List)) {
+      for (final row in currentRes) {
         final id = row['song_id'] as String;
         final count = row['play_count'] as int;
         
@@ -453,8 +456,21 @@ Future<dz.Either<Failure, List<SongEntity>>> getSongsByCategory(String? slug) as
         final prevPeriodCount = prevTotal - count;
 
         ChartTrend trend = ChartTrend.same;
-        if (count > prevPeriodCount) trend = ChartTrend.up;
-        else if (count < prevPeriodCount) trend = ChartTrend.down;
+        if (count > prevPeriodCount) {
+          trend = ChartTrend.up;
+        } else if (count < prevPeriodCount) {
+          trend = ChartTrend.down;
+        }
+
+        String? audioUrl = id;
+        try {
+          if (row['song_extras'] != null) {
+            final extras = jsonDecode(row['song_extras'] as String);
+            if (extras['url'] != null) {
+              audioUrl = extras['url'] as String;
+            }
+          }
+        } catch (_) {}
 
         final song = songsMap[id] ?? SongEntity(
           id: id,
@@ -462,7 +478,7 @@ Future<dz.Either<Failure, List<SongEntity>>> getSongsByCategory(String? slug) as
           artist: row['song_artist'] as String? ?? 'Unknown',
           album: 'Local Music',
           artUrl: row['song_art_uri'] as String?,
-          audioUrl: id, // Fallback
+          audioUrl: audioUrl,
           durationMs: (row['song_duration_ms'] as int?) ?? 0,
         );
 
@@ -487,7 +503,9 @@ Future<dz.Either<Failure, List<SongEntity>>> getSongsByCategory(String? slug) as
         'song_ids_csv': songIds.join(','),
       });
 
+      // ignore: avoid_print
       print("DEBUG GET_CHART_TRENDS: daysAgo=$daysAgo, songIds=$songIds");
+      // ignore: avoid_print
       print("DEBUG GET_CHART_TRENDS RES: $res");
 
       final List<ChartTrendPoint> result = [];
@@ -498,6 +516,7 @@ Future<dz.Either<Failure, List<SongEntity>>> getSongsByCategory(String? slug) as
           playCount: (row['play_count'] as num).toInt(),
         ));
       }
+      // ignore: avoid_print
       print("DEBUG GET_CHART_TRENDS RESULT length: ${result.length}");
 
       return dz.Right(result);

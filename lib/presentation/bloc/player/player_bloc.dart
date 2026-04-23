@@ -255,7 +255,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     final position = playbackState.position;
 
     // Lưu vào lịch sử khi bài đang phát (không lưu khi pause)
-    if (playbackState.playing && mediaItem != null) {
+    if (playbackState.playing) {
       _historyCubit.addSong(mediaItem);
     }
 
