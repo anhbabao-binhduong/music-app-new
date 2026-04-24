@@ -19,6 +19,7 @@ import 'package:music_app/presentation/bloc/comment/comment_cubit.dart';
 import 'package:music_app/presentation/bloc/comment/comment_state.dart';
 import 'package:music_app/presentation/bloc/download/download_cubit.dart';
 import 'package:music_app/presentation/bloc/playlist/playlist_cubit.dart';
+import 'package:music_app/data/local_music_data.dart';
 import 'package:share_plus/share_plus.dart';
 
 class PlayerPage extends StatefulWidget {
@@ -962,7 +963,7 @@ class _ActionRow extends StatelessWidget {
                                     : null,
                                 onTap: () async {
                                   Navigator.pop(ctx);
-                                  final err = await playlistCubit.addSongToPlaylist(pl.id, song.id);
+                                  final err = await playlistCubit.addSongToPlaylist(pl.id, resolvePlaylistSongId(song));
                                   if (pageContext.mounted) {
                                     ScaffoldMessenger.of(pageContext)
                                       ..removeCurrentSnackBar()

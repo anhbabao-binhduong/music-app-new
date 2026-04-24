@@ -321,6 +321,8 @@ Future<dz.Either<Failure, List<SongEntity>>> getAllSongs() async {
     final response = await _supabase
         .from('songs')
         .select('*')
+        .not('audio_path', 'is', null)   // loại bỏ bài không có audio
+        .neq('audio_path', '')            // loại bỏ audio_path rỗng
         .order('title', ascending: true);
     final songs = (response as List).map((json) => SongEntity(
       id: json['id'].toString(),
@@ -329,7 +331,7 @@ Future<dz.Either<Failure, List<SongEntity>>> getAllSongs() async {
       album: json['album'] ?? 'Unknown',
       artUrl: json['art_url'],
       audioUrl: json['audio_path'],
-      durationMs: (json['duration_seconds'] ?? 0) * 1000,
+      durationMs: ((json['duration_seconds'] as num?)?.toInt() ?? 0) * 1000,
     )).toList();
     return dz.Right(songs);
   } catch (e) {
@@ -362,17 +364,21 @@ Future<dz.Either<Failure, List<SongEntity>>> getSongsByCategory(String? slug) as
           .select('song_id')
           .eq('category_id', categoryId);
 
-      final songIds = (joinRes as List)
-          .map((e) => e['song_id'].toString())
+            final songIds = (joinRes as List)
+          .map((e) => int.tryParse(e['song_id']?.toString() ?? ''))
+          .whereType<int>()
           .toList();
+
 
       if (songIds.isEmpty) return const dz.Right([]);
 
-      // Bước 3: lấy songs từ Supabase
+      // Bước 3: lấy songs từ Supabase, chỉ lấy bài có audio hợp lệ
       final songsRes = await _supabase
           .from('songs')
           .select()
-          .inFilter('id', songIds);
+          .inFilter('id', songIds)
+          .not('audio_path', 'is', null)   // loại bỏ bài không có audio
+          .neq('audio_path', '');           // loại bỏ audio_path rỗng
 
       final songs = (songsRes as List).map((json) {
         return SongEntity(
@@ -382,7 +388,7 @@ Future<dz.Either<Failure, List<SongEntity>>> getSongsByCategory(String? slug) as
           album:      (json['album']  as String?) ?? 'Unknown',
           artUrl:     json['art_url']    as String?,
           audioUrl:   json['audio_path'] as String?,           // ✅ sửa
-          durationMs: ((json['duration_seconds'] as int?) ?? 0) * 1000, // ✅ sửa
+          durationMs: ((json['duration_seconds'] as num?)?.toInt() ?? 0) * 1000, // ✅ sửa
         );
       }).toList();
 
@@ -430,7 +436,7 @@ Future<dz.Either<Failure, List<SongEntity>>> getSongsByCategory(String? slug) as
       final List<String> topSongIds = (currentRes as List).map((r) => r['song_id'] as String).toList();
       final Map<String, SongEntity> songsMap = {};
       
-      final validSongIds = topSongIds.where((id) => int.tryParse(id) != null).toList();
+      final validSongIds = topSongIds.map((id) => int.tryParse(id)).whereType<int>().toList();
 
       if (validSongIds.isNotEmpty) {
         final songsRes = await _supabase.from('songs').select('*').inFilter('id', validSongIds);
@@ -442,7 +448,7 @@ Future<dz.Either<Failure, List<SongEntity>>> getSongsByCategory(String? slug) as
             album: s['album'] ?? 'Unknown',
             artUrl: s['art_url'],
             audioUrl: s['audio_path'],
-            durationMs: (s['duration_seconds'] ?? 0) * 1000,
+            durationMs: ((s['duration_seconds'] as num?)?.toInt() ?? 0) * 1000,
           );
         }
       }
@@ -479,7 +485,7 @@ Future<dz.Either<Failure, List<SongEntity>>> getSongsByCategory(String? slug) as
           album: 'Local Music',
           artUrl: row['song_art_uri'] as String?,
           audioUrl: audioUrl,
-          durationMs: (row['song_duration_ms'] as int?) ?? 0,
+          durationMs: (row['song_duration_ms'] as num?)?.toInt() ?? 0,
         );
 
         result.add(ChartTopSong(
@@ -524,4 +530,4 @@ Future<dz.Either<Failure, List<SongEntity>>> getSongsByCategory(String? slug) as
       return dz.Left(CacheFailure('Failed to fetch chart trends: $e'));
     }
   }
-}
+}

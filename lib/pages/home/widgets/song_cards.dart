@@ -7,6 +7,7 @@ import '../../../presentation/bloc/favorite/favorite_cubit.dart';
 import '../../../presentation/bloc/playlist/playlist_cubit.dart';
 import '../../../presentation/bloc/download/download_cubit.dart';
 import '../../../data/models/playlist_model.dart';
+import '../../../data/local_music_data.dart';
 
 class HorizontalSongCard extends StatefulWidget {
   final MediaItem item;
@@ -513,7 +514,8 @@ class _CompactSongTileState extends State<CompactSongTile> {
                           itemCount: playlists.length,
                           itemBuilder: (_, i) {
                             final pl = playlists[i];
-                            final isAdded = pl.songIds.contains(widget.item.id);
+                            final songPlaylistId = resolvePlaylistSongId(widget.item);
+                            final isAdded = pl.songIds.contains(songPlaylistId);
 
                             return ListTile(
                               leading: Container(
@@ -546,7 +548,7 @@ class _CompactSongTileState extends State<CompactSongTile> {
                                 Navigator.pop(ctx);
                                 final err = await playlistCubit.addSongToPlaylist(
                                   pl.id,
-                                  widget.item.id,
+                                  resolvePlaylistSongId(widget.item),
                                 );
                                 if (pageContext.mounted) {
                                   ScaffoldMessenger.of(pageContext).showSnackBar(

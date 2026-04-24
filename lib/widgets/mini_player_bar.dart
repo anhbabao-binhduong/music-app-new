@@ -10,6 +10,7 @@ import 'package:music_app/presentation/bloc/player/player_state.dart';
 import 'package:music_app/presentation/bloc/playlist/playlist_cubit.dart';
 import 'package:music_app/services/supabase_auth_service.dart';
 import 'package:music_app/presentation/bloc/download/download_cubit.dart';
+import 'package:music_app/data/local_music_data.dart';
 
 class MiniPlayerBar extends StatelessWidget {
   const MiniPlayerBar({super.key});
@@ -188,7 +189,8 @@ class MiniPlayerBar extends StatelessWidget {
 
 /// Mở bottom sheet chọn playlist để thêm bài hát đang phát.
 void showAddToPlaylistSheet(BuildContext context, MediaItem song) {
-  final songId = song.id;
+  // Dùng resolvePlaylistSongId để hỗ trợ cả community songs (UUID) lẫn regular songs (integer)
+  final songId = resolvePlaylistSongId(song);
   final controller = TextEditingController();
 
   void showSnack(String msg, {bool isError = false}) {

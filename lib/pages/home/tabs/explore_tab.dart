@@ -1,7 +1,6 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../data/local_music_data.dart';
 import '../widgets/banner_carousel.dart';
 import '../widgets/chart_tile.dart';
 import '../widgets/see_all_page.dart';
@@ -64,8 +63,17 @@ class _ExploreTabState extends State<ExploreTab> {
       if (validItems.isEmpty) return;
 
       final targetSong = items[index];
-      final newIndex = validItems.indexWhere((s) => s.id == targetSong.id);
-      if (newIndex == -1) return;
+      // Tìm index trong validItems: nếu bài được tap không hợp lệ, tìm bài gần nhất
+      int newIndex = validItems.indexWhere((s) => s.id == targetSong.id);
+      if (newIndex == -1) {
+        // Tìm bài hợp lệ tiếp theo sau index
+        for (int i = index + 1; i < items.length; i++) {
+          final next = validItems.indexWhere((s) => s.id == items[i].id);
+          if (next != -1) { newIndex = next; break; }
+        }
+        // Nếu không tìm thấy phía sau, lấy bài đầu tiên hợp lệ
+        if (newIndex == -1) newIndex = 0;
+      }
 
       final playlist = validItems.map((s) {
         final urlStr = s.extras?['url'] as String?;
@@ -99,8 +107,15 @@ class _ExploreTabState extends State<ExploreTab> {
       if (validSongs.isEmpty) return;
 
       final targetSong = songs[index];
-      final newIndex = validSongs.indexWhere((s) => s.id == targetSong.id);
-      if (newIndex == -1) return;
+      // Tìm index trong validSongs: nếu bài được tap không hợp lệ, tìm bài gần nhất
+      int newIndex = validSongs.indexWhere((s) => s.id == targetSong.id);
+      if (newIndex == -1) {
+        for (int i = index + 1; i < songs.length; i++) {
+          final next = validSongs.indexWhere((s) => s.id == songs[i].id);
+          if (next != -1) { newIndex = next; break; }
+        }
+        if (newIndex == -1) newIndex = 0;
+      }
 
       final playlist = validSongs.map((s) {
         final audioUrl = _normalizeAudioUrl(s.audioUrl);
@@ -316,6 +331,17 @@ class _ExploreTabState extends State<ExploreTab> {
                   ),
                 );
               }
+              if (state is CategoryError) {
+                return SliverToBoxAdapter(
+                  child: Center(child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Text(
+                      'Lỗi: ${state.message}',
+                      style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                    ),
+                  )),
+                );
+              }
               return const SliverToBoxAdapter(child: SizedBox.shrink());
             },
           ),
@@ -384,52 +410,66 @@ class _ExploreTabState extends State<ExploreTab> {
   }
 
   Widget _buildSuggestionsSection(BuildContext context) {
-    // Chỉ lấy đúng 5 item, ẩn phần còn lại
-    final displayItems = localPlaylist.take(5).toList();
+    return BlocBuilder<CategoryCubit, CategoryState>(
+      builder: (context, state) {
+        if (state is CategoryLoading || state is CategoryInitial) {
+          return const SizedBox(
+            height: 220,
+            child: Center(child: CircularProgressIndicator(color: Color(0xFF7C3AED))),
+          );
+        }
+        if (state is! CategoryLoaded) return const SizedBox.shrink();
+        final songs = state.allSongs; // Luôn dùng TẤT CẢ songs
+        if (songs.isEmpty) return const SizedBox.shrink();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader('Gợi ý cho bạn', () {
-          Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => SeeAllPage(title: 'Gợi ý cho bạn'),
-          ));
-        }),
-        const SizedBox(height: 20),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            const hPadding = 16.0;
-            const gapCount = 4;
-            const gap = 12.0;
-            final totalWidth = constraints.maxWidth - hPadding * 2;
-            final itemWidth = (totalWidth - gap * gapCount) / 5;
+        final displayItems = songs.take(5).map(_songEntityToMediaItem).toList();
+        final allItems = songs.map(_songEntityToMediaItem).toList();
 
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: hPadding),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: List.generate(displayItems.length, (i) {
-                  return Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(
-                        width: itemWidth,
-                        child: HorizontalSongCard(
-                          width: itemWidth,
-                          item: displayItems[i],
-                          onTap: () => _playSongFromMediaItems(localPlaylist, i),
-                        ),
-                      ),
-                      if (i < displayItems.length - 1)
-                        const SizedBox(width: gap),
-                    ],
-                  );
-                }),
-              ),
-            );
-          },
-        ),
-      ],
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionHeader('Gợi ý cho bạn', () {
+              Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => SeeAllPage(title: 'Gợi ý cho bạn'),
+              ));
+            }),
+            const SizedBox(height: 20),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                const hPadding = 16.0;
+                const gapCount = 4;
+                const gap = 12.0;
+                final totalWidth = constraints.maxWidth - hPadding * 2;
+                final itemWidth = (totalWidth - gap * gapCount) / 5;
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: hPadding),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: List.generate(displayItems.length, (i) {
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: itemWidth,
+                            child: HorizontalSongCard(
+                              width: itemWidth,
+                              item: displayItems[i],
+                              onTap: () => _playSongFromMediaItems(allItems, i),
+                            ),
+                          ),
+                          if (i < displayItems.length - 1)
+                            const SizedBox(width: gap),
+                        ],
+                      );
+                    }),
+                  ),
+                );
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -570,49 +610,80 @@ class _ExploreTabState extends State<ExploreTab> {
 
   Future<void> _playCommunitySong(List<UserSongModel> songs, int index) async {
     Future.microtask(() async {
-      final playlist = songs.map((s) => MediaItem(
-        id: s.id.hashCode.abs().toString(),
-        title: s.title,
-        artist: s.artist,
-        album: s.album,
-        artUri: s.artUrl != null ? Uri.parse(s.artUrl!) : null,
-        duration: Duration(milliseconds: s.durationMs),
-        extras: {'url': s.audioUrl},
-      )).toList();
+      // Dùng toMediaItem() để id = audioUrl, lưu userSongId trong extras
+      // → playlist lookup sẽ hoạt động đúng khi thêm vào playlist
+      final playlist = songs.map((s) => s.toMediaItem()).toList();
       await getIt<MusicPlayerService>().playPlaylist(playlist, startIndex: index);
     });
   }
 
   Widget _buildChartSection(BuildContext context) {
-    final totalItems = localPlaylist.length;
-    final totalPages = (totalItems / 8).ceil();
-    final startIdx = (_chartPage - 1) * 8;
-    final pageItems = localPlaylist.skip(startIdx).take(8).toList();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader('Bảng xếp hạng', () {
-          Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => SeeAllPage(title: 'Bảng xếp hạng'),
-          ));
-        }),
-        const SizedBox(height: 12),
-        ...List.generate(pageItems.length, (i) {
-          final isFirst = i == 0;
-          return Padding(
-            padding: EdgeInsets.only(top: isFirst ? 0 : 6),
-            child: ChartTile(
-              item: pageItems[i],
-              rank: startIdx + i + 1,
-              onTap: () => _playSongFromMediaItems(localPlaylist, startIdx + i),
-            ),
+    return BlocBuilder<CategoryCubit, CategoryState>(
+      builder: (context, state) {
+        if (state is CategoryLoading || state is CategoryInitial) {
+          return const SizedBox(
+            height: 200,
+            child: Center(child: CircularProgressIndicator(color: Color(0xFF7C3AED))),
           );
-        }),
-        _buildPaginationRow(_chartPage, totalPages, (page) {
-          setState(() => _chartPage = page);
-        }),
-      ],
+        }
+        if (state is! CategoryLoaded) return const SizedBox.shrink();
+        final songs = state.allSongs; // Luôn dùng TẤT CẢ songs
+
+        if (songs.isEmpty) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSectionHeader('Bảng xếp hạng', () {
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => SeeAllPage(title: 'Bảng xếp hạng'),
+                ));
+              }),
+              const SizedBox(height: 12),
+              const Padding(
+                padding: EdgeInsets.all(32),
+                child: Center(
+                  child: Text('Chưa có bài hát nào',
+                      style: TextStyle(color: Colors.white54)),
+                ),
+              ),
+            ],
+          );
+        }
+
+        final allItems = songs.map(_songEntityToMediaItem).toList();
+        final totalItems = allItems.length;
+        final totalPages = (totalItems / 8).ceil();
+        // Reset page if songs changed (e.g. category filter)
+        final safePage = _chartPage.clamp(1, totalPages);
+        final startIdx = (safePage - 1) * 8;
+        final pageItems = allItems.skip(startIdx).take(8).toList();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionHeader('Bảng xếp hạng', () {
+              Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => SeeAllPage(title: 'Bảng xếp hạng'),
+              ));
+            }),
+            const SizedBox(height: 12),
+            ...List.generate(pageItems.length, (i) {
+              final isFirst = i == 0;
+              return Padding(
+                padding: EdgeInsets.only(top: isFirst ? 0 : 6),
+                child: ChartTile(
+                  item: pageItems[i],
+                  rank: startIdx + i + 1,
+                  onTap: () => _playSongFromMediaItems(allItems, startIdx + i),
+                ),
+              );
+            }),
+            _buildPaginationRow(safePage, totalPages, (page) {
+              setState(() => _chartPage = page);
+            }),
+          ],
+        );
+      },
     );
   }
 }

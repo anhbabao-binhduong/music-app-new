@@ -21,14 +21,17 @@ class CategoryCubit extends Cubit<CategoryState> {
     emit(const CategoryLoading());
 
     final catResult  = await _getCategories();
-    final songResult = await _getSongsByCategory(null);
+    final songResult = await _getSongsByCategory(null); // null = tất cả
 
-    // Nếu một trong hai lỗi → emit error
     catResult.fold(
       (failure) => emit(CategoryError(failure.message)),
       (categories) => songResult.fold(
         (failure) => emit(CategoryError(failure.message)),
-        (songs)   => emit(CategoryLoaded(categories: categories, songs: songs)),
+        (songs)   => emit(CategoryLoaded(
+          categories: categories,
+          songs: songs,
+          allSongs: songs, // lúc đầu chưa filter → allSongs = songs
+        )),
       ),
     );
   }
@@ -50,9 +53,10 @@ class CategoryCubit extends Cubit<CategoryState> {
         // Lấy state mới nhất (tránh race condition)
         final latest = state;
         if (latest is CategoryLoaded) {
+          // Chỉ cập nhật songs (filtered), giữ nguyên allSongs
           emit(latest.copyWith(songs: songs));
         }
       },
     );
   }
-}
+}

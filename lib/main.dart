@@ -118,8 +118,8 @@ Future<void> main() async {
           BlocProvider<PlaylistCubit>.value(
             value: getIt<PlaylistCubit>(),
           ),
-          BlocProvider<CategoryCubit>(
-            create: (context) => getIt<CategoryCubit>(),
+          BlocProvider<CategoryCubit>.value(
+            value: getIt<CategoryCubit>(),
           ),
           BlocProvider<CommentCubit>(
             create: (_) => getIt<CommentCubit>(),

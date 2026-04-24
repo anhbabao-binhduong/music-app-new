@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:music_app/data/models/user_song_model.dart';
+import 'package:music_app/data/local_music_data.dart';
 
 class UserSongsCubit extends Cubit<List<UserSongModel>> {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -42,9 +43,14 @@ class UserSongsCubit extends Cubit<List<UserSongModel>> {
           .order('created_at', ascending: false)
           .limit(limit);
 
-      return (response as List)
+      final songs = (response as List)
           .map((e) => UserSongModel.fromJson(e))
           .toList();
+
+      // Điền userSongsCache để findSongById có thể tìm thấy khi hiển thị trong playlist
+      userSongsCache = songs.map((s) => s.toMediaItem()).toList();
+
+      return songs;
     } catch (_) {
       return [];
     }

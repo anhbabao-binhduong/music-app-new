@@ -3,13 +3,30 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 List<MediaItem> localPlaylist = [];
 
-MediaItem? findSongById(String idOrUrl) {
-  for (final song in localPlaylist) {
-    // ✅ match theo ID
-    if (song.id == idOrUrl) return song;
+/// Cache nhạc cộng đồng (user_songs) — được điền khi loadApprovedSongs
+List<MediaItem> userSongsCache = [];
 
-    // ✅ fallback cho dữ liệu cũ (Cloudinary)
+/// Lấy ID dùng để lưu vào playlist_songs.song_id:
+/// - Community song (được upload bởi user): dùng extras['userSongId'] (UUID)
+/// - Regular song (từ bảng songs): dùng song.id (integer string)
+String resolvePlaylistSongId(MediaItem song) {
+  final userSongId = song.extras?['userSongId'] as String?;
+  if (userSongId != null && userSongId.isNotEmpty) return userSongId;
+  return song.id;
+}
+
+MediaItem? findSongById(String idOrUrl) {
+  // Tìm trong localPlaylist (nhạc Supabase chính thức)
+  for (final song in localPlaylist) {
+    if (song.id == idOrUrl) return song;
     if (song.extras?['url'] == idOrUrl) return song;
+  }
+  // Tìm trong userSongsCache (nhạc từ cộng đồng)
+  for (final song in userSongsCache) {
+    if (song.id == idOrUrl) return song;
+    if (song.extras?['url'] == idOrUrl) return song;
+    // User song id lưu trong extras
+    if (song.extras?['userSongId'] == idOrUrl) return song;
   }
   return null;
 }
@@ -56,7 +73,7 @@ class SongRepository {
           album: song['album'] ?? '',
           artUri: Uri.parse(artUrl),
           duration: Duration(
-              seconds: song['duration_seconds'] ?? 0),
+              seconds: (song['duration_seconds'] as num?)?.toInt() ?? 0),
 
           extras: {
             'url': publicUrl, // ✅ URL audio thật

@@ -20,29 +20,33 @@ class CategoryLoading extends CategoryState {
 
 class CategoryLoaded extends CategoryState {
   final List<CategoryEntity> categories;
-  final List<SongEntity>     songs;
+  final List<SongEntity>     songs;      // Songs theo category đang chọn (cho mood section)
+  final List<SongEntity>     allSongs;   // Tất cả songs (cho Gợi ý + Bảng xếp hạng)
   final String?              selectedSlug; // null = "Tất cả"
 
   const CategoryLoaded({
     required this.categories,
     required this.songs,
+    required this.allSongs,
     this.selectedSlug,
   });
 
   CategoryLoaded copyWith({
     List<CategoryEntity>? categories,
     List<SongEntity>?     songs,
+    List<SongEntity>?     allSongs,
     String?               selectedSlug,
     bool                  clearSlug = false,
   }) =>
       CategoryLoaded(
         categories:   categories   ?? this.categories,
         songs:        songs        ?? this.songs,
+        allSongs:     allSongs     ?? this.allSongs,
         selectedSlug: clearSlug ? null : (selectedSlug ?? this.selectedSlug),
       );
 
   @override
-  List<Object?> get props => [categories, songs, selectedSlug];
+  List<Object?> get props => [categories, songs, allSongs, selectedSlug];
 }
 
 class CategoryError extends CategoryState {

@@ -14,7 +14,6 @@ import 'package:music_app/services/supabase_auth_service.dart';
 import 'package:music_app/core/di/service_locator.dart';
 import 'package:music_app/presentation/bloc/player/player_bloc.dart';
 import 'package:music_app/presentation/bloc/player/player_event.dart';
-import '../../presentation/bloc/category/category_cubit.dart';
 
 import 'package:music_app/core/constants/colors.dart';
 
@@ -104,13 +103,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider<CategoryCubit>(
-          create: (context) => getIt<CategoryCubit>(),
-        ),
-      ],
-      child: Container(
+    return Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -136,8 +129,7 @@ class _HomePageState extends State<HomePage> {
         bottomSheet: const MiniPlayerBar(),
         bottomNavigationBar: _buildBottomNavBar(),
         ),
-      ),
-    );
+      );
   }
 
   PreferredSizeWidget _buildAppBar() {
