@@ -3,7 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../auth/login_page.dart';
 import '../../auth/register_page.dart';
 import '../../profile/comment_history_page.dart';
+import '../../profile/notifications_page.dart';
+import '../../profile/edit_profile_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/constants/colors.dart';
 import '../../../presentation/bloc/admin/admin_cubit.dart';
 import '../../../presentation/bloc/admin/admin_state.dart';
@@ -19,10 +22,11 @@ class ProfileTab extends StatelessWidget {
   final String userName;
   final String userEmail;
   final String? userId; // Thêm biến lưu userId
+  final String? userAvatarUrl; // Thêm biến lưu avatar
   final Future<void> Function() onLogout;
   final int favoriteCount;
   final int playlistCount;
-  final int followingCount;
+  final int downloadCount;
 
   const ProfileTab({
     super.key,
@@ -30,10 +34,11 @@ class ProfileTab extends StatelessWidget {
     required this.userName,
     required this.userEmail,
     this.userId,
+    this.userAvatarUrl,
     required this.onLogout,
     this.favoriteCount = 0,
     this.playlistCount = 0,
-    this.followingCount = 0,
+    this.downloadCount = 0,
   });
 
   @override
@@ -43,10 +48,11 @@ class ProfileTab extends StatelessWidget {
             userName: userName,
             userEmail: userEmail,
             userId: userId,
+            userAvatarUrl: userAvatarUrl,
             onLogout: onLogout,
             favoriteCount: favoriteCount,
             playlistCount: playlistCount,
-            followingCount: followingCount,
+            downloadCount: downloadCount,
           )
         : const _GuestProfile();
   }
@@ -64,7 +70,7 @@ class _GuestProfile extends StatelessWidget {
         physics: const BouncingScrollPhysics(),
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
+            constraints: const BoxConstraints(maxWidth: 1500),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(28, 48, 28, 120),
               child: Column(
@@ -182,19 +188,21 @@ class _FeatureRow extends StatelessWidget {
 class _LoggedInProfile extends StatelessWidget {
   final String userName, userEmail;
   final String? userId; // Nhận userId
+  final String? userAvatarUrl; // Nhận avatar
   final Future<void> Function() onLogout;
   final int favoriteCount;
   final int playlistCount;
-  final int followingCount;
+  final int downloadCount;
 
   const _LoggedInProfile({
     required this.userName,
     required this.userEmail,
     this.userId,
+    this.userAvatarUrl,
     required this.onLogout,
     required this.favoriteCount,
     required this.playlistCount,
-    required this.followingCount,
+    required this.downloadCount,
   });
 
   @override
@@ -202,28 +210,50 @@ class _LoggedInProfile extends StatelessWidget {
     return SafeArea(
       child: Stack(
         children: [
-          SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.only(bottom: 120),
-            child: Column(
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1500),
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.only(bottom: 120),
+                child: Column(
               children: [
                 _ProfileHeader(
                   userName: userName,
                   userEmail: userEmail,
+                  userAvatarUrl: userAvatarUrl,
                   favoriteCount: favoriteCount,
                   playlistCount: playlistCount,
-                  followingCount: followingCount,
+                  downloadCount: downloadCount,
                 ),
                 const SizedBox(height: 8),
                 ..._kMenuItems.map((item) => _MenuItem(
                       icon: item.$1,
                       label: item.$2,
-                      onTap: () {
-                        if (item.$2 == 'Lịch sử bình luận' && userId != null) {
+                      onTap: () async {
+                        if (item.$2 == 'Chỉnh sửa hồ sơ' && userId != null) {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => EditProfilePage(
+                                currentName: userName,
+                                currentAvatarUrl: userAvatarUrl,
+                              ),
+                            ),
+                          );
+                          // HomePage sẽ tự động lắng nghe AuthState nếu user update profile
+                        } else if (item.$2 == 'Lịch sử bình luận' && userId != null) {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (_) => CommentHistoryPage(userId: userId!),
+                            ),
+                          );
+                        } else if (item.$2 == 'Thông báo' && userId != null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const NotificationsPage(),
                             ),
                           );
                         }
@@ -242,6 +272,8 @@ class _LoggedInProfile extends StatelessWidget {
                 _LogoutButton(onLogout: onLogout),
               ],
             ),
+          ),
+          ),
           ),
 
           // ── FAB Upload ─────────────────────────────────────────────
@@ -264,16 +296,18 @@ class _LoggedInProfile extends StatelessWidget {
 
 class _ProfileHeader extends StatelessWidget {
   final String userName, userEmail;
+  final String? userAvatarUrl;
   final int favoriteCount;
   final int playlistCount;
-  final int followingCount;
+  final int downloadCount;
 
   const _ProfileHeader({
     required this.userName,
     required this.userEmail,
+    this.userAvatarUrl,
     required this.favoriteCount,
     required this.playlistCount,
-    required this.followingCount,
+    required this.downloadCount,
   });
 
   @override
@@ -305,10 +339,23 @@ class _ProfileHeader extends StatelessWidget {
               ],
             ),
             alignment: Alignment.center,
-            child: Text(
-              userName.isNotEmpty ? userName[0].toUpperCase() : '?',
-              style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.w900),
-            ),
+            clipBehavior: Clip.antiAlias,
+            child: userAvatarUrl != null && userAvatarUrl!.isNotEmpty
+                ? CachedNetworkImage(
+                    imageUrl: userAvatarUrl!,
+                    fit: BoxFit.cover,
+                    width: 90,
+                    height: 90,
+                    placeholder: (context, url) => const CircularProgressIndicator(color: kAccent),
+                    errorWidget: (context, url, error) => Text(
+                      userName.isNotEmpty ? userName[0].toUpperCase() : '?',
+                      style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.w900),
+                    ),
+                  )
+                : Text(
+                    userName.isNotEmpty ? userName[0].toUpperCase() : '?',
+                    style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.w900),
+                  ),
           ),
           const SizedBox(height: 16),
           Text(userName,
@@ -319,7 +366,7 @@ class _ProfileHeader extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _StatChip(label: 'Theo dõi', value: followingCount.toString()),
+              _StatChip(label: 'Đã tải', value: downloadCount.toString()),
               _divider,
               _StatChip(label: 'Playlist', value: playlistCount.toString()),
               _divider,

@@ -395,9 +395,13 @@ class _ChartTileState extends State<ChartTile> {
         duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
           color: _isHovered
-              ? const Color(0xFF242424)
-              : const Color(0xFF1A1A1A),
-          borderRadius: BorderRadius.circular(8),
+              ? const Color(0xFF3D2D70)
+              : const Color(0xFF2E2060),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: const Color(0xFF9B6EFF).withValues(alpha: 0.3),
+            width: 1,
+          ),
         ),
         child: Material(
           color: Colors.transparent,
@@ -488,7 +492,7 @@ class _ChartTileState extends State<ChartTile> {
                         Text(
                           widget.item.artist ?? 'Unknown Artist',
                           style: const TextStyle(
-                            color: Color(0xFFA3A3A3),
+                            color: Color(0xFFBBBBBB),
                             fontSize: 13,
                           ),
                           maxLines: 1,
@@ -503,7 +507,7 @@ class _ChartTileState extends State<ChartTile> {
                   Text(
                     _formatDuration(widget.item.duration),
                     style: const TextStyle(
-                      color: Color(0xFFA3A3A3),
+                      color: Color(0xFFBBBBBB),
                       fontSize: 13,
                     ),
                   ),

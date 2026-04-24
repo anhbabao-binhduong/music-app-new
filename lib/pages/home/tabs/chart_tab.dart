@@ -431,11 +431,21 @@ class _ChartViewState extends State<_ChartView> with SingleTickerProviderStateMi
   // ═══════════════════════════════════════════════════════════════════
   //  TOP 10 RANKING
   // ═══════════════════════════════════════════════════════════════════
-  Widget _rankHeader() => SliverToBoxAdapter(child: Padding(
-    padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
-    child: Text('Bảng Xếp Hạng', style: TextStyle(
-      fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white.withValues(alpha: 0.9))),
-  ));
+  Widget _rankHeader() => SliverToBoxAdapter(
+    child: Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1500),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text('Bảng Xếp Hạng', style: TextStyle(
+              fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white.withValues(alpha: 0.9))),
+          ),
+        ),
+      ),
+    ),
+  );
 
   Widget _rankList(ChartLoaded state) {
     if (state.topSongs.isEmpty) {
@@ -457,11 +467,16 @@ class _ChartViewState extends State<_ChartView> with SingleTickerProviderStateMi
       sliver: SliverList(delegate: SliverChildBuilderDelegate(
         (ctx, i) {
           final item = state.topSongs[i];
-          return Column(children: [
-            _rankItem(ctx, i, item, state.topSongs),
-            if (i < state.topSongs.length - 1)
-              Divider(color: _kDivider, height: 1, thickness: 0.5, indent: 56, endIndent: 8),
-          ]);
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1500),
+              child: Column(children: [
+                _rankItem(ctx, i, item, state.topSongs),
+                if (i < state.topSongs.length - 1)
+                  Divider(color: _kDivider, height: 1, thickness: 0.5, indent: 56, endIndent: 8),
+              ]),
+            ),
+          );
         },
         childCount: state.topSongs.length,
       )),

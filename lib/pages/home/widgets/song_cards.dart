@@ -596,10 +596,14 @@ class _CompactSongTileState extends State<CompactSongTile> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
-            color: _isHovered 
-                ? const Color(0xFF242424) 
-                : const Color(0xFF1A1A1A),
-            borderRadius: BorderRadius.circular(8),
+            color: _isHovered
+                ? const Color(0xFF3D2D70)
+                : const Color(0xFF2E2060),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: const Color(0xFF9B6EFF).withValues(alpha: 0.3),
+              width: 1,
+            ),
           ),
           child: Material(
             color: Colors.transparent,
@@ -618,7 +622,7 @@ class _CompactSongTileState extends State<CompactSongTile> {
                           '${widget.rank}',
                           textAlign: TextAlign.center,
                           style: const TextStyle(
-                            color: Color(0xFF666666),
+                            color: Color(0xFFCCCCCC),
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                           ),

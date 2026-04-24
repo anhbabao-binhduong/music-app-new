@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:music_app/presentation/bloc/download/download_cubit.dart';
 import 'package:music_app/presentation/bloc/favorite/favorite_cubit.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../presentation/bloc/search/search_page.dart';
 import '../../widgets/mini_player_bar.dart';
 import 'tabs/explore_tab.dart';
@@ -11,7 +12,6 @@ import 'tabs/chart_tab.dart';
 import 'tabs/profile_tab.dart';
 import '../library/library_page.dart';
 import 'package:music_app/services/supabase_auth_service.dart';
-import 'package:music_app/core/di/service_locator.dart';
 import 'package:music_app/presentation/bloc/player/player_bloc.dart';
 import 'package:music_app/presentation/bloc/player/player_event.dart';
 
@@ -66,6 +66,11 @@ class _HomePageState extends State<HomePage> {
         : (_user?.email?.split('@').first ?? '');
   }
 
+  String? get _userAvatarUrl {
+    final metadata = _user?.userMetadata;
+    return metadata?['avatar_url']?.toString();
+  }
+
   String get _userEmail => _user?.email ?? '';
 
   Future<void> _onLogout() async {
@@ -92,8 +97,9 @@ class _HomePageState extends State<HomePage> {
           userName: _userName,
           userEmail: _userEmail,
           userId: _isLoggedIn ? _user?.id : null,
+          userAvatarUrl: _userAvatarUrl,
           favoriteCount: totalFavorites,
-          followingCount: totalDownloads,
+          downloadCount: totalDownloads,
           onLogout: _onLogout,
         );
       default:
@@ -175,18 +181,38 @@ class _HomePageState extends State<HomePage> {
               ),
               child: _isLoggedIn
                   ? ClipOval(
-                      child: Container(
-                        color: const Color(0xFF4A148C),
-                        alignment: Alignment.center,
-                        child: Text(
-                          _userName.isNotEmpty ? _userName[0].toUpperCase() : '?',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 15,
-                          ),
-                        ),
-                      ),
+                      child: _userAvatarUrl != null && _userAvatarUrl!.isNotEmpty
+                          ? CachedNetworkImage(
+                              imageUrl: _userAvatarUrl!,
+                              fit: BoxFit.cover,
+                              width: 36,
+                              height: 36,
+                              placeholder: (context, url) => Container(color: const Color(0xFF4A148C)),
+                              errorWidget: (context, url, error) => Container(
+                                color: const Color(0xFF4A148C),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  _userName.isNotEmpty ? _userName[0].toUpperCase() : '?',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              ),
+                            )
+                          : Container(
+                              color: const Color(0xFF4A148C),
+                              alignment: Alignment.center,
+                              child: Text(
+                                _userName.isNotEmpty ? _userName[0].toUpperCase() : '?',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ),
                     )
                   : const Icon(Icons.person_rounded, color: Colors.white, size: 20),
             ),

@@ -163,9 +163,12 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
               .whereType<MediaItem>()
               .toList();
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1400),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
               // ── HEADER ───────────────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.symmetric(
@@ -254,6 +257,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                             .copyWith(canvasColor: Colors.transparent),
                         child: ReorderableListView.builder(
                           physics: const BouncingScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(0, 0, 0, 120),
                           itemCount: playlist.songIds.length,
                           onReorder: (oldIndex, newIndex) {
                             context
@@ -267,11 +271,19 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
 
                             // ── Bài hát không khả dụng ───────────────
                             if (song == null) {
-                              return ListTile(
+                              return Container(
                                 key: ValueKey(songId),
-                                contentPadding:
-                                    const EdgeInsets.symmetric(
-                                        horizontal: 20, vertical: 4),
+                                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.03),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                                ),
+                                clipBehavior: Clip.antiAlias,
+                                child: ListTile(
+                                  contentPadding:
+                                      const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 4),
                                 leading: Container(
                                   width: 50,
                                   height: 50,
@@ -318,18 +330,34 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                                         color: Colors.white24),
                                   ],
                                 ),
-                              );
+                              ),
+                            );
                             }
 
                             // ── Bài hát bình thường ──────────────────
                             final songIndex = playableSongs
                                 .indexWhere((s) => s.id == song.id);
 
-                            return ListTile(
+                            return Container(
                               key: ValueKey(songId),
-                              contentPadding:
-                                  const EdgeInsets.symmetric(
-                                      horizontal: 20, vertical: 4),
+                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.03),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.1),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              clipBehavior: Clip.antiAlias,
+                              child: ListTile(
+                                contentPadding:
+                                    const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 4),
                               leading: ClipRRect(
                                 borderRadius: BorderRadius.circular(6),
                                 child: CachedNetworkImage(
@@ -397,14 +425,17 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                                   ),
                                 );
                               },
-                            );
-                          },
+                            ),
+                          );
+                        },
                         ),
                       ),
               ),
             ],
-          );
-        },
+          ),
+        ),
+      );
+    },
       ),
     );
   }

@@ -252,16 +252,24 @@ class _ExploreTabState extends State<ExploreTab> {
           const SliverToBoxAdapter(child: SizedBox(height: 32)),
 
           // Mood Section Header
-          const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'Khám phá theo tâm trạng',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.5,
+          SliverToBoxAdapter(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1500),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Khám phá theo tâm trạng',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -270,21 +278,26 @@ class _ExploreTabState extends State<ExploreTab> {
 
           // Mood Chips
           SliverToBoxAdapter(
-            child: Container(
-              height: 48,
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              child: BlocBuilder<CategoryCubit, CategoryState>(
-                builder: (context, state) {
-                  if (state is CategoryLoaded) {
-                    return CategoryChipRow(
-                      categories: state.categories,
-                      selectedSlug: state.selectedSlug,
-                      onTap: (slug) =>
-                          context.read<CategoryCubit>().selectCategory(slug),
-                    );
-                  }
-                  return const _CategoryChipSkeleton();
-                },
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1500),
+                child: Container(
+                  height: 48,
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  child: BlocBuilder<CategoryCubit, CategoryState>(
+                    builder: (context, state) {
+                      if (state is CategoryLoaded) {
+                        return CategoryChipRow(
+                          categories: state.categories,
+                          selectedSlug: state.selectedSlug,
+                          onTap: (slug) =>
+                              context.read<CategoryCubit>().selectCategory(slug),
+                        );
+                      }
+                      return const _CategoryChipSkeleton();
+                    },
+                  ),
+                ),
               ),
             ),
           ),
@@ -320,10 +333,15 @@ class _ExploreTabState extends State<ExploreTab> {
                     delegate: SliverChildBuilderDelegate(
                       (ctx, i) {
                         final song = songs[i];
-                        return CompactSongTile(
-                          item: _songEntityToMediaItem(song),
-                          onTap: () => _playSongFromCategory(songs, i),
-                          rank: i + 1,
+                        return Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 1500),
+                            child: CompactSongTile(
+                              item: _songEntityToMediaItem(song),
+                              onTap: () => _playSongFromCategory(songs, i),
+                              rank: i + 1,
+                            ),
+                          ),
                         );
                       },
                       childCount: songs.length.clamp(0, 20),
@@ -355,9 +373,12 @@ class _ExploreTabState extends State<ExploreTab> {
     // Chỉ lấy đúng 5 item, ẩn phần còn lại
     final displayAlbums = albums.take(5).toList();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1800),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
         _buildSectionHeader('Album mới phát hành', () {
           Navigator.of(context).push(MaterialPageRoute(
             builder: (_) => SeeAllPage(
@@ -406,6 +427,8 @@ class _ExploreTabState extends State<ExploreTab> {
           },
         ),
       ],
+    ),
+      ),
     );
   }
 
@@ -425,9 +448,12 @@ class _ExploreTabState extends State<ExploreTab> {
         final displayItems = songs.take(5).map(_songEntityToMediaItem).toList();
         final allItems = songs.map(_songEntityToMediaItem).toList();
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1800),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
             _buildSectionHeader('Gợi ý cho bạn', () {
               Navigator.of(context).push(MaterialPageRoute(
                 builder: (_) => SeeAllPage(title: 'Gợi ý cho bạn'),
@@ -468,6 +494,8 @@ class _ExploreTabState extends State<ExploreTab> {
               },
             ),
           ],
+        ),
+          ),
         );
       },
     );
@@ -481,10 +509,13 @@ class _ExploreTabState extends State<ExploreTab> {
         final approved = snapshot.data!;
         if (approved.isEmpty) return const SizedBox.shrink();
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ═══ HERO HEADER ═══════════════════════════════════════════════
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1600),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ═══ HERO HEADER ═══════════════════════════════════════════════
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
@@ -602,7 +633,9 @@ class _ExploreTabState extends State<ExploreTab> {
                 },
               ),
             ),
-          ],
+              ],
+            ),
+          ),
         );
       },
     );
@@ -658,30 +691,35 @@ class _ExploreTabState extends State<ExploreTab> {
         final startIdx = (safePage - 1) * 8;
         final pageItems = allItems.skip(startIdx).take(8).toList();
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSectionHeader('Bảng xếp hạng', () {
-              Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => SeeAllPage(title: 'Bảng xếp hạng'),
-              ));
-            }),
-            const SizedBox(height: 12),
-            ...List.generate(pageItems.length, (i) {
-              final isFirst = i == 0;
-              return Padding(
-                padding: EdgeInsets.only(top: isFirst ? 0 : 6),
-                child: ChartTile(
-                  item: pageItems[i],
-                  rank: startIdx + i + 1,
-                  onTap: () => _playSongFromMediaItems(allItems, startIdx + i),
-                ),
-              );
-            }),
-            _buildPaginationRow(safePage, totalPages, (page) {
-              setState(() => _chartPage = page);
-            }),
-          ],
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1500),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSectionHeader('Bảng xếp hạng', () {
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => SeeAllPage(title: 'Bảng xếp hạng'),
+                  ));
+                }),
+                const SizedBox(height: 12),
+                ...List.generate(pageItems.length, (i) {
+                  final isFirst = i == 0;
+                  return Padding(
+                    padding: EdgeInsets.only(top: isFirst ? 0 : 6),
+                    child: ChartTile(
+                      item: pageItems[i],
+                      rank: startIdx + i + 1,
+                      onTap: () => _playSongFromMediaItems(allItems, startIdx + i),
+                    ),
+                  );
+                }),
+                _buildPaginationRow(safePage, totalPages, (page) {
+                  setState(() => _chartPage = page);
+                }),
+              ],
+            ),
+          ),
         );
       },
     );
