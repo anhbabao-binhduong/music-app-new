@@ -1,0 +1,81 @@
+.clinerules for `music_app`
+
+Scope
+- This is a Flutter app using a hybrid layered architecture with feature-based presentation organization.
+- Only change files directly related to the requested task. Do not refactor unrelated areas.
+- Do not create new architectural styles if the existing project already has a clear place for the change.
+
+Architecture To Preserve
+- Primary state management is `flutter_bloc` with `Bloc`/`Cubit` in `lib/presentation/bloc/`.
+- Dependency injection uses `get_it` in `lib/core/di/service_locator.dart`.
+- The codebase follows a clean-ish layered split:
+  - `lib/domain/`: entities, repository contracts, use cases.
+  - `lib/data/`: models, repository implementations, mapping to Supabase/Hive.
+  - `lib/presentation/bloc/`: state management per feature.
+  - `lib/pages/` + `lib/widgets/`: UI.
+  - `lib/services/`: cross-cutting services such as audio, auth, lyrics, storage.
+  - `lib/core/`: config, constants, DI, router, errors, utilities.
+- Keep the existing hybrid approach: some features go through domain/data layers, while some app-specific behavior talks to Supabase directly from Cubits/Services. Do not force full clean architecture unless explicitly requested.
+
+State Management Rules
+- Prefer adding logic to an existing `Bloc`/`Cubit` when the feature already has one.
+- New stateful business logic should usually live in `lib/presentation/bloc/<feature>/`.
+- Keep state classes in dedicated `*_state.dart` files and events in `*_event.dart` for Bloc-based features.
+- Use `Equatable` for state/value classes when the surrounding feature already uses it.
+- Do not introduce Riverpod, GetX, MobX, Redux, or another state solution.
+
+Dependency Injection Rules
+- Register shared dependencies via `get_it` in `lib/core/di/service_locator.dart`.
+- Match existing lifetimes:
+  - `registerLazySingleton` for shared app-wide services/cubits already treated as singletons.
+  - `registerFactory` for short-lived feature cubits/use cases currently created per usage.
+- Do not bypass DI for reusable services if the same kind of dependency is already resolved from `getIt`.
+
+Data And Domain Rules
+- Repository contracts belong in `lib/domain/repositories/`.
+- Repository implementations belong in `lib/data/repositories/`.
+- Entities belong in `lib/domain/entities/`.
+- DTO/model mapping belongs in `lib/data/models/`.
+- When a feature already has a use case, keep orchestration there instead of pushing extra logic into UI.
+- Preserve existing local/remote split: Hive for local persistence/cache, Supabase for backend/auth/storage/RPC.
+
+UI And Feature Placement
+- Full screens go in `lib/pages/<feature>/`.
+- Shared or reusable UI components go in `lib/widgets/` or feature subfolders under `lib/pages/`.
+- Keep admin-specific UI under `lib/pages/admin/`, auth under `lib/pages/auth/`, player under `lib/pages/player/`, and so on.
+- Avoid moving files across folders unless the task explicitly requires restructuring.
+
+Naming Conventions
+- File names use `snake_case.dart`.
+- Classes, enums, typedefs use `PascalCase`.
+- Variables, parameters, methods, and fields use `camelCase`.
+- Private members use a leading underscore.
+- Keep existing suffix conventions:
+  - `*Cubit`, `*Bloc`, `*State`, `*Event`
+  - `*Repository`, `*RepositoryImpl`
+  - `*UseCase` / `*Usecase` only match the local feature's existing spelling
+  - `*Entity`, `*Model`, `*Page`, `*Service`
+
+Code Style Rules
+- Follow the current Dart/Flutter style in the touched file before applying personal preferences.
+- Keep imports package-relative when that file already uses package imports; otherwise preserve existing relative style nearby.
+- Favor small, targeted edits over large rewrites.
+- Add comments only when the logic is non-obvious; keep them short.
+- Do not rename symbols, reorder files, or mass-format unrelated code.
+
+Editing Discipline
+- Before editing, inspect the nearest related files to mirror local patterns.
+- Keep changes scoped to the feature being requested.
+- If a task touches audio, auth, Supabase, playlists, or admin flows, verify the existing service/cubit/repository path before changing code.
+- Respect current initialization order in `lib/main.dart`: Hive -> Supabase -> service locator -> preload/setup -> `runApp`.
+
+Testing And Validation
+- Prefer adding or updating tests only when they are directly relevant to the requested change.
+- Use the existing test structure under `test/unit/`, `test/widget/`, and `test/integration/`.
+- Do not create speculative tests for untouched features.
+
+Avoid
+- Do not introduce a new architecture layer without a strong project-specific reason.
+- Do not spread a simple change across many folders if one existing feature file is enough.
+- Do not modify secrets/config unless explicitly requested.
+- Do not edit unrelated files just to make style more "perfect".

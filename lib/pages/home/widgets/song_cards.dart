@@ -146,7 +146,7 @@ class _HorizontalSongCardState extends State<HorizontalSongCard> {
               Text(
                 widget.item.title,
                 style: TextStyle(
-                  color: _isHovered ? Colors.white : Colors.white.withValues(alpha: 0.9),
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.1,
@@ -159,7 +159,7 @@ class _HorizontalSongCardState extends State<HorizontalSongCard> {
               Text(
                 widget.item.artist ?? 'Unknown',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.6),
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                   fontSize: 13,
                   fontWeight: FontWeight.w400,
                 ),

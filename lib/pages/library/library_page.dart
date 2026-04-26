@@ -22,7 +22,18 @@ class LibraryPage extends StatefulWidget {
 class _LibraryPageState extends State<LibraryPage> {
   bool _isPlaylistExpanded = true;
 
-  Widget _LibraryThumbnail({
+  ThemeData get _theme => Theme.of(context);
+  ColorScheme get _scheme => _theme.colorScheme;
+  bool get _isDark => _theme.brightness == Brightness.dark;
+
+  Color get _bg => _theme.scaffoldBackgroundColor;
+  Color get _card => _scheme.surface;
+  Color get _textPrimary => _scheme.onSurface;
+  Color get _textSecondary => _scheme.onSurface.withValues(alpha: 0.66);
+  Color get _divider => _scheme.outline.withValues(alpha: _isDark ? 0.35 : 0.5);
+  Color get _accent => _scheme.primary;
+
+  Widget _libraryThumbnail({
     required List<Color> colors,
     required IconData icon,
     required Color iconColor,
@@ -39,7 +50,7 @@ class _LibraryPageState extends State<LibraryPage> {
         ),
         boxShadow: [
           BoxShadow(
-            color: colors.first.withValues(alpha: 0.4),
+            color: colors.first.withValues(alpha: 0.35),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -75,31 +86,40 @@ class _LibraryPageState extends State<LibraryPage> {
     await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
+        backgroundColor: _card,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Tạo danh sách mới', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text(
+          'Tạo danh sách mới',
+          style: TextStyle(color: _textPrimary, fontWeight: FontWeight.bold),
+        ),
         content: TextField(
           controller: controller,
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: _textPrimary),
           autofocus: true,
           decoration: InputDecoration(
             hintText: 'Nhập tên danh sách...',
-            hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+            hintStyle: TextStyle(color: _textSecondary),
             filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.05),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF1976D2), width: 1.5)),
+            fillColor: _bg,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: _accent, width: 1.5),
+            ),
           ),
         ),
         actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Hủy', style: TextStyle(color: Colors.white.withValues(alpha: 0.6))),
+            child: Text('Hủy', style: TextStyle(color: _textSecondary)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1976D2),
+              backgroundColor: _accent,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
@@ -130,12 +150,15 @@ class _LibraryPageState extends State<LibraryPage> {
     await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
+        backgroundColor: _card,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Đổi tên danh sách', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text(
+          'Đổi tên danh sách',
+          style: TextStyle(color: _textPrimary, fontWeight: FontWeight.bold),
+        ),
         content: TextField(
           controller: controller,
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: _textPrimary),
           autofocus: true,
           onTap: () => controller.selection = TextSelection(
             baseOffset: 0,
@@ -143,22 +166,28 @@ class _LibraryPageState extends State<LibraryPage> {
           ),
           decoration: InputDecoration(
             hintText: 'Nhập tên mới...',
-            hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+            hintStyle: TextStyle(color: _textSecondary),
             filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.05),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF1976D2), width: 1.5)),
+            fillColor: _bg,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: _accent, width: 1.5),
+            ),
           ),
         ),
         actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Hủy', style: TextStyle(color: Colors.white.withValues(alpha: 0.6))),
+            child: Text('Hủy', style: TextStyle(color: _textSecondary)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1976D2),
+              backgroundColor: _accent,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
@@ -169,7 +198,8 @@ class _LibraryPageState extends State<LibraryPage> {
                 return;
               }
 
-              final error = await context.read<PlaylistCubit>().renamePlaylist(playlist.id, newName);
+              final error =
+                  await context.read<PlaylistCubit>().renamePlaylist(playlist.id, newName);
 
               if (!ctx.mounted) return;
               Navigator.pop(ctx);
@@ -190,9 +220,9 @@ class _LibraryPageState extends State<LibraryPage> {
   void _showPlaylistOptions(PlaylistModel playlist) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1E1E1E),
+      backgroundColor: _card,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (_) => SafeArea(
         child: Column(
@@ -203,7 +233,7 @@ class _LibraryPageState extends State<LibraryPage> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white24,
+                color: _divider,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -211,7 +241,7 @@ class _LibraryPageState extends State<LibraryPage> {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Row(
                 children: [
-                  _LibraryThumbnail(
+                  _libraryThumbnail(
                     colors: const [Color(0xFF4A148C), Color(0xFF1A237E)],
                     icon: Icons.queue_music_rounded,
                     iconColor: Colors.white,
@@ -221,24 +251,31 @@ class _LibraryPageState extends State<LibraryPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(playlist.name,
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis),
+                        Text(
+                          playlist.name,
+                          style: TextStyle(
+                            color: _textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                         const SizedBox(height: 4),
-                        Text('${playlist.songIds.length} bài hát',
-                            style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                        Text(
+                          '${playlist.songIds.length} bài hát',
+                          style: TextStyle(color: _textSecondary, fontSize: 13),
+                        ),
                       ],
                     ),
                   ),
                 ],
               ),
             ),
-            const Divider(color: Colors.white12, height: 1),
+            Divider(color: _divider, height: 1),
             ListTile(
-              leading: const Icon(Icons.edit_rounded, color: Colors.white70),
-              title: const Text('Đổi tên', style: TextStyle(color: Colors.white)),
+              leading: Icon(Icons.edit_rounded, color: _accent),
+              title: Text('Đổi tên', style: TextStyle(color: _textPrimary)),
               onTap: () {
                 Navigator.pop(context);
                 _showRenamePlaylistDialog(playlist);
@@ -255,20 +292,23 @@ class _LibraryPageState extends State<LibraryPage> {
     context.read<PlaylistCubit>().loadPlaylists();
   }
 
-  Widget _buildLibraryCard({
-    required Widget child,
-  }) {
+  Widget _buildLibraryCard({required Widget child}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
+        color: _card,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(color: _divider),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 8,
+            color: _accent.withValues(alpha: _isDark ? 0.16 : 0.08),
+            blurRadius: 10,
             offset: const Offset(0, 4),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -280,7 +320,7 @@ class _LibraryPageState extends State<LibraryPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: _bg,
       body: BlocConsumer<PlaylistCubit, PlaylistState>(
         listener: (context, state) {
           if (state is PlaylistError) {
@@ -290,26 +330,26 @@ class _LibraryPageState extends State<LibraryPage> {
         builder: (context, state) {
           return RefreshIndicator(
             onRefresh: _refreshPlaylists,
-            color: const Color(0xFF1976D2),
+            color: _accent,
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 1400),
                 child: CustomScrollView(
                   physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
                   slivers: [
-                    // ── Màn hình nền mờ Header ───────────────────────────────────────────
+                    // ── Header ────────────────────────────────────────────
                     SliverAppBar(
                       expandedHeight: 180,
                       pinned: true,
-                      backgroundColor: const Color(0xFF121212),
+                      backgroundColor: _bg,
                       elevation: 0,
-                      iconTheme: const IconThemeData(color: Colors.white),
+                      iconTheme: IconThemeData(color: _textPrimary),
                       flexibleSpace: FlexibleSpaceBar(
                         titlePadding: const EdgeInsets.only(left: 20, bottom: 16),
-                        title: const Text(
+                        title: Text(
                           'Thư viện',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: _isDark ? Colors.white : _textPrimary,
                             fontSize: 24,
                             fontWeight: FontWeight.w800,
                             letterSpacing: -0.5,
@@ -318,17 +358,20 @@ class _LibraryPageState extends State<LibraryPage> {
                         background: Stack(
                           fit: StackFit.expand,
                           children: [
-                            // Background gradient nghệ thuật
                             Container(
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                 gradient: LinearGradient(
-                                  colors: [Color(0xFF0D47A1), Color(0xFF121212)],
+                                  colors: [
+                                    _scheme.primary.withValues(alpha: _isDark ? 0.62 : 0.42),
+                                    _scheme.secondary.withValues(alpha: _isDark ? 0.46 : 0.26),
+                                    _bg,
+                                  ],
                                   begin: Alignment.topCenter,
                                   end: Alignment.bottomCenter,
+                                  stops: const [0.0, 0.55, 1.0],
                                 ),
                               ),
                             ),
-                            // Thêm chi tiết trang trí mờ
                             Positioned(
                               right: -50,
                               top: -50,
@@ -337,10 +380,11 @@ class _LibraryPageState extends State<LibraryPage> {
                                 height: 250,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: const Color(0xFF1976D2).withValues(alpha: 0.2),
+                                   color: (_isDark ? Colors.white : _scheme.primary)
+                                       .withValues(alpha: _isDark ? 0.15 : 0.12),
                                 ),
                                 child: BackdropFilter(
-                                  filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
+                                  filter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
                                   child: Container(color: Colors.transparent),
                                 ),
                               ),
@@ -350,21 +394,21 @@ class _LibraryPageState extends State<LibraryPage> {
                       ),
                       actions: [
                         IconButton(
-                          icon: const Icon(Icons.refresh_rounded, color: Colors.white, size: 24),
+                          icon: Icon(Icons.refresh_rounded, color: _textPrimary, size: 24),
                           onPressed: _refreshPlaylists,
                         ),
                         IconButton(
-                          icon: const Icon(Icons.add_circle_outline_rounded, color: Colors.white, size: 26),
+                          icon: Icon(Icons.add_circle_outline_rounded, color: _textPrimary, size: 26),
                           onPressed: _showCreatePlaylistDialog,
                         ),
                         const SizedBox(width: 8),
                       ],
                     ),
 
-                    // Nội dung
+                    // ── Nội dung ──────────────────────────────────────────
                     if (state is PlaylistInitial)
-                      const SliverFillRemaining(
-                        child: Center(child: CircularProgressIndicator(color: Color(0xFF1976D2))),
+                      SliverFillRemaining(
+                        child: Center(child: CircularProgressIndicator(color: _accent)),
                       )
                     else if (state is PlaylistError)
                       SliverFillRemaining(
@@ -374,16 +418,19 @@ class _LibraryPageState extends State<LibraryPage> {
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 42),
+                                const Icon(Icons.error_outline_rounded,
+                                    color: Colors.redAccent, size: 42),
                                 const SizedBox(height: 12),
-                                Text(state.message,
-                                    style: const TextStyle(color: Colors.redAccent),
-                                    textAlign: TextAlign.center),
+                                Text(
+                                  state.message,
+                                  style: const TextStyle(color: Colors.redAccent),
+                                  textAlign: TextAlign.center,
+                                ),
                                 const SizedBox(height: 20),
                                 ElevatedButton.icon(
                                   onPressed: _refreshPlaylists,
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.white12,
+                                    backgroundColor: _accent,
                                     foregroundColor: Colors.white,
                                   ),
                                   icon: const Icon(Icons.refresh_rounded),
@@ -402,7 +449,10 @@ class _LibraryPageState extends State<LibraryPage> {
                               return BlocBuilder<DownloadCubit, List<String>>(
                                 builder: (context, downloadIds) {
                                   final playlists = state.playlists.reversed.toList();
-                                  final itemCount = 5 + (_isPlaylistExpanded ? (playlists.isEmpty ? 1 : playlists.length) : 0);
+                                  final itemCount = 5 +
+                                      (_isPlaylistExpanded
+                                          ? (playlists.isEmpty ? 1 : playlists.length)
+                                          : 0);
 
                                   return SliverPadding(
                                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
@@ -412,19 +462,33 @@ class _LibraryPageState extends State<LibraryPage> {
                                           if (index == 0) {
                                             return _buildLibraryCard(
                                               child: ListTile(
-                                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                                leading: _LibraryThumbnail(
+                                                contentPadding:
+                                                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                 leading: _libraryThumbnail(
                                                   colors: const [Color(0xFF0D47A1), Color(0xFF1565C0)],
                                                   icon: Icons.history_rounded,
                                                   iconColor: Colors.white,
                                                 ),
-                                                title: const Text('Lịch sử nghe',
-                                                    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
+                                                 title: Text(
+                                                   'Lịch sử nghe',
+                                                   style: TextStyle(
+                                                     color: _textPrimary,
+                                                     fontSize: 16,
+                                                     fontWeight: FontWeight.w700,
+                                                   ),
+                                                 ),
                                                 subtitle: Text(
-                                                  history.isEmpty ? 'Chưa có bài nào' : '${history.length} bài gần đây',
-                                                  style: const TextStyle(color: Colors.white54, fontSize: 13, fontWeight: FontWeight.w500),
+                                                  history.isEmpty
+                                                      ? 'Chưa có bài nào'
+                                                      : '${history.length} bài gần đây',
+                                                   style: TextStyle(
+                                                     color: _textSecondary,
+                                                     fontSize: 13,
+                                                     fontWeight: FontWeight.w500,
+                                                   ),
                                                 ),
-                                                trailing: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white24, size: 16),
+                                                 trailing: Icon(Icons.arrow_forward_ios_rounded,
+                                                     color: _textSecondary, size: 16),
                                                 onTap: () => Navigator.push(
                                                   context,
                                                   MaterialPageRoute(builder: (_) => const HistoryPage()),
@@ -436,17 +500,31 @@ class _LibraryPageState extends State<LibraryPage> {
                                           if (index == 1) {
                                             return _buildLibraryCard(
                                               child: ListTile(
-                                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                                leading: _LibraryThumbnail(
+                                                contentPadding:
+                                                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                 leading: _libraryThumbnail(
                                                   colors: const [Color(0xFFD81B60), Color(0xFF880E4F)],
                                                   icon: Icons.favorite_rounded,
                                                   iconColor: Colors.white,
                                                 ),
-                                                title: const Text('Bài hát yêu thích',
-                                                    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
-                                                subtitle: Text('${favoriteIds.length} bài hát',
-                                                    style: const TextStyle(color: Colors.white54, fontSize: 13, fontWeight: FontWeight.w500)),
-                                                trailing: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white24, size: 16),
+                                                 title: Text(
+                                                   'Bài hát yêu thích',
+                                                   style: TextStyle(
+                                                     color: _textPrimary,
+                                                     fontSize: 16,
+                                                     fontWeight: FontWeight.w700,
+                                                   ),
+                                                 ),
+                                                subtitle: Text(
+                                                  '${favoriteIds.length} bài hát',
+                                                  style: TextStyle(
+                                                    color: _textSecondary,
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                                trailing: Icon(Icons.arrow_forward_ios_rounded,
+                                                    color: _textSecondary, size: 16),
                                                 onTap: () => Navigator.push(
                                                   context,
                                                   MaterialPageRoute(builder: (_) => const FavoritePage()),
@@ -458,17 +536,31 @@ class _LibraryPageState extends State<LibraryPage> {
                                           if (index == 2) {
                                             return _buildLibraryCard(
                                               child: ListTile(
-                                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                                leading: _LibraryThumbnail(
+                                                contentPadding:
+                                                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                 leading: _libraryThumbnail(
                                                   colors: const [Color(0xFF2E7D32), Color(0xFF004D40)],
                                                   icon: Icons.download_done_rounded,
                                                   iconColor: Colors.white,
                                                 ),
-                                                title: const Text('Nhạc đã tải',
-                                                    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
-                                                subtitle: Text('${downloadIds.length} bài hát',
-                                                    style: const TextStyle(color: Colors.white54, fontSize: 13, fontWeight: FontWeight.w500)),
-                                                trailing: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white24, size: 16),
+                                                 title: Text(
+                                                   'Nhạc đã tải',
+                                                   style: TextStyle(
+                                                     color: _textPrimary,
+                                                     fontSize: 16,
+                                                     fontWeight: FontWeight.w700,
+                                                   ),
+                                                 ),
+                                                subtitle: Text(
+                                                  '${downloadIds.length} bài hát',
+                                                  style: TextStyle(
+                                                    color: _textSecondary,
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                                trailing: Icon(Icons.arrow_forward_ios_rounded,
+                                                    color: _textSecondary, size: 16),
                                                 onTap: () => Navigator.push(
                                                   context,
                                                   MaterialPageRoute(builder: (_) => const DownloadPage()),
@@ -478,33 +570,47 @@ class _LibraryPageState extends State<LibraryPage> {
                                           }
 
                                           if (index == 3) {
-                                            return const Padding(
-                                              padding: EdgeInsets.symmetric(vertical: 16),
-                                              child: Divider(color: Colors.white12, height: 1),
+                                            return Padding(
+                                              padding: const EdgeInsets.symmetric(vertical: 16),
+                                              child: Divider(color: _divider, height: 1),
                                             );
                                           }
 
                                           if (index == 4) {
                                             return _buildLibraryCard(
                                               child: ListTile(
-                                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                                leading: _LibraryThumbnail(
+                                                contentPadding:
+                                                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                 leading: _libraryThumbnail(
                                                   colors: const [Color(0xFF5E35B1), Color(0xFF311B92)],
                                                   icon: Icons.queue_music_rounded,
                                                   iconColor: Colors.white,
                                                 ),
-                                                title: const Text('Danh sách phát',
-                                                    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
-                                                subtitle: Text('${playlists.length} danh sách',
-                                                    style: const TextStyle(color: Colors.white54, fontSize: 13, fontWeight: FontWeight.w500)),
+                                                 title: Text(
+                                                   'Danh sách phát',
+                                                   style: TextStyle(
+                                                     color: _textPrimary,
+                                                     fontSize: 16,
+                                                     fontWeight: FontWeight.w700,
+                                                   ),
+                                                 ),
+                                                subtitle: Text(
+                                                  '${playlists.length} danh sách',
+                                                  style: TextStyle(
+                                                    color: _textSecondary,
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
                                                 trailing: Icon(
                                                   _isPlaylistExpanded
                                                       ? Icons.keyboard_arrow_down_rounded
                                                       : Icons.keyboard_arrow_right_rounded,
-                                                  color: Colors.white54,
+                                                  color: _textSecondary,
                                                   size: 28,
                                                 ),
-                                                onTap: () => setState(() => _isPlaylistExpanded = !_isPlaylistExpanded),
+                                                onTap: () =>
+                                                    setState(() => _isPlaylistExpanded = !_isPlaylistExpanded),
                                               ),
                                             );
                                           }
@@ -521,17 +627,25 @@ class _LibraryPageState extends State<LibraryPage> {
                                                         padding: const EdgeInsets.all(20),
                                                         decoration: BoxDecoration(
                                                           shape: BoxShape.circle,
-                                                          color: Colors.white.withValues(alpha: 0.05),
+                                                           color: _divider,
                                                         ),
-                                                        child: Icon(Icons.library_music_rounded,
-                                                            size: 48, color: Colors.white.withValues(alpha: 0.2)),
+                                                         child: Icon(Icons.library_music_rounded,
+                                                             size: 48, color: _textSecondary),
                                                       ),
                                                       const SizedBox(height: 16),
-                                                      const Text('Chưa có danh sách phát nào',
-                                                          style: TextStyle(color: Colors.white70, fontSize: 15, fontWeight: FontWeight.w500)),
+                                                       Text(
+                                                         'Chưa có danh sách phát nào',
+                                                         style: TextStyle(
+                                                           color: _textPrimary,
+                                                           fontSize: 15,
+                                                           fontWeight: FontWeight.w500,
+                                                         ),
+                                                       ),
                                                       const SizedBox(height: 4),
-                                                      const Text('Nhấn dấu + ở trên để tạo',
-                                                          style: TextStyle(color: Colors.white38, fontSize: 13)),
+                                                       Text(
+                                                         'Nhấn dấu + ở trên để tạo',
+                                                         style: TextStyle(color: _textSecondary, fontSize: 13),
+                                                       ),
                                                     ],
                                                   ),
                                                 ),
@@ -543,27 +657,48 @@ class _LibraryPageState extends State<LibraryPage> {
                                               padding: const EdgeInsets.only(left: 24),
                                               child: _buildLibraryCard(
                                                 child: ListTile(
-                                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                                                  leading: _LibraryThumbnail(
-                                                    colors: const [Color(0xFF2A2A3E), Color(0xFF1C1C2E)],
-                                                    icon: Icons.music_note_rounded,
-                                                    iconColor: Colors.white54,
+                                                  contentPadding:
+                                                      const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                                                  leading: Container(
+                                                    width: 56,
+                                                    height: 56,
+                                                    decoration: BoxDecoration(
+                                                      borderRadius: BorderRadius.circular(14),
+                                                       color: _bg,
+                                                       border: Border.all(color: _divider),
+                                                    ),
+                                                     child: Icon(
+                                                       Icons.music_note_rounded,
+                                                       color: _textSecondary,
+                                                       size: 26,
+                                                     ),
                                                   ),
-                                                  title: Text(playlist.name,
-                                                      style: const TextStyle(
-                                                          color: Colors.white,
-                                                          fontSize: 15,
-                                                          fontWeight: FontWeight.w600)),
-                                                  subtitle: Text('${playlist.songIds.length} bài hát',
-                                                      style: const TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w500)),
+                                                  title: Text(
+                                                    playlist.name,
+                                                    style: TextStyle(
+                                                      color: _textPrimary,
+                                                      fontSize: 15,
+                                                      fontWeight: FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                  subtitle: Text(
+                                                    '${playlist.songIds.length} bài hát',
+                                                    style: TextStyle(
+                                                      color: _textSecondary,
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                  ),
                                                   trailing: IconButton(
-                                                    icon: const Icon(Icons.more_vert_rounded, color: Colors.white54, size: 22),
+                                                     icon: Icon(Icons.more_vert_rounded,
+                                                         color: _textSecondary, size: 22),
                                                     onPressed: () => _showPlaylistOptions(playlist),
                                                   ),
                                                   onTap: () => Navigator.push(
                                                     context,
                                                     MaterialPageRoute(
-                                                      builder: (_) => PlaylistDetailPage(playlistId: playlist.id),
+                                                      builder: (_) =>
+                                                          PlaylistDetailPage(playlistId: playlist.id),
                                                     ),
                                                   ),
                                                   onLongPress: () => _showPlaylistOptions(playlist),

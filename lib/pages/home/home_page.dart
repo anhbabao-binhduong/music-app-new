@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:music_app/presentation/bloc/download/download_cubit.dart';
 import 'package:music_app/presentation/bloc/favorite/favorite_cubit.dart';
@@ -109,56 +111,87 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF1A0533),
-              Color(0xFF0D0D1A),
-            ],
-            stops: [0.0, 0.4],
-          ),
+    final theme = Theme.of(context);
+    final isLight = theme.brightness == Brightness.light;
+
+    final bgColor = isLight ? const Color(0xFFF5F5F5) : const Color(0xFF121212);
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: isLight ? SystemUiOverlayStyle.dark : SystemUiOverlayStyle.light,
+      child: Scaffold(
+      backgroundColor: bgColor,
+      extendBody: true,
+      appBar: (_currentNavIndex == 1 || _currentNavIndex == 3) ? null : _buildAppBar(),
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 220),
+        child: KeyedSubtree(
+          key: ValueKey(_currentNavIndex),
+          child: _buildBody(),
         ),
-        child: Scaffold(
-          backgroundColor: Colors.transparent,
-        extendBody: true,
-        appBar: (_currentNavIndex == 1 || _currentNavIndex == 3) ? null : _buildAppBar(),
-        body: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 220),
-          child: KeyedSubtree(
-            key: ValueKey(_currentNavIndex),
-            child: _buildBody(),
-          ),
-        ),
-        bottomSheet: const MiniPlayerBar(),
-        bottomNavigationBar: _buildBottomNavBar(),
-        ),
-      );
+      ),
+      bottomSheet: const MiniPlayerBar(),
+      bottomNavigationBar: _buildBottomNavBar(),
+      ),
+    );
   }
 
   PreferredSizeWidget _buildAppBar() {
+    final theme = Theme.of(context);
+    final isLight = theme.brightness == Brightness.light;
+
     String title = 'Khám phá';
     if (_currentNavIndex == 1) title = 'Radio';
     if (_currentNavIndex == 2) title = 'Thư viện';
 
     return AppBar(
-      backgroundColor: Colors.transparent,
+      backgroundColor: isLight ? const Color(0xFFF5F5F5) : const Color(0xFF121212),
       elevation: 0,
-      title: Text(
-        title,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 26,
-          fontWeight: FontWeight.w800,
-          letterSpacing: -0.5,
-        ),
+      scrolledUnderElevation: 0,
+      title: Row(
+        children: [
+          // Purple accent bar before title
+          Container(
+            width: 3,
+            height: 22,
+            margin: const EdgeInsets.only(right: 10),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [kAccent, kAccentPink],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Text(
+            title,
+            style: TextStyle(
+              color: isLight ? const Color(0xFF121212) : Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+            ),
+          ),
+        ],
       ),
       actions: [
-        IconButton(
-          icon: const Icon(Icons.search_rounded, color: Colors.white, size: 26),
-          onPressed: _openSearch,
+        // Search button with subtle background
+        Container(
+          margin: const EdgeInsets.only(right: 8),
+          decoration: BoxDecoration(
+            color: isLight
+                ? const Color(0xFF121212).withValues(alpha: 0.06)
+                : Colors.white.withValues(alpha: 0.08),
+            shape: BoxShape.circle,
+          ),
+          child: IconButton(
+            icon: Icon(
+              Icons.search_rounded,
+              color: isLight ? const Color(0xFF121212) : Colors.white,
+              size: 22,
+            ),
+            onPressed: _openSearch,
+          ),
         ),
         Padding(
           padding: const EdgeInsets.only(right: 16),
@@ -174,10 +207,13 @@ class _HomePageState extends State<HomePage> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                border: Border.all(
-                  color: kAccent.withValues(alpha: 0.6),
-                  width: 1.5,
-                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: kAccent.withValues(alpha: 0.4),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: _isLoggedIn
                   ? ClipOval(
@@ -187,9 +223,10 @@ class _HomePageState extends State<HomePage> {
                               fit: BoxFit.cover,
                               width: 36,
                               height: 36,
-                              placeholder: (context, url) => Container(color: const Color(0xFF4A148C)),
+                              placeholder: (context, url) =>
+                                  Container(color: kAccent.withValues(alpha: 0.25)),
                               errorWidget: (context, url, error) => Container(
-                                color: const Color(0xFF4A148C),
+                                color: kAccent.withValues(alpha: 0.25),
                                 alignment: Alignment.center,
                                 child: Text(
                                   _userName.isNotEmpty ? _userName[0].toUpperCase() : '?',
@@ -202,7 +239,7 @@ class _HomePageState extends State<HomePage> {
                               ),
                             )
                           : Container(
-                              color: const Color(0xFF4A148C),
+                              color: kAccent.withValues(alpha: 0.25),
                               alignment: Alignment.center,
                               child: Text(
                                 _userName.isNotEmpty ? _userName[0].toUpperCase() : '?',
@@ -223,6 +260,10 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildBottomNavBar() {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final activeColor = kAccent;
+    final inactiveColor = isLight ? const Color(0xFF6B6B6B) : const Color(0xFF9E9E9E);
+
     const items = [
       BottomNavigationBarItem(
         icon: Icon(Icons.explore_outlined),
@@ -245,17 +286,45 @@ class _HomePageState extends State<HomePage> {
         label: 'Cá nhân',
       ),
     ];
-    return BottomNavigationBar(
-      currentIndex: _currentNavIndex,
-      onTap: (i) => setState(() => _currentNavIndex = i),
-      backgroundColor: const Color(0xFF0D0D1A),
-      elevation: 8,
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: kAccent,
-      unselectedItemColor: kSubText,
-      selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 11),
-      unselectedLabelStyle: const TextStyle(fontSize: 11),
-      items: items,
+
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isLight
+                ? Colors.white.withValues(alpha: 0.92)
+                : const Color(0xFF0D0D0D).withValues(alpha: 0.90),
+            border: Border(
+              top: BorderSide(
+                color: isLight
+                    ? const Color(0xFFE0E0E0)
+                    : kAccent.withValues(alpha: 0.12),
+                width: 0.5,
+              ),
+            ),
+          ),
+          child: BottomNavigationBar(
+            currentIndex: _currentNavIndex,
+            onTap: (i) => setState(() => _currentNavIndex = i),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            type: BottomNavigationBarType.fixed,
+            selectedItemColor: activeColor,
+            unselectedItemColor: inactiveColor,
+            selectedLabelStyle: const TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 11,
+              letterSpacing: 0.2,
+            ),
+            unselectedLabelStyle: const TextStyle(
+              fontSize: 11,
+              letterSpacing: 0.2,
+            ),
+            items: items,
+          ),
+        ),
+      ),
     );
   }
 }

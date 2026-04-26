@@ -149,6 +149,8 @@ class _ExploreTabState extends State<ExploreTab> {
   }
 
   Widget _buildSectionHeader(String title, VoidCallback onSeeAll) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
@@ -158,8 +160,8 @@ class _ExploreTabState extends State<ExploreTab> {
           Flexible(
             child: Text(
               title,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: onSurface,
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.5,
@@ -263,7 +265,7 @@ class _ExploreTabState extends State<ExploreTab> {
                     child: Text(
                       'Khám phá theo tâm trạng',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.5,

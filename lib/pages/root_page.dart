@@ -80,20 +80,26 @@ class _SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Color(0xFF0D0D1A),
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CircleAvatar(
               radius: 36,
-              backgroundColor: Color(0xFF1A1A2E),
-              child: Icon(Icons.music_note_rounded,
-                  color: kAccent, size: 36),
+              backgroundColor: colorScheme.surfaceContainerHighest,
+              child: const Icon(
+                Icons.music_note_rounded,
+                color: kAccent,
+                size: 36,
+              ),
             ),
-            SizedBox(height: 24),
-            SizedBox(
+            const SizedBox(height: 24),
+            const SizedBox(
               width: 24,
               height: 24,
               child: CircularProgressIndicator(

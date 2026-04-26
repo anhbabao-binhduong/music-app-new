@@ -20,13 +20,19 @@ class AlbumDetailPage extends StatelessWidget {
         .map(findSongById)
         .whereType<MediaItem>()
         .toList();
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isLight = theme.brightness == Brightness.light;
+    final onSurface = colorScheme.onSurface;
+    final muted = onSurface.withValues(alpha: 0.65);
+    final soft = onSurface.withValues(alpha: 0.52);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: isLight ? colorScheme.surface : const Color(0xFF121212),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: onSurface),
       ),
       body: Center(
         child: ConstrainedBox(
@@ -68,7 +74,7 @@ class AlbumDetailPage extends StatelessWidget {
                           const SizedBox(height: 24),
                           Text(
                             album.title,
-                            style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w800),
+                            style: TextStyle(color: onSurface, fontSize: 26, fontWeight: FontWeight.w800),
                             textAlign: TextAlign.center,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -76,13 +82,13 @@ class AlbumDetailPage extends StatelessWidget {
                           const SizedBox(height: 6),
                           Text(
                             '${album.artistName}${album.releaseYear != null ? ' • ${album.releaseYear}' : ''}',
-                            style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 16),
+                            style: TextStyle(color: muted, fontSize: 16),
                           ),
                           if (album.description != null && album.description!.isNotEmpty) ...[
                             const SizedBox(height: 16),
                             Text(
                               album.description!,
-                              style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 14),
+                              style: TextStyle(color: soft, fontSize: 14),
                               textAlign: TextAlign.center,
                               maxLines: 3,
                               overflow: TextOverflow.ellipsis,
@@ -149,10 +155,13 @@ class AlbumDetailPage extends StatelessWidget {
               SliverPadding(
                 padding: const EdgeInsets.only(bottom: 120, left: 16, right: 16),
                 sliver: album.songIds.isEmpty
-                  ? const SliverToBoxAdapter(
+                  ? SliverToBoxAdapter(
                       child: Center(
-                        child: Text("Album chưa có bài hát nào", style: TextStyle(color: Colors.grey))
-                      )
+                        child: Text(
+                          "Album chưa có bài hát nào",
+                          style: TextStyle(color: muted),
+                        ),
+                      ),
                     )
                   : SliverList(
                       delegate: SliverChildBuilderDelegate(
@@ -182,11 +191,24 @@ class AlbumDetailPage extends StatelessWidget {
   }
 
   Widget _buildFallbackCover() {
-    return Container(
-      width: 200,
-      height: 200,
-      color: Colors.grey[800],
-      child: const Icon(Icons.album, size: 80, color: Colors.white54),
+    return Builder(
+      builder: (context) {
+        final theme = Theme.of(context);
+        final isLight = theme.brightness == Brightness.light;
+
+        return Container(
+          width: 200,
+          height: 200,
+          color: isLight
+              ? theme.colorScheme.surfaceContainerHighest
+              : Colors.grey[800],
+          child: Icon(
+            Icons.album,
+            size: 80,
+            color: isLight ? Colors.black26 : Colors.white54,
+          ),
+        );
+      },
     );
   }
 
@@ -198,34 +220,54 @@ class AlbumDetailPage extends StatelessWidget {
     required int songIndex,
     required List<MediaItem> playableSongs,
   }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isLight = theme.brightness == Brightness.light;
+    final cardColor = isLight
+        ? Colors.white.withValues(alpha: 0.92)
+        : Colors.white.withValues(alpha: 0.03);
+    final borderColor = isLight
+        ? colorScheme.onSurface.withValues(alpha: 0.08)
+        : Colors.white.withValues(alpha: 0.05);
+    final titleColor = colorScheme.onSurface;
+    final subtitleColor = colorScheme.onSurface.withValues(alpha: 0.62);
+    final indexColor = colorScheme.onSurface.withValues(alpha: isLight ? 0.35 : 0.2);
+    final thumbBg = isLight
+        ? colorScheme.surfaceContainerHighest
+        : Colors.white12;
+
     if (song == null) {
       return Container(
         margin: const EdgeInsets.only(bottom: 8),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.03),
+          color: cardColor,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+          border: Border.all(color: borderColor),
         ),
         child: ListTile(
           key: ValueKey(songId),
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           leading: Container(
-            width: 52, height: 52,
+            width: 52,
+            height: 52,
             decoration: BoxDecoration(
-              color: Colors.white12,
+              color: thumbBg,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.music_off_rounded, color: Colors.white54),
+            child: Icon(
+              Icons.music_off_rounded,
+              color: isLight ? Colors.black38 : Colors.white54,
+            ),
           ),
-          title: const Text(
+          title: Text(
             'Bài hát không còn khả dụng',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 15),
+            style: TextStyle(color: titleColor, fontWeight: FontWeight.w600, fontSize: 15),
           ),
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Text(
               'ID: $songId',
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 13),
+              style: TextStyle(color: subtitleColor, fontSize: 13),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -237,9 +279,9 @@ class AlbumDetailPage extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
+        color: cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(color: borderColor),
       ),
       child: Material(
         color: Colors.transparent,
@@ -265,8 +307,13 @@ class AlbumDetailPage extends StatelessWidget {
                     imageUrl: song.artUri?.toString() ?? '',
                     width: 52, height: 52, fit: BoxFit.cover,
                     errorWidget: (_, __, ___) => Container(
-                      width: 52, height: 52, color: Colors.white12,
-                      child: const Icon(Icons.music_note, color: Colors.white54),
+                      width: 52,
+                      height: 52,
+                      color: thumbBg,
+                      child: Icon(
+                        Icons.music_note,
+                        color: isLight ? Colors.black38 : Colors.white54,
+                      ),
                     ),
                   ),
                 ),
@@ -277,14 +324,14 @@ class AlbumDetailPage extends StatelessWidget {
                     children: [
                       Text(
                         song.title,
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 15),
+                        style: TextStyle(color: titleColor, fontWeight: FontWeight.w600, fontSize: 15),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
                       Text(
                         song.artist ?? 'Unknown',
-                        style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13),
+                        style: TextStyle(color: subtitleColor, fontSize: 13),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -295,7 +342,7 @@ class AlbumDetailPage extends StatelessWidget {
                 Text(
                   '${index + 1}',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.2),
+                    color: indexColor,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),

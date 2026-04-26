@@ -11,31 +11,29 @@ import 'package:music_app/pages/player/player_page.dart';
 import 'package:music_app/presentation/bloc/download/download_cubit.dart';
 import 'package:music_app/presentation/bloc/favorite/favorite_cubit.dart';
 
+const _kBg = Color(0xFFF3F4F8);
+const _kCard = Colors.white;
+const _kTextPrimary = Color(0xFF1A1A2E);
+const _kTextSecondary = Color(0xFF6B7280);
+const _kDivider = Color(0xFFEEEEF5);
+const _kAccent = Color(0xFF0D47A1);
+
 class HistoryPage extends StatelessWidget {
   const HistoryPage({super.key});
 
   Future<void> _playSongs(
       BuildContext context, List<MediaItem> items, int index) async {
     final target = items[index];
-
-    // Lọc bài có URL hợp lệ
     final validItems = items.where((s) {
       final url = s.extras?['url'] as String?;
       return url != null && url.isNotEmpty;
     }).toList();
     if (validItems.isEmpty) return;
-
     final newIndex = validItems.indexWhere((s) => s.id == target.id);
     if (newIndex == -1) return;
-
-    // Tải playlist & navigate đồng thời (microtask tránh jank)
     Future.microtask(() {
-      getIt<PlayerBloc>().add(LoadPlaylistEvent(
-        validItems,
-        startIndex: newIndex,
-      ));
+      getIt<PlayerBloc>().add(LoadPlaylistEvent(validItems, startIndex: newIndex));
     });
-
     if (!context.mounted) return;
     await Navigator.push(
       context,
@@ -47,21 +45,21 @@ class HistoryPage extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
+        backgroundColor: _kCard,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Xóa khỏi lịch sử',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            style: TextStyle(color: _kTextPrimary, fontWeight: FontWeight.bold)),
         content: Text('Xóa "${item.title}" khỏi lịch sử nghe?',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.7))),
+            style: const TextStyle(color: _kTextSecondary)),
         actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Hủy', style: TextStyle(color: Colors.white.withValues(alpha: 0.6))),
+            child: const Text('Hủy', style: TextStyle(color: _kTextSecondary)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent.withValues(alpha: 0.2),
+              backgroundColor: Colors.redAccent.withValues(alpha: 0.1),
               foregroundColor: Colors.redAccent,
               elevation: 0,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -72,7 +70,6 @@ class HistoryPage extends StatelessWidget {
         ],
       ),
     );
-
     if (confirmed == true && context.mounted) {
       await context.read<HistoryCubit>().removeItem(item.id);
     }
@@ -82,14 +79,19 @@ class HistoryPage extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
+        color: _kCard,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(color: _kDivider),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 8,
+            color: _kAccent.withValues(alpha: 0.06),
+            blurRadius: 10,
             offset: const Offset(0, 4),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -101,7 +103,7 @@ class HistoryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: _kBg,
       body: BlocBuilder<HistoryCubit, List<MediaItem>>(
         builder: (context, history) {
           return Center(
@@ -113,9 +115,9 @@ class HistoryPage extends StatelessWidget {
                   SliverAppBar(
                     expandedHeight: 180,
                     pinned: true,
-                    backgroundColor: const Color(0xFF121212),
+                    backgroundColor: _kBg,
                     elevation: 0,
-                    iconTheme: const IconThemeData(color: Colors.white),
+                    iconTheme: const IconThemeData(color: _kTextPrimary),
                     flexibleSpace: FlexibleSpaceBar(
                       titlePadding: const EdgeInsets.only(left: 48, bottom: 16),
                       title: const Text(
@@ -133,9 +135,10 @@ class HistoryPage extends StatelessWidget {
                           Container(
                             decoration: const BoxDecoration(
                               gradient: LinearGradient(
-                                colors: [Color(0xFF0D47A1), Color(0xFF121212)],
+                                colors: [Color(0xFF0D47A1), Color(0xFF1565C0), Color(0xFFF3F4F8)],
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
+                                stops: [0.0, 0.55, 1.0],
                               ),
                             ),
                           ),
@@ -147,7 +150,7 @@ class HistoryPage extends StatelessWidget {
                               height: 200,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: const Color(0xFF1565C0).withValues(alpha: 0.2),
+                                color: Colors.white.withValues(alpha: 0.15),
                               ),
                               child: BackdropFilter(
                                 filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
@@ -165,27 +168,35 @@ class HistoryPage extends StatelessWidget {
                             final confirmed = await showDialog<bool>(
                               context: context,
                               builder: (ctx) => AlertDialog(
-                                backgroundColor: const Color(0xFF1E1E1E),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                backgroundColor: _kCard,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20)),
                                 title: const Text('Xóa lịch sử',
-                                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                                content: Text('Xóa toàn bộ lịch sử nghe?',
-                                    style: TextStyle(color: Colors.white.withValues(alpha: 0.7))),
-                                actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                    style: TextStyle(
+                                        color: _kTextPrimary,
+                                        fontWeight: FontWeight.bold)),
+                                content: const Text('Xóa toàn bộ lịch sử nghe?',
+                                    style: TextStyle(color: _kTextSecondary)),
+                                actionsPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 12),
                                 actions: [
                                   TextButton(
                                     onPressed: () => Navigator.pop(ctx, false),
-                                    child: Text('Hủy', style: TextStyle(color: Colors.white.withValues(alpha: 0.6))),
+                                    child: const Text('Hủy',
+                                        style: TextStyle(color: _kTextSecondary)),
                                   ),
                                   ElevatedButton(
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.redAccent.withValues(alpha: 0.2),
+                                      backgroundColor:
+                                          Colors.redAccent.withValues(alpha: 0.1),
                                       foregroundColor: Colors.redAccent,
                                       elevation: 0,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(10)),
                                     ),
                                     onPressed: () => Navigator.pop(ctx, true),
-                                    child: const Text('Xóa', style: TextStyle(fontWeight: FontWeight.bold)),
+                                    child: const Text('Xóa',
+                                        style: TextStyle(fontWeight: FontWeight.bold)),
                                   ),
                                 ],
                               ),
@@ -194,8 +205,13 @@ class HistoryPage extends StatelessWidget {
                               await context.read<HistoryCubit>().clearHistory();
                             }
                           },
-                          icon: Icon(Icons.delete_outline_rounded, color: Colors.white.withValues(alpha: 0.6), size: 18),
-                          label: Text('Xóa tất cả', style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 13, fontWeight: FontWeight.w600)),
+                          icon: const Icon(Icons.delete_outline_rounded,
+                              color: Colors.redAccent, size: 18),
+                          label: const Text('Xóa tất cả',
+                              style: TextStyle(
+                                  color: Colors.redAccent,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600)),
                         ),
                     ],
                   ),
@@ -207,16 +223,21 @@ class HistoryPage extends StatelessWidget {
                           children: [
                             Container(
                               padding: const EdgeInsets.all(24),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.white.withValues(alpha: 0.05),
-                              ),
-                              child: Icon(Icons.history_rounded, size: 64, color: Colors.white.withValues(alpha: 0.2)),
+                              decoration: const BoxDecoration(
+                                  shape: BoxShape.circle, color: _kDivider),
+                              child: const Icon(Icons.history_rounded,
+                                  size: 64, color: _kTextSecondary),
                             ),
                             const SizedBox(height: 20),
-                            const Text('Chưa có lịch sử nghe', style: TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.w600)),
+                            const Text('Chưa có lịch sử nghe',
+                                style: TextStyle(
+                                    color: _kTextPrimary,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600)),
                             const SizedBox(height: 8),
-                            Text('Phát nhạc để bắt đầu theo dõi', style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 14)),
+                            const Text('Phát nhạc để bắt đầu theo dõi',
+                                style:
+                                    TextStyle(color: _kTextSecondary, fontSize: 14)),
                           ],
                         ),
                       ),
@@ -231,13 +252,14 @@ class HistoryPage extends StatelessWidget {
                             return _buildSongCard(
                               child: ListTile(
                                 key: ValueKey(item.id),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
                                 leading: Container(
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(10),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.3),
+                                        color: Colors.black.withValues(alpha: 0.12),
                                         blurRadius: 6,
                                         offset: const Offset(0, 3),
                                       ),
@@ -251,7 +273,8 @@ class HistoryPage extends StatelessWidget {
                                             width: 52,
                                             height: 52,
                                             fit: BoxFit.cover,
-                                            errorWidget: (_, __, ___) => _placeholder(),
+                                            errorWidget: (_, __, ___) =>
+                                                _placeholder(),
                                           )
                                         : _placeholder(),
                                   ),
@@ -259,7 +282,7 @@ class HistoryPage extends StatelessWidget {
                                 title: Text(
                                   item.title,
                                   style: const TextStyle(
-                                      color: Colors.white,
+                                      color: _kTextPrimary,
                                       fontSize: 15,
                                       fontWeight: FontWeight.w700),
                                   maxLines: 1,
@@ -269,14 +292,17 @@ class HistoryPage extends StatelessWidget {
                                   padding: const EdgeInsets.only(top: 4),
                                   child: Text(
                                     item.artist ?? '',
-                                    style: TextStyle(
-                                        color: Colors.white.withValues(alpha: 0.6), fontSize: 13, fontWeight: FontWeight.w500),
+                                    style: const TextStyle(
+                                        color: _kTextSecondary,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                                 trailing: IconButton(
-                                  icon: Icon(Icons.more_vert_rounded, color: Colors.white.withValues(alpha: 0.5), size: 22),
+                                  icon: const Icon(Icons.more_vert_rounded,
+                                      color: _kTextSecondary, size: 22),
                                   onPressed: () => _showSongOptions(context, item),
                                 ),
                                 onTap: () => _playSongs(context, history, index),
@@ -299,9 +325,9 @@ class HistoryPage extends StatelessWidget {
   void _showSongOptions(BuildContext context, MediaItem song) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1E1E1E),
+      backgroundColor: _kCard,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (_) => SafeArea(
         child: Column(
@@ -309,8 +335,10 @@ class HistoryPage extends StatelessWidget {
           children: [
             Container(
               margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 40, height: 4,
-              decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+              width: 40,
+              height: 4,
+              decoration:
+                  BoxDecoration(color: _kDivider, borderRadius: BorderRadius.circular(2)),
             ),
             BlocBuilder<FavoriteCubit, List<String>>(
               builder: (context, favorites) {
@@ -318,11 +346,13 @@ class HistoryPage extends StatelessWidget {
                 return ListTile(
                   leading: Icon(
                     isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                    color: isFav ? const Color(0xFFD81B60) : Colors.white70,
+                    color: isFav ? const Color(0xFFD81B60) : _kTextSecondary,
                   ),
                   title: Text(
                     isFav ? 'Bỏ yêu thích' : 'Thêm vào yêu thích',
-                    style: TextStyle(color: isFav ? const Color(0xFFD81B60) : Colors.white, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                        color: isFav ? const Color(0xFFD81B60) : _kTextPrimary,
+                        fontWeight: FontWeight.w600),
                   ),
                   onTap: () async {
                     Navigator.pop(context);
@@ -337,12 +367,13 @@ class HistoryPage extends StatelessWidget {
                 return ListTile(
                   leading: Icon(
                     isDownloaded ? Icons.download_done_rounded : Icons.download_rounded,
-                    color: isDownloaded ? const Color(0xFF2E7D32) : Colors.white70,
+                    color: isDownloaded ? const Color(0xFF2E7D32) : _kTextSecondary,
                   ),
                   title: Text(
                     isDownloaded ? 'Đã tải' : 'Tải nhạc',
                     style: TextStyle(
-                      color: isDownloaded ? const Color(0xFF2E7D32) : Colors.white, fontWeight: FontWeight.w600,
+                      color: isDownloaded ? const Color(0xFF2E7D32) : _kTextPrimary,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   onTap: () async {
@@ -351,17 +382,19 @@ class HistoryPage extends StatelessWidget {
                       await context.read<DownloadCubit>().toggleDownload(song);
                     } catch (e) {
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+                        ScaffoldMessenger.of(context)
+                            .showSnackBar(SnackBar(content: Text(e.toString())));
                       }
                     }
                   },
                 );
               },
             ),
-            const Divider(color: Colors.white12, height: 1),
+            const Divider(color: _kDivider, height: 1),
             ListTile(
               leading: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
-              title: const Text('Xóa khỏi lịch sử', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600)),
+              title: const Text('Xóa khỏi lịch sử',
+                  style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600)),
               onTap: () {
                 Navigator.pop(context);
                 _removeItem(context, song);
@@ -377,14 +410,13 @@ class HistoryPage extends StatelessWidget {
   Widget _placeholder() => Container(
         width: 52,
         height: 52,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF2A2A3E), Color(0xFF1C1C2E)],
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFEEEEF5), Color(0xFFDDDDEE)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
         ),
-        child: Icon(Icons.music_note_rounded,
-            color: Colors.white.withValues(alpha: 0.2), size: 24),
+        child: const Icon(Icons.music_note_rounded, color: _kTextSecondary, size: 24),
       );
 }

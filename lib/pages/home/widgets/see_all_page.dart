@@ -43,27 +43,32 @@ class _SeeAllPageState extends State<SeeAllPage> {
   @override
   Widget build(BuildContext context) {
     final isWide = MediaQuery.of(context).size.width >= 750;
-    
+    final theme = Theme.of(context);
+    final isLight = theme.brightness == Brightness.light;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF170F23),
+      backgroundColor: isLight ? theme.colorScheme.surface : const Color(0xFF170F23),
       appBar: _buildAppBar(context, isWide),
       body: _buildBody(context, isWide),
     );
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context, bool isWide) {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+        icon: Icon(Icons.arrow_back_ios_new_rounded, color: onSurface, size: 20),
         onPressed: () => Navigator.of(context).pop(),
       ),
-      title: !isWide 
+      title: !isWide
           ? Flexible(
               child: Text(
-                widget.title, 
-                style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+                widget.title,
+                style: TextStyle(color: onSurface, fontSize: 18, fontWeight: FontWeight.w700),
                 overflow: TextOverflow.ellipsis,
               ),
             )
@@ -71,7 +76,7 @@ class _SeeAllPageState extends State<SeeAllPage> {
       centerTitle: false,
       actions: [
         IconButton(
-          icon: const Icon(Icons.search_rounded, color: Colors.white, size: 24),
+          icon: Icon(Icons.search_rounded, color: onSurface, size: 24),
           onPressed: () => _showSearchDialog(context),
         ),
         const SizedBox(width: 8),
@@ -130,13 +135,21 @@ class _SeeAllPageState extends State<SeeAllPage> {
   }
 
   Widget _buildAlbumMobileHeader(int totalAlbums) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isLight = theme.brightness == Brightness.light;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF170F23),
+        color: isLight ? colorScheme.surface : const Color(0xFF170F23),
         border: Border(
-          bottom: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+          bottom: BorderSide(
+            color: isLight
+                ? colorScheme.onSurface.withValues(alpha: 0.08)
+                : Colors.white.withValues(alpha: 0.06),
+          ),
         ),
       ),
       child: Row(
@@ -147,13 +160,21 @@ class _SeeAllPageState extends State<SeeAllPage> {
               children: [
                 Text(
                   widget.title,
-                  style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: -0.5),
+                  style: TextStyle(
+                    color: colorScheme.onSurface,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '$totalAlbums album',
-                  style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                  style: TextStyle(
+                    color: colorScheme.onSurface.withValues(alpha: 0.6),
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
@@ -164,6 +185,9 @@ class _SeeAllPageState extends State<SeeAllPage> {
   }
 
   Widget _buildAlbumsDesktopGrid(List<AlbumEntity> albums) {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+
     return Padding(
       padding: const EdgeInsets.all(40),
       child: Column(
@@ -171,12 +195,12 @@ class _SeeAllPageState extends State<SeeAllPage> {
         children: [
           Text(
             widget.title.toUpperCase(),
-            style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800),
+            style: TextStyle(color: onSurface, fontSize: 22, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
           Text(
             '${albums.length} album',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13),
+            style: TextStyle(color: onSurface.withValues(alpha: 0.6), fontSize: 13),
           ),
           const SizedBox(height: 24),
           Expanded(
@@ -222,8 +246,24 @@ class _SeeAllPageState extends State<SeeAllPage> {
   Widget _buildSongsDesktopLayout(BuildContext context) {
     final imgUrl = widget.imageUrl ?? fallbackImageUrl;
     final desc = widget.description ?? fallbackDescription;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isLight = theme.brightness == Brightness.light;
+    final onSurface = colorScheme.onSurface;
+    final panelColor = isLight
+        ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.55)
+        : Colors.white.withValues(alpha: 0.04);
+    final panelBorder = isLight
+        ? onSurface.withValues(alpha: 0.08)
+        : Colors.white.withValues(alpha: 0.06);
+
     // ignore: no_leading_underscores_for_local_identifiers
-    final _headerStyle = TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.5);
+    final _headerStyle = TextStyle(
+      color: onSurface.withValues(alpha: isLight ? 0.72 : 0.6),
+      fontSize: 12,
+      fontWeight: FontWeight.w700,
+      letterSpacing: 0.6,
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 20.0),
@@ -242,20 +282,25 @@ class _SeeAllPageState extends State<SeeAllPage> {
                     width: 300,
                     height: 300,
                     fit: BoxFit.cover,
-                    errorWidget: (context, url, err) => Container(width: 300, height: 300, color: Colors.blueGrey, child: const Icon(Icons.music_note, color: Colors.white, size: 80)),
+                    errorWidget: (context, url, err) => Container(
+                      width: 300,
+                      height: 300,
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      child: const Icon(Icons.music_note, color: Colors.white, size: 80),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 24),
                 Text(
                   widget.title.toUpperCase(),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800),
+                  style: TextStyle(color: onSurface, fontSize: 22, fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 10),
                 Text(
                   'Cập nhật: Hôm nay\nLượt nghe: 10M+',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13, height: 1.6),
+                  style: TextStyle(color: onSurface.withValues(alpha: 0.6), fontSize: 13, height: 1.6),
                 ),
                 const SizedBox(height: 24),
                 SizedBox(
@@ -281,38 +326,61 @@ class _SeeAllPageState extends State<SeeAllPage> {
           const SizedBox(width: 48),
           // Right Content
           Expanded(
-            child: Column(
-               crossAxisAlignment: CrossAxisAlignment.start,
-               children: [
-                  Text(desc, style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 14, height: 1.6)),
-                  const SizedBox(height: 24),
-                  // Table Header
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 12),
+              decoration: BoxDecoration(
+                color: panelColor,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: panelBorder),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    desc,
+                    style: TextStyle(
+                      color: onSurface.withValues(alpha: isLight ? 0.82 : 0.72),
+                      fontSize: 14,
+                      height: 1.7,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 10),
                     child: Row(
-                       children: [
-                          Expanded(flex: 5, child: Text('BÀI HÁT', style: _headerStyle)),
-                          Expanded(flex: 3, child: Text('ALBUM', style: _headerStyle)),
-                          Expanded(flex: 1, child: Align(alignment: Alignment.centerRight, child: Text('THỜI GIAN', style: _headerStyle))),
-                       ]
+                      children: [
+                        Expanded(flex: 5, child: Text('BÀI HÁT', style: _headerStyle)),
+                        Expanded(flex: 3, child: Text('ALBUM', style: _headerStyle)),
+                        Expanded(
+                          flex: 1,
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: Text('THỜI GIAN', style: _headerStyle),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  Divider(color: Colors.white.withValues(alpha: 0.05), height: 1),
+                  Divider(
+                    color: onSurface.withValues(alpha: isLight ? 0.12 : 0.08),
+                    height: 1,
+                  ),
                   Expanded(
                     child: ListView.builder(
                       physics: const BouncingScrollPhysics(),
                       itemCount: localPlaylist.length,
                       itemBuilder: (ctx, i) {
-                         return _ZingMusicTableRow(
-                            item: localPlaylist[i],
-                            index: i,
-                            onTap: () => playWithAuthGuard(ctx, playlist: localPlaylist, index: i),
-                         );
-                      }
-                    )
+                        return _ZingMusicTableRow(
+                          item: localPlaylist[i],
+                          index: i,
+                          onTap: () => playWithAuthGuard(ctx, playlist: localPlaylist, index: i),
+                        );
+                      },
+                    ),
                   )
-               ]
-            )
+                ],
+              ),
+            ),
           )
         ]
       )
@@ -355,15 +423,20 @@ class _SeeAllPageState extends State<SeeAllPage> {
 
   Widget _buildSongsMobileHeader(BuildContext context) {
     final totalSongs = localPlaylist.length;
-    
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isLight = theme.brightness == Brightness.light;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF170F23),
+        color: isLight ? colorScheme.surface : const Color(0xFF170F23),
         border: Border(
           bottom: BorderSide(
-            color: Colors.white.withValues(alpha: 0.06),
+            color: isLight
+                ? colorScheme.onSurface.withValues(alpha: 0.08)
+                : Colors.white.withValues(alpha: 0.06),
           ),
         ),
       ),
@@ -377,8 +450,8 @@ class _SeeAllPageState extends State<SeeAllPage> {
               children: [
                 Text(
                   widget.title,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: colorScheme.onSurface,
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.5,
@@ -390,7 +463,7 @@ class _SeeAllPageState extends State<SeeAllPage> {
                 Text(
                   '$totalSongs bài hát',
                   style: TextStyle(
-                    color: Colors.grey.shade500,
+                    color: colorScheme.onSurface.withValues(alpha: 0.6),
                     fontSize: 12,
                   ),
                 ),
@@ -437,60 +510,78 @@ class _SeeAllPageState extends State<SeeAllPage> {
     
     showDialog(
       context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: const Color(0xFF2A2A2E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Container(
-          width: 500,
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: searchController,
-                autofocus: true,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: 'Tìm kiếm bài hát...',
-                  hintStyle: TextStyle(color: Colors.grey.shade500),
-                  prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                  filled: true,
-                  fillColor: Colors.white.withValues(alpha: 0.05),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        final colorScheme = theme.colorScheme;
+        final isLight = theme.brightness == Brightness.light;
+
+        return Dialog(
+          backgroundColor: isLight ? colorScheme.surface : const Color(0xFF2A2A2E),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          child: Container(
+            width: 500,
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: searchController,
+                  autofocus: true,
+                  style: TextStyle(color: colorScheme.onSurface),
+                  decoration: InputDecoration(
+                    hintText: 'Tìm kiếm bài hát...',
+                    hintStyle: TextStyle(
+                      color: colorScheme.onSurface.withValues(alpha: 0.45),
+                    ),
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                    filled: true,
+                    fillColor: isLight
+                        ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.7)
+                        : Colors.white.withValues(alpha: 0.05),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: const Text('Hủy', style: TextStyle(color: Colors.grey)),
-                    ),
-                  ),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF9b4de0),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: Text(
+                          'Hủy',
+                          style: TextStyle(
+                            color: colorScheme.onSurface.withValues(alpha: 0.65),
+                          ),
                         ),
                       ),
-                      child: const Text('Tìm kiếm'),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF9B4DE0),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text('Tìm kiếm'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -517,17 +608,35 @@ class _ZingMusicTableRowState extends State<_ZingMusicTableRow> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isLight = theme.brightness == Brightness.light;
+    final titleColor = colorScheme.onSurface;
+    final subColor = colorScheme.onSurface.withValues(alpha: 0.62);
+    final lineColor = isLight
+        ? colorScheme.onSurface.withValues(alpha: 0.08)
+        : Colors.white.withValues(alpha: 0.05);
+    final hoverColor = isLight
+        ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.7)
+        : Colors.white.withValues(alpha: 0.08);
+    final thumbFallback = isLight
+        ? colorScheme.surfaceContainerHighest
+        : Colors.black26;
+
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: GestureDetector(
         onTap: widget.onTap,
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
           decoration: BoxDecoration(
-            color: _isHovered ? Colors.white.withValues(alpha: 0.08) : Colors.transparent,
-            borderRadius: BorderRadius.circular(6),
-            border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: _isHovered ? 0 : 0.05)))
+            color: _isHovered ? hoverColor : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            border: Border(
+              bottom: BorderSide(color: _isHovered ? Colors.transparent : lineColor),
+            ),
           ),
           child: Row(
             children: [
@@ -538,10 +647,18 @@ class _ZingMusicTableRowState extends State<_ZingMusicTableRow> {
                     SizedBox(width: 30, child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                         if (_isHovered) 
-                            const Icon(Icons.music_note_rounded, color: Colors.white70, size: 16)
-                         else 
-                            const Icon(Icons.music_note_rounded, color: Colors.white30, size: 16),
+                         if (_isHovered)
+                            Icon(
+                              Icons.music_note_rounded,
+                              color: isLight ? colorScheme.primary : Colors.white70,
+                              size: 16,
+                            )
+                         else
+                            Icon(
+                              Icons.music_note_rounded,
+                              color: isLight ? subColor : Colors.white30,
+                              size: 16,
+                            ),
                       ],
                     )),
                     const SizedBox(width: 8),
@@ -551,14 +668,28 @@ class _ZingMusicTableRowState extends State<_ZingMusicTableRow> {
                         alignment: Alignment.center,
                         children: [
                            Container(
-                             width: 48, height: 48, color: Colors.black26,
-                             child: widget.item.artUri != null 
-                               ? CachedNetworkImage(imageUrl: widget.item.artUri.toString(), fit: BoxFit.cover, errorWidget: (c,u,e) => const Icon(Icons.music_note, color: Colors.white30))
-                               : const Icon(Icons.music_note, color: Colors.white30),
+                             width: 48,
+                             height: 48,
+                             color: thumbFallback,
+                             child: widget.item.artUri != null
+                               ? CachedNetworkImage(
+                                   imageUrl: widget.item.artUri.toString(),
+                                   fit: BoxFit.cover,
+                                   errorWidget: (c, u, e) => Icon(
+                                     Icons.music_note,
+                                     color: isLight ? Colors.black26 : Colors.white30,
+                                   ),
+                                 )
+                               : Icon(
+                                   Icons.music_note,
+                                   color: isLight ? Colors.black26 : Colors.white30,
+                                 ),
                            ),
                            if (_isHovered)
                              Container(
-                               width: 48, height: 48, color: Colors.black.withValues(alpha: 0.5),
+                               width: 48,
+                               height: 48,
+                               color: Colors.black.withValues(alpha: isLight ? 0.20 : 0.5),
                                child: const Icon(Icons.play_arrow_rounded, color: Colors.white),
                              )
                         ]
@@ -569,9 +700,23 @@ class _ZingMusicTableRowState extends State<_ZingMusicTableRow> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                           Text(widget.item.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+                           Text(
+                             widget.item.title,
+                             maxLines: 1,
+                             overflow: TextOverflow.ellipsis,
+                             style: TextStyle(
+                               color: titleColor,
+                               fontSize: 14,
+                               fontWeight: FontWeight.w600,
+                             ),
+                           ),
                            const SizedBox(height: 6),
-                           Text(widget.item.artist ?? 'Unknown Artist', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12)),
+                           Text(
+                             widget.item.artist ?? 'Unknown Artist',
+                             maxLines: 1,
+                             overflow: TextOverflow.ellipsis,
+                             style: TextStyle(color: subColor, fontSize: 12),
+                           ),
                         ]
                       )
                     )
@@ -580,7 +725,12 @@ class _ZingMusicTableRowState extends State<_ZingMusicTableRow> {
               ),
               Expanded(
                 flex: 3,
-                child: Text(widget.item.album ?? 'Single', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13))
+                child: Text(
+                  widget.item.album ?? 'Single',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: subColor, fontSize: 13),
+                )
               ),
               SizedBox(
                 width: 60,
@@ -600,7 +750,7 @@ class _ZingMusicTableRowState extends State<_ZingMusicTableRow> {
                                     : Icons.favorite_border,
                                 color: context.read<FavoriteCubit>().state.contains(widget.item.id)
                                     ? const Color(0xFFE91E8C)
-                                    : Colors.white70,
+                                    : (isLight ? subColor : Colors.white70),
                                 size: 16,
                               ),
                               onPressed: () async {
@@ -633,26 +783,54 @@ class _ZingMusicTableRowState extends State<_ZingMusicTableRow> {
                               constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.more_horiz, color: Colors.white70, size: 16),
+                              icon: Icon(
+                                Icons.more_horiz,
+                                color: isLight ? subColor : Colors.white70,
+                                size: 16,
+                              ),
                               onPressed: () {
                                 final pageContext = context;
                                 showModalBottomSheet(
                                   context: pageContext,
-                                  backgroundColor: const Color(0xFF1E1E28),
+                                  backgroundColor: Colors.transparent,
                                   shape: const RoundedRectangleBorder(
                                     borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                                   ),
-                                  builder: (ctx) => SafeArea(
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(vertical: 12),
-                                      child: Column(
+                                  builder: (ctx) {
+                                    final sheetTheme = Theme.of(ctx);
+                                    final sheetScheme = sheetTheme.colorScheme;
+                                    final sheetIsLight =
+                                        sheetTheme.brightness == Brightness.light;
+
+                                    return Container(
+                                      decoration: BoxDecoration(
+                                        color: sheetIsLight
+                                            ? sheetScheme.surface
+                                            : const Color(0xFF1E1E28),
+                                        borderRadius: const BorderRadius.vertical(
+                                          top: Radius.circular(20),
+                                        ),
+                                        border: Border(
+                                          top: BorderSide(
+                                            color: sheetIsLight
+                                                ? sheetScheme.onSurface.withValues(alpha: 0.08)
+                                                : Colors.white.withValues(alpha: 0.12),
+                                          ),
+                                        ),
+                                      ),
+                                      child: SafeArea(
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(vertical: 12),
+                                          child: Column(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Container(
                                             width: 36, height: 4,
                                             margin: const EdgeInsets.only(bottom: 16),
                                             decoration: BoxDecoration(
-                                              color: Colors.white.withValues(alpha: 0.2),
+                                              color: sheetIsLight
+                                                  ? sheetScheme.onSurface.withValues(alpha: 0.18)
+                                                  : Colors.white.withValues(alpha: 0.2),
                                               borderRadius: BorderRadius.circular(2),
                                             ),
                                           ),
@@ -667,12 +845,18 @@ class _ZingMusicTableRowState extends State<_ZingMusicTableRow> {
                                               return ListTile(
                                                 leading: Icon(
                                                   isInAnyPlaylist ? Icons.check_circle_rounded : Icons.queue_music_rounded,
-                                                  color: isInAnyPlaylist ? const Color(0xFF7C3AED) : Colors.white70,
+                                                  color: isInAnyPlaylist
+                                                      ? const Color(0xFF7C3AED)
+                                                      : (sheetIsLight
+                                                          ? sheetScheme.onSurface.withValues(alpha: 0.7)
+                                                          : Colors.white70),
                                                 ),
                                                 title: Text(
                                                   isInAnyPlaylist ? 'Đã thêm vào playlist' : 'Thêm vào playlist',
                                                   style: TextStyle(
-                                                    color: isInAnyPlaylist ? const Color(0xFF7C3AED) : Colors.white,
+                                                    color: isInAnyPlaylist
+                                                        ? const Color(0xFF7C3AED)
+                                                        : sheetScheme.onSurface,
                                                   ),
                                                 ),
                                                 onTap: () {
@@ -690,8 +874,16 @@ class _ZingMusicTableRowState extends State<_ZingMusicTableRow> {
                                             },
                                           ),
                                           ListTile(
-                                            leading: const Icon(Icons.share_rounded, color: Colors.white70),
-                                            title: const Text('Chia sẻ', style: TextStyle(color: Colors.white)),
+                                            leading: Icon(
+                                              Icons.share_rounded,
+                                              color: sheetIsLight
+                                                  ? sheetScheme.onSurface.withValues(alpha: 0.7)
+                                                  : Colors.white70,
+                                            ),
+                                            title: Text(
+                                              'Chia sẻ',
+                                              style: TextStyle(color: sheetScheme.onSurface),
+                                            ),
                                             onTap: () {
                                               Navigator.pop(ctx);
                                             },
@@ -702,12 +894,18 @@ class _ZingMusicTableRowState extends State<_ZingMusicTableRow> {
                                               return ListTile(
                                                 leading: Icon(
                                                   isDownloaded ? Icons.download_done_rounded : Icons.download_rounded,
-                                                  color: isDownloaded ? const Color(0xFF1DB954) : Colors.white70,
+                                                  color: isDownloaded
+                                                      ? const Color(0xFF1DB954)
+                                                      : (sheetIsLight
+                                                          ? sheetScheme.onSurface.withValues(alpha: 0.7)
+                                                          : Colors.white70),
                                                 ),
                                                 title: Text(
                                                   isDownloaded ? 'Đã tải' : 'Tải nhạc',
                                                   style: TextStyle(
-                                                    color: isDownloaded ? const Color(0xFF1DB954) : Colors.white,
+                                                    color: isDownloaded
+                                                        ? const Color(0xFF1DB954)
+                                                        : sheetScheme.onSurface,
                                                   ),
                                                 ),
                                                                                                 onTap: () async {
@@ -750,9 +948,11 @@ class _ZingMusicTableRowState extends State<_ZingMusicTableRow> {
                                             },
                                           ),
                                         ],
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
+                                    );
+                                  },
                                 );
                               },
                               padding: EdgeInsets.zero,
@@ -761,7 +961,10 @@ class _ZingMusicTableRowState extends State<_ZingMusicTableRow> {
                           ],
                         ),
                       )
-                    : Text(_formatDuration(widget.item.duration), style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13))
+                    : Text(
+                        _formatDuration(widget.item.duration),
+                        style: TextStyle(color: subColor, fontSize: 13),
+                      )
                 )
               )
             ]

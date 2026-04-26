@@ -1,28 +1,30 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../auth/login_page.dart';
-import '../../auth/register_page.dart';
-import '../../profile/comment_history_page.dart';
-import '../../profile/notifications_page.dart';
-import '../../profile/edit_profile_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+
 import '../../../core/constants/colors.dart';
+import '../../../data/models/user_song_model.dart';
 import '../../../presentation/bloc/admin/admin_cubit.dart';
 import '../../../presentation/bloc/admin/admin_state.dart';
-import '../../admin/admin_dashboard_page.dart';
 import '../../../presentation/bloc/player/player_bloc.dart';
 import '../../../presentation/bloc/player/player_event.dart';
 import '../../../presentation/bloc/user_songs/user_songs_cubit.dart';
-import '../../../data/models/user_song_model.dart';
+import '../../admin/admin_dashboard_page.dart';
+import '../../auth/login_page.dart';
+import '../../auth/register_page.dart';
+import '../../profile/comment_history_page.dart';
+import '../../profile/edit_profile_page.dart';
+import '../../profile/notifications_page.dart';
+import '../../profile/settings_page.dart';
 import '../../upload/upload_music_sheet.dart';
 
 class ProfileTab extends StatelessWidget {
   final bool isLoggedIn;
   final String userName;
   final String userEmail;
-  final String? userId; // Thêm biến lưu userId
-  final String? userAvatarUrl; // Thêm biến lưu avatar
+  final String? userId;
+  final String? userAvatarUrl;
   final Future<void> Function() onLogout;
   final int favoriteCount;
   final int playlistCount;
@@ -58,6 +60,78 @@ class ProfileTab extends StatelessWidget {
   }
 }
 
+class _ProfilePalette {
+  final Color background;
+  final Color surface;
+  final Color elevated;
+  final Color border;
+  final Color text;
+  final Color muted;
+  final Color softText;
+  final Color accent;
+  final Color accentSecondary;
+  final Color shadow;
+  final Color destructive;
+
+  const _ProfilePalette({
+    required this.background,
+    required this.surface,
+    required this.elevated,
+    required this.border,
+    required this.text,
+    required this.muted,
+    required this.softText,
+    required this.accent,
+    required this.accentSecondary,
+    required this.shadow,
+    required this.destructive,
+  });
+
+  factory _ProfilePalette.of(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    return _ProfilePalette(
+      background: theme.scaffoldBackgroundColor,
+      surface: scheme.surface,
+      elevated: scheme.surfaceContainerHighest,
+      border: scheme.outline.withValues(alpha: isDark ? 0.55 : 0.75),
+      text: scheme.onSurface,
+      muted: scheme.onSurface.withValues(alpha: 0.68),
+      softText: scheme.onSurface.withValues(alpha: 0.48),
+      accent: scheme.primary,
+      accentSecondary: scheme.secondary,
+      shadow: isDark
+          ? Colors.black.withValues(alpha: 0.30)
+          : const Color(0xFF2D1457).withValues(alpha: 0.08),
+      destructive: scheme.error,
+    );
+  }
+
+  LinearGradient get accentGradient => const LinearGradient(
+        colors: [kAccent, kAccentPink],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
+
+  LinearGradient heroGradient(bool isDark) => LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: isDark
+            ? [
+                const Color(0xFF19132F),
+                accent.withValues(alpha: 0.82),
+                accentSecondary.withValues(alpha: 0.74),
+              ]
+            : [
+                accent.withValues(alpha: 0.92),
+                accentSecondary.withValues(alpha: 0.86),
+                const Color(0xFFFFF3FB),
+              ],
+      );
+}
+
 // ── Guest ─────────────────────────────────────────────────────────────────────
 
 class _GuestProfile extends StatelessWidget {
@@ -65,71 +139,162 @@ class _GuestProfile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final palette = _ProfilePalette.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return SafeArea(
       child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1500),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(28, 48, 28, 120),
-              child: Column(
-                children: [
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: kCard,
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.08), width: 2),
+            constraints: const BoxConstraints(maxWidth: 920),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _HeroGuestCard(palette: palette, isDark: isDark),
+                const SizedBox(height: 24),
+                _SectionTitle(
+                  title: 'Quyền lợi khi đăng nhập',
+                  subtitle: 'Cá nhân hóa trải nghiệm âm nhạc như Spotify',
+                ),
+                const SizedBox(height: 14),
+                ..._kFeatures.map(
+                  (f) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _FeatureRow(
+                      icon: f.$1,
+                      label: f.$2,
+                      sub: f.$3,
                     ),
-                    child: Icon(Icons.person_rounded,
-                        size: 52, color: Colors.white.withValues(alpha: 0.25)),
                   ),
-                  const SizedBox(height: 24),
-                  const Text('Bạn chưa đăng nhập',
-                      style:
-                          TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
-                  const SizedBox(height: 10),
-                  const Text('Đăng nhập để lưu playlist,\ntheo dõi nghệ sĩ và nhiều hơn nữa',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: kSubText, fontSize: 14, height: 1.6)),
-                  const SizedBox(height: 36),
-                  _AuthButton(
-                    label: 'Đăng nhập',
-                    isPrimary: true,
-                    onTap: () => Navigator.of(context).push(PageRouteBuilder(
-                      pageBuilder: (_, anim, __) => const LoginPage(),
-                      transitionsBuilder: (_, anim, __, child) => SlideTransition(
-                        position: Tween(begin: const Offset(0, 1), end: Offset.zero)
-                            .animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
-                        child: child,
-                      ),
-                    )),
-                  ),
-                  const SizedBox(height: 14),
-                  _AuthButton(
-                    label: 'Tạo tài khoản mới',
-                    isPrimary: false,
-                    onTap: () => Navigator.of(context).push(PageRouteBuilder(
-                      pageBuilder: (_, anim, __) => const RegisterPage(),
-                      transitionsBuilder: (_, anim, __, child) => SlideTransition(
-                        position: Tween(begin: const Offset(1, 0), end: Offset.zero)
-                            .animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
-                        child: child,
-                      ),
-                    )),
-                  ),
-                  const SizedBox(height: 44),
-                  Divider(color: Colors.white.withValues(alpha: 0.08)),
-                  const SizedBox(height: 24),
-                  const Text('Khi đăng nhập bạn sẽ có',
-                      style: TextStyle(color: kSubText, fontSize: 13, fontWeight: FontWeight.w500)),
-                  const SizedBox(height: 20),
-                  ..._kFeatures.map((f) => _FeatureRow(icon: f.$1, label: f.$2, sub: f.$3)),
-                ],
-              ),
+                ),
+              ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HeroGuestCard extends StatelessWidget {
+  final _ProfilePalette palette;
+  final bool isDark;
+
+  const _HeroGuestCard({
+    required this.palette,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: palette.heroGradient(isDark),
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: palette.shadow,
+            blurRadius: 30,
+            offset: const Offset(0, 16),
+          ),
+        ],
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: isDark ? 0.06 : 0.24),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 82,
+                height: 82,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: isDark ? 0.12 : 0.20),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.24),
+                    width: 1.4,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.person_rounded,
+                  size: 40,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Hồ sơ âm nhạc của bạn',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  height: 1.1,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Đăng nhập để đồng bộ playlist, theo dõi lịch sử nghe, tải lên bài hát và quản lý trải nghiệm cá nhân trên mọi thiết bị.',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.86),
+                  fontSize: 14,
+                  height: 1.65,
+                ),
+              ),
+              const SizedBox(height: 24),
+              _AuthButton(
+                label: 'Đăng nhập',
+                isPrimary: true,
+                onTap: () => Navigator.of(context).push(
+                  PageRouteBuilder(
+                    pageBuilder: (_, anim, __) => const LoginPage(),
+                    transitionsBuilder: (_, anim, __, child) => SlideTransition(
+                      position: Tween(
+                        begin: const Offset(0, 1),
+                        end: Offset.zero,
+                      ).animate(
+                        CurvedAnimation(
+                          parent: anim,
+                          curve: Curves.easeOutCubic,
+                        ),
+                      ),
+                      child: child,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              _AuthButton(
+                label: 'Tạo tài khoản mới',
+                isPrimary: false,
+                onTap: () => Navigator.of(context).push(
+                  PageRouteBuilder(
+                    pageBuilder: (_, anim, __) => const RegisterPage(),
+                    transitionsBuilder: (_, anim, __, child) => SlideTransition(
+                      position: Tween(
+                        begin: const Offset(1, 0),
+                        end: Offset.zero,
+                      ).animate(
+                        CurvedAnimation(
+                          parent: anim,
+                          curve: Curves.easeOutCubic,
+                        ),
+                      ),
+                      child: child,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -146,36 +311,68 @@ const _kFeatures = [
 
 class _FeatureRow extends StatelessWidget {
   final IconData icon;
-  final String label, sub;
-  const _FeatureRow({required this.icon, required this.label, required this.sub});
+  final String label;
+  final String sub;
+
+  const _FeatureRow({
+    required this.icon,
+    required this.label,
+    required this.sub,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+    final palette = _ProfilePalette.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: palette.border.withValues(alpha: 0.45)),
+        boxShadow: [
+          BoxShadow(
+            color: palette.shadow.withValues(alpha: 0.55),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: Row(
         children: [
           Container(
-            width: 44,
-            height: 44,
+            width: 52,
+            height: 52,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              gradient: LinearGradient(colors: [
-                kAccent.withValues(alpha: 0.25),
-                kAccentPink.withValues(alpha: 0.25),
-              ]),
+              gradient: palette.accentGradient,
+              borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(icon, color: kAccent, size: 22),
+            child: Icon(icon, color: Colors.white, size: 24),
           ),
           const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label,
-                  style: const TextStyle(
-                      color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
-              Text(sub, style: const TextStyle(color: kSubText, fontSize: 12)),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: palette.text,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  sub,
+                  style: TextStyle(
+                    color: palette.muted,
+                    fontSize: 13,
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -186,9 +383,10 @@ class _FeatureRow extends StatelessWidget {
 // ── Logged In ─────────────────────────────────────────────────────────────────
 
 class _LoggedInProfile extends StatelessWidget {
-  final String userName, userEmail;
-  final String? userId; // Nhận userId
-  final String? userAvatarUrl; // Nhận avatar
+  final String userName;
+  final String userEmail;
+  final String? userId;
+  final String? userAvatarUrl;
   final Future<void> Function() onLogout;
   final int favoriteCount;
   final int playlistCount;
@@ -207,85 +405,127 @@ class _LoggedInProfile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final palette = _ProfilePalette.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return SafeArea(
       child: Stack(
         children: [
-          Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1500),
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.only(bottom: 120),
+          SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 920),
                 child: Column(
-              children: [
-                _ProfileHeader(
-                  userName: userName,
-                  userEmail: userEmail,
-                  userAvatarUrl: userAvatarUrl,
-                  favoriteCount: favoriteCount,
-                  playlistCount: playlistCount,
-                  downloadCount: downloadCount,
-                ),
-                const SizedBox(height: 8),
-                ..._kMenuItems.map((item) => _MenuItem(
-                      icon: item.$1,
-                      label: item.$2,
-                      onTap: () async {
-                        if (item.$2 == 'Chỉnh sửa hồ sơ' && userId != null) {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => EditProfilePage(
-                                currentName: userName,
-                                currentAvatarUrl: userAvatarUrl,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _ProfileHeader(
+                      userName: userName,
+                      userEmail: userEmail,
+                      userAvatarUrl: userAvatarUrl,
+                      favoriteCount: favoriteCount,
+                      playlistCount: playlistCount,
+                      downloadCount: downloadCount,
+                    ),
+                    const SizedBox(height: 24),
+                    const _SectionTitle(
+                      title: 'Tài khoản',
+                      subtitle: 'Quản lý hồ sơ, hoạt động và cài đặt cá nhân',
+                    ),
+                    const SizedBox(height: 14),
+                    _SurfaceCard(
+                      child: Column(
+                        children: _kMenuItems
+                            .map(
+                              (item) => _MenuItem(
+                                icon: item.$1,
+                                label: item.$2,
+                                onTap: () async {
+                                  if (item.$2 == 'Chỉnh sửa hồ sơ' &&
+                                      userId != null) {
+                                    final user = Supabase
+                                        .instance.client.auth.currentUser;
+                                    final profileData = {
+                                      'name': user?.userMetadata?['name'],
+                                      'avatar_url':
+                                          user?.userMetadata?['avatar_url'],
+                                      'bio': user?.userMetadata?['bio'],
+                                      'location':
+                                          user?.userMetadata?['location'],
+                                      'website': user?.userMetadata?['website'],
+                                    };
+                                    await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => EditProfilePage(
+                                          profileData: profileData,
+                                        ),
+                                      ),
+                                    );
+                                  } else if (item.$2 == 'Lịch sử bình luận' &&
+                                      userId != null) {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            CommentHistoryPage(userId: userId!),
+                                      ),
+                                    );
+                                  } else if (item.$2 == 'Thông báo' &&
+                                      userId != null) {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            const NotificationsPage(),
+                                      ),
+                                    );
+                                  } else if (item.$2 == 'Cài đặt') {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const SettingsPage(),
+                                      ),
+                                    );
+                                  }
+                                },
                               ),
-                            ),
-                          );
-                          // HomePage sẽ tự động lắng nghe AuthState nếu user update profile
-                        } else if (item.$2 == 'Lịch sử bình luận' && userId != null) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => CommentHistoryPage(userId: userId!),
-                            ),
-                          );
-                        } else if (item.$2 == 'Thông báo' && userId != null) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const NotificationsPage(),
-                            ),
-                          );
-                        }
-                      },
-                    )),
-                const SizedBox(height: 8),
-
-                // ── Nhạc của tôi ─────────────────────────────────────
-                _MyMusicSection(userId: userId),
-                const SizedBox(height: 8),
-
-                // ── Admin Panel button (only for admin/moderator) ───
-                _AdminSection(),
-                const SizedBox(height: 8),
-
-                _LogoutButton(onLogout: onLogout),
-              ],
+                            )
+                            .toList(),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    _QuickActionBar(
+                      palette: palette,
+                      isDark: isDark,
+                      onUploadTap: () => showUploadMusicSheet(context),
+                    ),
+                    const SizedBox(height: 18),
+                    _MyMusicSection(userId: userId),
+                    const SizedBox(height: 18),
+                    const _AdminSection(),
+                    const SizedBox(height: 18),
+                    _LogoutButton(onLogout: onLogout),
+                  ],
+                ),
+              ),
             ),
           ),
-          ),
-          ),
-
-          // ── FAB Upload ─────────────────────────────────────────────
           Positioned(
             bottom: 24,
             right: 20,
             child: FloatingActionButton.extended(
               onPressed: () => showUploadMusicSheet(context),
-              backgroundColor: kAccent,
-              icon: const Icon(Icons.cloud_upload_rounded, color: Colors.white),
-              label: const Text('Upload nhạc',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+              backgroundColor: palette.accent,
+              foregroundColor: Colors.white,
+              elevation: 8,
+              icon: const Icon(Icons.cloud_upload_rounded),
+              label: const Text(
+                'Upload nhạc',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
             ),
           ),
         ],
@@ -295,7 +535,8 @@ class _LoggedInProfile extends StatelessWidget {
 }
 
 class _ProfileHeader extends StatelessWidget {
-  final String userName, userEmail;
+  final String userName;
+  final String userEmail;
   final String? userAvatarUrl;
   final int favoriteCount;
   final int playlistCount;
@@ -312,98 +553,322 @@ class _ProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final user = Supabase.instance.client.auth.currentUser;
+    final bio = user?.userMetadata?['bio'] as String?;
+    final location = user?.userMetadata?['location'] as String?;
+    final theme = Theme.of(context);
+    final palette = _ProfilePalette.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(28, 40, 28, 32),
-      decoration: const BoxDecoration(
-        color: Colors.transparent,
+      decoration: BoxDecoration(
+        gradient: palette.heroGradient(isDark),
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: palette.shadow,
+            blurRadius: 30,
+            offset: const Offset(0, 16),
+          ),
+        ],
       ),
-      child: Column(
-        children: [
-          Container(
-            width: 90,
-            height: 90,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: const LinearGradient(
-                colors: [kAccent, kAccentPink],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: isDark ? 0.06 : 0.24),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(22, 24, 22, 22),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'HỒ SƠ',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.72),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.2,
+                ),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF7B1FA2).withValues(alpha: 0.5),
-                  blurRadius: 24,
-                  spreadRadius: 2,
-                )
+              const SizedBox(height: 12),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _AvatarView(
+                    userName: userName,
+                    userAvatarUrl: userAvatarUrl,
+                    size: 96,
+                  ),
+                  const SizedBox(width: 18),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          userName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w900,
+                            height: 1.1,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          userEmail,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.82),
+                            fontSize: 13,
+                          ),
+                        ),
+                        if (bio != null && bio.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            bio,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.92),
+                              fontSize: 14,
+                              height: 1.55,
+                            ),
+                          ),
+                        ],
+                        if (location != null && location.isNotEmpty) ...[
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.14),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.location_on_rounded,
+                                  size: 14,
+                                  color: Colors.white.withValues(alpha: 0.82),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  location,
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.88),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final compact = constraints.maxWidth < 540;
+                  final children = [
+                    _StatChip(
+                      icon: Icons.download_rounded,
+                      label: 'Đã tải',
+                      value: downloadCount.toString(),
+                      inverse: true,
+                    ),
+                    _StatChip(
+                      icon: Icons.queue_music_rounded,
+                      label: 'Playlist',
+                      value: playlistCount.toString(),
+                      inverse: true,
+                    ),
+                    _StatChip(
+                      icon: Icons.favorite_rounded,
+                      label: 'Yêu thích',
+                      value: favoriteCount.toString(),
+                      inverse: true,
+                    ),
+                  ];
+
+                  if (compact) {
+                    return Column(
+                      children: [
+                        for (var i = 0; i < children.length; i++) ...[
+                          children[i],
+                          if (i != children.length - 1)
+                            const SizedBox(height: 10),
+                        ],
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    children: [
+                      for (var i = 0; i < children.length; i++) ...[
+                        Expanded(child: children[i]),
+                        if (i != children.length - 1)
+                          const SizedBox(width: 12),
+                      ],
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AvatarView extends StatelessWidget {
+  final String userName;
+  final String? userAvatarUrl;
+  final double size;
+
+  const _AvatarView({
+    required this.userName,
+    required this.userAvatarUrl,
+    required this.size,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: const LinearGradient(
+          colors: [kAccent, kAccentPink],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF7B1FA2).withValues(alpha: 0.35),
+            blurRadius: 22,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      alignment: Alignment.center,
+      child: userAvatarUrl != null && userAvatarUrl!.isNotEmpty
+          ? CachedNetworkImage(
+              imageUrl: userAvatarUrl!,
+              fit: BoxFit.cover,
+              width: size,
+              height: size,
+              placeholder: (context, url) => const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2.5,
+                ),
+              ),
+              errorWidget: (context, url, error) => Text(
+                userName.isNotEmpty ? userName[0].toUpperCase() : '?',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: size * 0.4,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            )
+          : Text(
+              userName.isNotEmpty ? userName[0].toUpperCase() : '?',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: size * 0.4,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+    );
+  }
+}
+
+class _StatChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final bool inverse;
+
+  const _StatChip({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.inverse = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = _ProfilePalette.of(context);
+
+    final bgColor = inverse
+        ? Colors.white.withValues(alpha: 0.14)
+        : palette.elevated.withValues(alpha: 0.7);
+    final textColor = inverse ? Colors.white : palette.text;
+    final mutedColor = inverse
+        ? Colors.white.withValues(alpha: 0.76)
+        : palette.muted;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: inverse
+              ? Colors.white.withValues(alpha: 0.16)
+              : palette.border.withValues(alpha: 0.45),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: textColor, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: mutedColor,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
-            alignment: Alignment.center,
-            clipBehavior: Clip.antiAlias,
-            child: userAvatarUrl != null && userAvatarUrl!.isNotEmpty
-                ? CachedNetworkImage(
-                    imageUrl: userAvatarUrl!,
-                    fit: BoxFit.cover,
-                    width: 90,
-                    height: 90,
-                    placeholder: (context, url) => const CircularProgressIndicator(color: kAccent),
-                    errorWidget: (context, url, error) => Text(
-                      userName.isNotEmpty ? userName[0].toUpperCase() : '?',
-                      style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.w900),
-                    ),
-                  )
-                : Text(
-                    userName.isNotEmpty ? userName[0].toUpperCase() : '?',
-                    style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.w900),
-                  ),
-          ),
-          const SizedBox(height: 16),
-          Text(userName,
-              style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 4),
-          Text(userEmail, style: const TextStyle(color: kSubText, fontSize: 13)),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _StatChip(label: 'Đã tải', value: downloadCount.toString()),
-              _divider,
-              _StatChip(label: 'Playlist', value: playlistCount.toString()),
-              _divider,
-              _StatChip(label: 'Yêu thích', value: favoriteCount.toString()),
-            ],
           ),
         ],
       ),
     );
   }
-
-  Widget get _divider => Container(
-        width: 1,
-        height: 28,
-        color: Colors.white.withValues(alpha: 0.1),
-        margin: const EdgeInsets.symmetric(horizontal: 20),
-      );
-}
-
-class _StatChip extends StatelessWidget {
-  final String label, value;
-  const _StatChip({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) => Column(
-        children: [
-          Text(value,
-              style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 2),
-          Text(label, style: const TextStyle(color: kSubText, fontSize: 11)),
-        ],
-      );
 }
 
 const _kMenuItems = [
   (Icons.manage_accounts_outlined, 'Chỉnh sửa hồ sơ'),
-  (Icons.history_rounded, 'Lịch sử nghe'),
   (Icons.comment_rounded, 'Lịch sử bình luận'),
   (Icons.notifications_outlined, 'Thông báo'),
   (Icons.settings_outlined, 'Cài đặt'),
@@ -414,40 +879,52 @@ class _MenuItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  const _MenuItem({required this.icon, required this.label, required this.onTap});
+
+  const _MenuItem({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(14),
-          splashColor: kAccent.withValues(alpha: 0.08),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
-              children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.06),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(icon, color: Colors.white70, size: 20),
+    final palette = _ProfilePalette.of(context);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        splashColor: palette.accent.withValues(alpha: 0.08),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: palette.elevated,
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                    child: Text(label,
-                        style: const TextStyle(
-                            color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500))),
-                Icon(Icons.chevron_right_rounded,
-                    color: Colors.white.withValues(alpha: 0.25), size: 20),
-              ],
-            ),
+                child: Icon(icon, color: palette.text.withValues(alpha: 0.82)),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: palette.text,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: palette.softText,
+              ),
+            ],
           ),
         ),
       ),
@@ -455,51 +932,252 @@ class _MenuItem extends StatelessWidget {
   }
 }
 
+class _SurfaceCard extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+
+  const _SurfaceCard({
+    required this.child,
+    this.padding = EdgeInsets.zero,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = _ProfilePalette.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: padding,
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: palette.border.withValues(alpha: 0.45)),
+        boxShadow: [
+          BoxShadow(
+            color: palette.shadow.withValues(alpha: 0.55),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  final String title;
+  final String subtitle;
+
+  const _SectionTitle({
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = _ProfilePalette.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: palette.text,
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: TextStyle(
+              color: palette.muted,
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickActionBar extends StatelessWidget {
+  final _ProfilePalette palette;
+  final bool isDark;
+  final VoidCallback onUploadTap;
+
+  const _QuickActionBar({
+    required this.palette,
+    required this.isDark,
+    required this.onUploadTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _SurfaceCard(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    gradient: palette.accentGradient,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(
+                    Icons.graphic_eq_rounded,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Không gian sáng tạo',
+                        style: TextStyle(
+                          color: palette.text,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Upload bài hát và xây dựng thư viện của riêng bạn',
+                        style: TextStyle(
+                          color: palette.muted,
+                          fontSize: 12.5,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          FilledButton.icon(
+            onPressed: onUploadTap,
+            style: FilledButton.styleFrom(
+              backgroundColor: palette.accent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 12,
+              ),
+            ),
+            icon: const Icon(Icons.add_rounded, size: 18),
+            label: const Text(
+              'Tải lên',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _LogoutButton extends StatelessWidget {
   final Future<void> Function() onLogout;
+
   const _LogoutButton({required this.onLogout});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+    final palette = _ProfilePalette.of(context);
+
+    return _SurfaceCard(
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: () async {
             final confirm = await showDialog<bool>(
               context: context,
-              builder: (ctx) => AlertDialog(
-                backgroundColor: const Color(0xFF2A2A2E),
-                title: const Text('Đăng xuất', style: TextStyle(color: Colors.white)),
-                content: const Text('Bạn có chắc muốn đăng xuất?', style: TextStyle(color: Colors.white)),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    child: const Text('Hủy', style: TextStyle(color: Colors.grey)),
+              builder: (ctx) {
+                final dialogPalette = _ProfilePalette.of(ctx);
+
+                return AlertDialog(
+                  backgroundColor: dialogPalette.surface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    side: BorderSide(
+                      color: dialogPalette.border.withValues(alpha: 0.45),
+                    ),
                   ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx, true),
-                    child: const Text('Đăng xuất', style: TextStyle(color: Colors.redAccent)),
+                  title: Text(
+                    'Đăng xuất',
+                    style: TextStyle(
+                      color: dialogPalette.text,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                ],
-              ),
+                  content: Text(
+                    'Bạn có chắc muốn đăng xuất khỏi tài khoản hiện tại?',
+                    style: TextStyle(
+                      color: dialogPalette.muted,
+                      height: 1.5,
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: Text(
+                        'Hủy',
+                        style: TextStyle(color: dialogPalette.muted),
+                      ),
+                    ),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: dialogPalette.destructive,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Đăng xuất'),
+                    ),
+                  ],
+                );
+              },
             );
 
             if (confirm == true) {
               await onLogout();
             }
           },
-          borderRadius: BorderRadius.circular(14),
-          splashColor: Colors.red.withValues(alpha: 0.08),
-          child: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          borderRadius: BorderRadius.circular(24),
+          splashColor: palette.destructive.withValues(alpha: 0.08),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
             child: Row(
               children: [
-                Icon(Icons.logout_rounded, color: Colors.redAccent, size: 20),
-                SizedBox(width: 16),
-                Text('Đăng xuất',
-                    style: TextStyle(color: Colors.redAccent, fontSize: 15, fontWeight: FontWeight.w600)),
+                Icon(
+                  Icons.logout_rounded,
+                  color: palette.destructive,
+                  size: 20,
+                ),
+                const SizedBox(width: 14),
+                Text(
+                  'Đăng xuất',
+                  style: TextStyle(
+                    color: palette.destructive,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ],
             ),
           ),
@@ -515,44 +1193,51 @@ class _AuthButton extends StatelessWidget {
   final String label;
   final bool isPrimary;
   final VoidCallback onTap;
-  const _AuthButton({required this.label, required this.isPrimary, required this.onTap});
+
+  const _AuthButton({
+    required this.label,
+    required this.isPrimary,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final palette = _ProfilePalette.of(context);
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        height: 56,
+        height: 54,
         decoration: isPrimary
             ? BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [kAccent, kAccentPink],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                ),
-                borderRadius: BorderRadius.circular(14),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF7B1FA2).withValues(alpha: 0.40),
+                    color: Colors.black.withValues(alpha: 0.12),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
-                  )
+                  ),
                 ],
               )
             : BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: kAccent.withValues(alpha: 0.5), width: 1.5),
-                color: kAccent.withValues(alpha: 0.07),
+                color: Colors.white.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.28),
+                ),
               ),
         alignment: Alignment.center,
-        child: Text(label,
-            style: TextStyle(
-              color: isPrimary ? Colors.white : kAccent,
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.3,
-            )),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isPrimary ? palette.accent : Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.2,
+          ),
+        ),
       ),
     );
   }
@@ -562,6 +1247,7 @@ class _AuthButton extends StatelessWidget {
 
 class _MyMusicSection extends StatefulWidget {
   final String? userId;
+
   const _MyMusicSection({this.userId});
 
   @override
@@ -572,7 +1258,6 @@ class _MyMusicSectionState extends State<_MyMusicSection> {
   @override
   void initState() {
     super.initState();
-    // Load ngay khi widget hiển thị
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.userId != null) {
         context.read<UserSongsCubit>().loadMySongs();
@@ -584,70 +1269,111 @@ class _MyMusicSectionState extends State<_MyMusicSection> {
   Widget build(BuildContext context) {
     if (widget.userId == null) return const SizedBox.shrink();
 
+    final palette = _ProfilePalette.of(context);
+
     return BlocBuilder<UserSongsCubit, List<UserSongModel>>(
       builder: (context, songs) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header row
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 36, height: 36,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(colors: [kAccent, kAccentPink]),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.cloud_done_rounded, color: Colors.white, size: 18),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('Nhạc của tôi',
-                            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800)),
-                          Text('${songs.length} bài đã upload',
-                            style: const TextStyle(color: kSubText, fontSize: 12)),
-                        ],
-                      ),
-                    ),
-                    // Refresh button
-                    IconButton(
-                      icon: const Icon(Icons.refresh_rounded, color: kSubText, size: 20),
-                      onPressed: () => context.read<UserSongsCubit>().loadMySongs(),
-                    ),
-                  ],
-                ),
-              ),
-
-              if (songs.isEmpty)
-                Container(
-                  margin: const EdgeInsets.only(top: 4, bottom: 8),
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.03),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const _SectionTitle(
+              title: 'Nhạc của tôi',
+              subtitle: 'Các bài hát bạn đã tải lên và trạng thái kiểm duyệt',
+            ),
+            const SizedBox(height: 14),
+            _SurfaceCard(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Row(
                     children: [
-                      Icon(Icons.music_off_rounded, color: Colors.white.withValues(alpha: 0.2), size: 20),
-                      const SizedBox(width: 8),
-                      Text('Bạn chưa upload bài nào',
-                        style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 13)),
+                      Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          gradient: palette.accentGradient,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const Icon(
+                          Icons.library_music_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Bộ sưu tập đã upload',
+                              style: TextStyle(
+                                color: palette.text,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              '${songs.length} bài hát trong thư viện cá nhân',
+                              style: TextStyle(
+                                color: palette.muted,
+                                fontSize: 12.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          Icons.refresh_rounded,
+                          color: palette.muted,
+                          size: 20,
+                        ),
+                        onPressed: () =>
+                            context.read<UserSongsCubit>().loadMySongs(),
+                      ),
                     ],
                   ),
-                )
-              else
-                ...songs.map((song) => _UserSongTile(song: song)),
-            ],
-          ),
+                  const SizedBox(height: 14),
+                  if (songs.isEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: palette.elevated.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: palette.border.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.music_off_rounded,
+                            color: palette.softText,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Bạn chưa upload bài nào',
+                              style: TextStyle(
+                                color: palette.muted,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    ...songs.map((song) => _UserSongTile(song: song)),
+                ],
+              ),
+            ),
+          ],
         );
       },
     );
@@ -656,95 +1382,183 @@ class _MyMusicSectionState extends State<_MyMusicSection> {
 
 class _UserSongTile extends StatelessWidget {
   final UserSongModel song;
+
   const _UserSongTile({required this.song});
 
   @override
   Widget build(BuildContext context) {
+    final palette = _ProfilePalette.of(context);
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+        color: palette.elevated.withValues(alpha: 0.52),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: palette.border.withValues(alpha: 0.35)),
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         leading: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           child: song.artUrl != null
-              ? Image.network(song.artUrl!, width: 48, height: 48, fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _placeholder())
+              ? Image.network(
+                  song.artUrl!,
+                  width: 52,
+                  height: 52,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => _placeholder(),
+                )
               : _placeholder(),
         ),
-        title: Text(song.title,
-          style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
-          maxLines: 1, overflow: TextOverflow.ellipsis),
-        subtitle: Row(
-          children: [
-            Text(song.artist,
-              style: const TextStyle(color: kSubText, fontSize: 11),
-              maxLines: 1, overflow: TextOverflow.ellipsis),
-            const SizedBox(width: 6),
-            _StatusBadge(status: song.status),
-          ],
+        title: Text(
+          song.title,
+          style: TextStyle(
+            color: palette.text,
+            fontSize: 13.5,
+            fontWeight: FontWeight.w700,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              Text(
+                song.artist,
+                style: TextStyle(
+                  color: palette.muted,
+                  fontSize: 11.5,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              _StatusBadge(status: song.status),
+            ],
+          ),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Phát nhạc (chỉ khi approved)
             if (song.isApproved)
               IconButton(
-                icon: const Icon(Icons.play_circle_rounded, color: kAccent, size: 28),
+                icon: const Icon(
+                  Icons.play_circle_rounded,
+                  color: kAccent,
+                  size: 30,
+                ),
                 onPressed: () => _playUserSong(context, song),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
               ),
-            // Menu 3 chấm
             PopupMenuButton<String>(
-              icon: Icon(Icons.more_vert_rounded, color: Colors.white.withValues(alpha: 0.4), size: 20),
-              color: const Color(0xFF252530),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              icon: Icon(
+                Icons.more_vert_rounded,
+                color: palette.softText,
+                size: 20,
+              ),
+              color: palette.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(
+                  color: palette.border.withValues(alpha: 0.4),
+                ),
+              ),
               itemBuilder: (_) => [
-                const PopupMenuItem(value: 'delete',
-                  child: Row(children: [
-                    Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 18),
-                    SizedBox(width: 10),
-                    Text('Xóa bài', style: TextStyle(color: Colors.redAccent, fontSize: 14)),
-                  ]),
+                PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.delete_outline_rounded,
+                        color: palette.destructive,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Xóa bài',
+                        style: TextStyle(
+                          color: palette.destructive,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
               onSelected: (value) async {
                 if (value == 'delete') {
                   final confirm = await showDialog<bool>(
                     context: context,
-                    builder: (ctx) => AlertDialog(
-                      backgroundColor: const Color(0xFF252530),
-                      title: const Text('Xóa bài hát', style: TextStyle(color: Colors.white)),
-                      content: Text('Xóa "${song.title}" khỏi danh sách của bạn?',
-                        style: const TextStyle(color: kSubText)),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(ctx, false),
-                          child: const Text('Hủy', style: TextStyle(color: kSubText))),
-                        TextButton(onPressed: () => Navigator.pop(ctx, true),
-                          child: const Text('Xóa', style: TextStyle(color: Colors.redAccent))),
-                      ],
-                    ),
+                    builder: (ctx) {
+                      final dialogPalette = _ProfilePalette.of(ctx);
+
+                      return AlertDialog(
+                        backgroundColor: dialogPalette.surface,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(22),
+                          side: BorderSide(
+                            color:
+                                dialogPalette.border.withValues(alpha: 0.45),
+                          ),
+                        ),
+                        title: Text(
+                          'Xóa bài hát',
+                          style: TextStyle(
+                            color: dialogPalette.text,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        content: Text(
+                          'Xóa "${song.title}" khỏi danh sách của bạn?',
+                          style: TextStyle(
+                            color: dialogPalette.muted,
+                            height: 1.5,
+                          ),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: Text(
+                              'Hủy',
+                              style: TextStyle(color: dialogPalette.muted),
+                            ),
+                          ),
+                          FilledButton(
+                            onPressed: () => Navigator.pop(ctx, true),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: dialogPalette.destructive,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Xóa'),
+                          ),
+                        ],
+                      );
+                    },
                   );
+
                   if (confirm == true && context.mounted) {
                     try {
                       await context.read<UserSongsCubit>().deleteSong(song);
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Đã xóa "${song.title}"'),
-                            backgroundColor: Colors.redAccent,
-                            behavior: SnackBarBehavior.floating),
+                          SnackBar(
+                            content: Text('Đã xóa "${song.title}"'),
+                            backgroundColor: palette.destructive,
+                            behavior: SnackBarBehavior.floating,
+                          ),
                         );
                       }
                     } catch (_) {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Xóa thất bại, thử lại sau'),
-                            backgroundColor: Colors.orange),
+                          const SnackBar(
+                            content: Text('Xóa thất bại, thử lại sau'),
+                            backgroundColor: Colors.orange,
+                          ),
                         );
                       }
                     }
@@ -759,47 +1573,68 @@ class _UserSongTile extends StatelessWidget {
   }
 
   Widget _placeholder() => Container(
-    width: 48, height: 48,
-    decoration: BoxDecoration(
-      gradient: const LinearGradient(colors: [kAccent, kAccentPink]),
-      borderRadius: BorderRadius.circular(8),
-    ),
-    child: const Icon(Icons.music_note_rounded, color: Colors.white54, size: 20),
-  );
+        width: 52,
+        height: 52,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [kAccent, kAccentPink],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Icon(
+          Icons.music_note_rounded,
+          color: Colors.white70,
+          size: 22,
+        ),
+      );
 
   void _playUserSong(BuildContext context, UserSongModel song) {
     final item = song.toMediaItem();
-    context.read<PlayerBloc>().add(LoadPlaylistEvent(
-      [item],
-      startIndex: 0,
-    ));
+    context.read<PlayerBloc>().add(
+          LoadPlaylistEvent(
+            [item],
+            startIndex: 0,
+          ),
+        );
   }
 }
 
 class _StatusBadge extends StatelessWidget {
   final String status;
+
   const _StatusBadge({required this.status});
 
   @override
   Widget build(BuildContext context) {
     final (label, color) = switch (status) {
-      'approved' => ('✓ Đã duyệt', Colors.greenAccent),
+      'approved' => ('✓ Đã duyệt', Colors.green),
       'rejected' => ('✗ Từ chối', Colors.redAccent),
       _ => ('⏳ Chờ duyệt', Colors.orange),
     };
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withValues(alpha: 0.3), width: 0.8),
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.28)),
       ),
-      child: Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w600)),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 10.5,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
     );
   }
 }
 
-// ── Admin Section Widget ───────────────────────────────────
+// ── Admin Section Widget ──────────────────────────────────────────────────────
+
 class _AdminSection extends StatelessWidget {
   const _AdminSection();
 
@@ -811,7 +1646,6 @@ class _AdminSection extends StatelessWidget {
         final uid = supabase.auth.currentUser?.id;
         if (uid == null) return const SizedBox.shrink();
 
-        // Load role from profiles if not yet loaded
         return FutureBuilder<String>(
           future: _getRole(uid),
           builder: (context, snap) {
@@ -819,88 +1653,120 @@ class _AdminSection extends StatelessWidget {
             if (role != 'admin' && role != 'moderator') {
               return const SizedBox.shrink();
             }
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: InkWell(
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => BlocProvider.value(
-                      value: context.read<AdminCubit>(),
-                      child: const AdminDashboardPage(),
+
+            final palette = _ProfilePalette.of(context);
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const _SectionTitle(
+                  title: 'Quản trị',
+                  subtitle: 'Truy cập công cụ quản lý nội dung và hệ thống',
+                ),
+                const SizedBox(height: 14),
+                InkWell(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => BlocProvider.value(
+                        value: context.read<AdminCubit>(),
+                        child: const AdminDashboardPage(),
+                      ),
                     ),
                   ),
-                ),
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        kAccent.withValues(alpha: 0.15),
-                        kAccentPink.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(24),
+                  child: Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          palette.accent.withValues(alpha: 0.16),
+                          palette.accentSecondary.withValues(alpha: 0.12),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: palette.accent.withValues(alpha: 0.24),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: palette.shadow.withValues(alpha: 0.45),
+                          blurRadius: 18,
+                          offset: const Offset(0, 8),
+                        ),
                       ],
                     ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: kAccent.withValues(alpha: 0.25)),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [kAccent, kAccentPink],
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [kAccent, kAccentPink],
+                            ),
+                            borderRadius: BorderRadius.circular(14),
                           ),
-                          borderRadius: BorderRadius.circular(12),
+                          child: const Icon(
+                            Icons.admin_panel_settings_rounded,
+                            color: Colors.white,
+                            size: 22,
+                          ),
                         ),
-                        child: const Icon(Icons.admin_panel_settings_rounded,
-                            color: Colors.white, size: 20),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Trang quản trị',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14,
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Trang quản trị',
+                                style: TextStyle(
+                                  color: palette.text,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 15,
+                                ),
                               ),
-                            ),
-                            Text(
-                              role == 'admin' ? 'Admin • Toàn quyền' : 'Moderator • Kiểm duyệt nội dung',
-                              style: const TextStyle(
-                                  color: Colors.white54, fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: kAccent.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          role.toUpperCase(),
-                          style: const TextStyle(
-                            color: kAccent,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
+                              const SizedBox(height: 4),
+                              Text(
+                                role == 'admin'
+                                    ? 'Admin • Toàn quyền'
+                                    : 'Moderator • Kiểm duyệt nội dung',
+                                style: TextStyle(
+                                  color: palette.muted,
+                                  fontSize: 12.5,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Icon(Icons.chevron_right_rounded,
-                          color: Colors.white38, size: 20),
-                    ],
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: palette.accent.withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            role.toUpperCase(),
+                            style: TextStyle(
+                              color: palette.accent,
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          color: palette.softText,
+                          size: 20,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
+              ],
             );
           },
         );

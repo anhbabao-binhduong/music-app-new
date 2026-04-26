@@ -1,4 +1,5 @@
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:music_app/core/di/service_locator.dart';
@@ -25,141 +26,173 @@ class CommentHistoryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => CommentHistoryCubit(getIt<CommentRepository>())..loadUserComments(userId),
-      child: Scaffold(
-        backgroundColor: const Color(0xFF121212),
-        body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1400),
-            child: CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                // ── Màn hình nền mờ Header ───────────────────────────────────────────
-                SliverAppBar(
-                  expandedHeight: 180,
-                  pinned: true,
-                  backgroundColor: const Color(0xFF121212),
-                  elevation: 0,
-                  iconTheme: const IconThemeData(color: Colors.white),
-                  flexibleSpace: FlexibleSpaceBar(
-                    titlePadding: const EdgeInsets.only(left: 48, bottom: 16),
-                    title: const Text(
-                      'Lịch sử bình luận',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    background: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        // Background gradient nghệ thuật
-                        Container(
-                          decoration: const BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [Color(0xFF4A148C), Color(0xFF121212)],
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                            ),
-                          ),
-                        ),
-                        // Thêm chi tiết trang trí mờ
-                        Positioned(
-                          right: -50,
-                          top: -50,
-                          child: Container(
-                            width: 200,
-                            height: 200,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: const Color(0xFFEC4899).withValues(alpha: 0.2),
-                            ),
-                            child: BackdropFilter(
-                              filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-                              child: Container(color: Colors.transparent),
-                            ),
-                          ),
-                        ),
-                      ],
+      create: (_) => CommentHistoryCubit(getIt<CommentRepository>())
+        ..loadUserComments(userId),
+      child: _CommentHistoryView(userId: userId),
+    );
+  }
+}
+
+class _CommentHistoryView extends StatelessWidget {
+  final String userId;
+
+  const _CommentHistoryView({required this.userId});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    final muted = scheme.onSurface.withValues(alpha: 0.68);
+    final soft = scheme.onSurface.withValues(alpha: 0.45);
+    final border = scheme.outline.withValues(alpha: isDark ? 0.35 : 0.55);
+
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1400),
+          child: CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              // ── Header ────────────────────────────────────────────────────
+              SliverAppBar(
+                expandedHeight: 180,
+                pinned: true,
+                backgroundColor: theme.scaffoldBackgroundColor,
+                elevation: 0,
+                iconTheme: IconThemeData(color: scheme.onSurface),
+                flexibleSpace: FlexibleSpaceBar(
+                  titlePadding: const EdgeInsets.only(left: 48, bottom: 16),
+                  title: Text(
+                    'Lịch sử bình luận',
+                    style: TextStyle(
+                      color: scheme.onSurface,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
                     ),
                   ),
-                ),
-
-                // ── Nội dung danh sách ───────────────────────────────────────────
-                BlocBuilder<CommentHistoryCubit, CommentHistoryState>(
-                  builder: (context, state) {
-                    if (state is CommentHistoryLoading) {
-                      return const SliverFillRemaining(
-                        child: Center(
-                          child: CircularProgressIndicator(color: Color(0xFF9333EA)),
+                  background: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      // Background gradient thích ứng theme
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              scheme.primary.withValues(alpha: isDark ? 0.55 : 0.35),
+                              theme.scaffoldBackgroundColor,
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
                         ),
-                      );
-                    } else if (state is CommentHistoryError) {
+                      ),
+                      // chi tiết trang trí mờ
+                      Positioned(
+                        right: -50,
+                        top: -50,
+                        child: Container(
+                          width: 200,
+                          height: 200,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: scheme.secondary.withValues(alpha: isDark ? 0.20 : 0.16),
+                          ),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
+                            child: Container(color: Colors.transparent),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // ── Content ───────────────────────────────────────────────────
+              BlocBuilder<CommentHistoryCubit, CommentHistoryState>(
+                builder: (context, state) {
+                  if (state is CommentHistoryLoading) {
+                    return SliverFillRemaining(
+                      child: Center(
+                        child: CircularProgressIndicator(color: scheme.primary),
+                      ),
+                    );
+                  } else if (state is CommentHistoryError) {
+                    return SliverFillRemaining(
+                      child: Center(
+                        child: Text(
+                          'Lỗi: ${state.message}',
+                          style: TextStyle(
+                            color: scheme.error,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    );
+                  } else if (state is CommentHistoryLoaded) {
+                    final comments = state.comments;
+                    if (comments.isEmpty) {
                       return SliverFillRemaining(
                         child: Center(
-                          child: Text(
-                            'Lỗi: ${state.message}',
-                            style: const TextStyle(color: Colors.redAccent, fontSize: 16),
-                          ),
-                        ),
-                      );
-                    } else if (state is CommentHistoryLoaded) {
-                      final comments = state.comments;
-                      if (comments.isEmpty) {
-                        return SliverFillRemaining(
-                          child: Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(24),
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Colors.white.withValues(alpha: 0.05),
-                                  ),
-                                  child: Icon(
-                                    Icons.chat_bubble_outline_rounded,
-                                    size: 64,
-                                    color: Colors.white.withValues(alpha: 0.2),
-                                  ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(24),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: scheme.surfaceContainerHighest.withValues(alpha: 0.7),
+                                  border: Border.all(color: border.withValues(alpha: 0.6)),
                                 ),
-                                const SizedBox(height: 20),
-                                const Text(
-                                  'Bạn chưa đăng bình luận nào.',
-                                  style: TextStyle(color: Colors.grey, fontSize: 16, fontWeight: FontWeight.w500),
+                                child: Icon(
+                                  Icons.chat_bubble_outline_rounded,
+                                  size: 64,
+                                  color: soft,
                                 ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }
-                      
-                      return SliverPadding(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-                        sliver: SliverList(
-                          delegate: SliverChildBuilderDelegate(
-                            (context, index) {
-                              final comment = comments[index];
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 16.0),
-                                child: _CommentCard(
-                                  comment: comment,
-                                  userId: userId,
+                              ),
+                              const SizedBox(height: 20),
+                              Text(
+                                'Bạn chưa đăng bình luận nào.',
+                                style: TextStyle(
+                                  color: muted,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
                                 ),
-                              );
-                            },
-                            childCount: comments.length,
+                              ),
+                            ],
                           ),
                         ),
                       );
                     }
-                    return const SliverToBoxAdapter(child: SizedBox());
-                  },
-                ),
-              ],
-            ),
+
+                    return SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final comment = comments[index];
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 16.0),
+                              child: _CommentCard(
+                                comment: comment,
+                                userId: userId,
+                              ),
+                            );
+                          },
+                          childCount: comments.length,
+                        ),
+                      ),
+                    );
+                  }
+                  return const SliverToBoxAdapter(child: SizedBox());
+                },
+              ),
+            ],
           ),
         ),
       ),
@@ -177,16 +210,24 @@ class _CommentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    final muted = scheme.onSurface.withValues(alpha: 0.68);
+    final soft = scheme.onSurface.withValues(alpha: 0.45);
+    final border = scheme.outline.withValues(alpha: isDark ? 0.35 : 0.55);
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
+        color: scheme.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(color: border.withValues(alpha: 0.7)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.06),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -198,7 +239,7 @@ class _CommentCard extends StatelessWidget {
           _SongInfoHeader(comment: comment),
 
           // ── Divider ───────────────────────────────────────────────────────
-          Divider(height: 1, color: Colors.white.withValues(alpha: 0.05)),
+          Divider(height: 1, color: border),
 
           // ── Comment Content ───────────────────────────────────────────────
           Padding(
@@ -210,13 +251,13 @@ class _CommentCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF9333EA).withValues(alpha: 0.15),
+                    color: scheme.primary.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.format_quote_rounded,
                     size: 20,
-                    color: Color(0xFFD8B4FE), // Light purple
+                    color: scheme.primary.withValues(alpha: 0.9),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -227,20 +268,21 @@ class _CommentCard extends StatelessWidget {
                     children: [
                       Text(
                         comment.content,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: scheme.onSurface,
                           fontSize: 15,
                           height: 1.5,
                           letterSpacing: 0.2,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         timeAgo(comment.createdAt),
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.4),
+                          color: soft,
                           fontSize: 12,
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -248,10 +290,17 @@ class _CommentCard extends StatelessWidget {
                 ),
                 // Menu chỉnh sửa / xóa
                 PopupMenuButton<String>(
-                  icon: Icon(Icons.more_vert, size: 22, color: Colors.white.withValues(alpha: 0.5)),
-                  color: const Color(0xFF2A2A2E),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 8,
+                  icon: Icon(
+                    Icons.more_vert,
+                    size: 22,
+                    color: muted,
+                  ),
+                  color: scheme.surface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: border.withValues(alpha: 0.7)),
+                  ),
+                  elevation: 10,
                   padding: EdgeInsets.zero,
                   onSelected: (value) {
                     if (value == 'view') {
@@ -267,33 +316,54 @@ class _CommentCard extends StatelessWidget {
                     }
                   },
                   itemBuilder: (ctx) => [
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'view',
                       child: Row(
                         children: [
-                          Icon(Icons.open_in_new_rounded, size: 18, color: Colors.white70),
-                          SizedBox(width: 12),
-                          Text('Xem bình luận', style: TextStyle(color: Colors.white)),
+                          Icon(
+                            Icons.open_in_new_rounded,
+                            size: 18,
+                            color: muted,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Xem bình luận',
+                            style: TextStyle(color: scheme.onSurface),
+                          ),
                         ],
                       ),
                     ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'edit',
                       child: Row(
                         children: [
-                          Icon(Icons.edit_rounded, size: 18, color: Color(0xFFD8B4FE)),
-                          SizedBox(width: 12),
-                          Text('Chỉnh sửa', style: TextStyle(color: Colors.white)),
+                          Icon(
+                            Icons.edit_rounded,
+                            size: 18,
+                            color: scheme.primary,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Chỉnh sửa',
+                            style: TextStyle(color: scheme.onSurface),
+                          ),
                         ],
                       ),
                     ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'delete',
                       child: Row(
                         children: [
-                          Icon(Icons.delete_outline_rounded, size: 18, color: Colors.redAccent),
-                          SizedBox(width: 12),
-                          Text('Xóa', style: TextStyle(color: Colors.redAccent)),
+                          Icon(
+                            Icons.delete_outline_rounded,
+                            size: 18,
+                            color: scheme.error,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Xóa',
+                            style: TextStyle(color: scheme.error),
+                          ),
                         ],
                       ),
                     ),
@@ -308,35 +378,50 @@ class _CommentCard extends StatelessWidget {
   }
 
   void _showEditDialog(BuildContext context, String commentId, String oldContent) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
     final textController = TextEditingController(text: oldContent);
     final cubit = context.read<CommentHistoryCubit>();
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Chỉnh sửa bình luận',
-            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+        backgroundColor: scheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: scheme.outline.withValues(alpha: isDark ? 0.35 : 0.55),
+          ),
+        ),
+        title: Text(
+          'Chỉnh sửa bình luận',
+          style: TextStyle(
+            color: scheme.onSurface,
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
         content: TextField(
           controller: textController,
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: scheme.onSurface),
           maxLength: 300,
           maxLines: 4,
           decoration: InputDecoration(
             hintText: 'Nhập nội dung mới...',
-            hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+            hintStyle: TextStyle(color: scheme.onSurface.withValues(alpha: 0.35)),
             filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.05),
+            fillColor: scheme.surfaceContainerHighest.withValues(alpha: 0.7),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide.none,
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Color(0xFF9333EA), width: 1.5),
+              borderSide: BorderSide(color: scheme.primary, width: 1.5),
             ),
-            counterStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+            counterStyle: TextStyle(color: scheme.onSurface.withValues(alpha: 0.45)),
           ),
         ),
         actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -345,10 +430,11 @@ class _CommentCard extends StatelessWidget {
             onPressed: () => Navigator.pop(ctx),
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              foregroundColor: scheme.onSurface.withValues(alpha: 0.72),
             ),
-            child: Text('Hủy', style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontWeight: FontWeight.w600)),
+            child: const Text('Hủy', style: TextStyle(fontWeight: FontWeight.w700)),
           ),
-          ElevatedButton(
+          FilledButton(
             onPressed: () {
               final newContent = textController.text.trim();
               if (newContent.isNotEmpty) {
@@ -356,13 +442,13 @@ class _CommentCard extends StatelessWidget {
                 Navigator.pop(ctx);
               }
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF9333EA),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            style: FilledButton.styleFrom(
+              backgroundColor: scheme.primary,
+              foregroundColor: scheme.onPrimary,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: const Text('Lưu', style: TextStyle(fontWeight: FontWeight.w700)),
+            child: const Text('Lưu', style: TextStyle(fontWeight: FontWeight.w800)),
           ),
         ],
       ),
@@ -370,17 +456,36 @@ class _CommentCard extends StatelessWidget {
   }
 
   void _showDeleteDialog(BuildContext context, String commentId) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
     final cubit = context.read<CommentHistoryCubit>();
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Xóa bình luận',
-            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
-        content: const Text(
+        backgroundColor: scheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: scheme.outline.withValues(alpha: isDark ? 0.35 : 0.55),
+          ),
+        ),
+        title: Text(
+          'Xóa bình luận',
+          style: TextStyle(
+            color: scheme.onSurface,
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        content: Text(
           'Bạn có chắc chắn muốn xóa bình luận này không?',
-          style: TextStyle(color: Colors.white70, fontSize: 15),
+          style: TextStyle(
+            color: scheme.onSurface.withValues(alpha: 0.72),
+            fontSize: 15,
+            height: 1.5,
+          ),
         ),
         actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         actions: [
@@ -388,22 +493,22 @@ class _CommentCard extends StatelessWidget {
             onPressed: () => Navigator.pop(ctx),
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              foregroundColor: scheme.onSurface.withValues(alpha: 0.72),
             ),
-            child: Text('Hủy', style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontWeight: FontWeight.w600)),
+            child: const Text('Hủy', style: TextStyle(fontWeight: FontWeight.w700)),
           ),
-          ElevatedButton(
+          FilledButton(
             onPressed: () {
               cubit.deleteComment(commentId, userId);
               Navigator.pop(ctx);
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent.withValues(alpha: 0.2),
-              foregroundColor: Colors.redAccent,
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            style: FilledButton.styleFrom(
+              backgroundColor: scheme.error,
+              foregroundColor: scheme.onError,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: const Text('Xóa', style: TextStyle(fontWeight: FontWeight.w700)),
+            child: const Text('Xóa', style: TextStyle(fontWeight: FontWeight.w800)),
           ),
         ],
       ),
@@ -420,12 +525,17 @@ class _SongInfoHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
     final hasSongInfo = comment.songTitle != null;
+    final border = scheme.outline.withValues(alpha: isDark ? 0.28 : 0.45);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.02),
+        color: scheme.surfaceContainerHighest.withValues(alpha: isDark ? 0.42 : 0.8),
       ),
       child: Row(
         children: [
@@ -435,9 +545,9 @@ class _SongInfoHeader extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.4),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
+                  color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.10),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
                 ),
               ],
             ),
@@ -462,10 +572,10 @@ class _SongInfoHeader extends StatelessWidget {
               children: [
                 Text(
                   hasSongInfo ? comment.songTitle! : 'Bài hát không xác định',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: scheme.onSurface,
                     fontSize: 15,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
                     letterSpacing: 0.2,
                   ),
                   maxLines: 1,
@@ -476,9 +586,9 @@ class _SongInfoHeader extends StatelessWidget {
                   Text(
                     comment.songArtist!,
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
+                      color: scheme.onSurface.withValues(alpha: 0.55),
                       fontSize: 12,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -493,25 +603,29 @@ class _SongInfoHeader extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  const Color(0xFF9333EA).withValues(alpha: 0.2),
-                  const Color(0xFFEC4899).withValues(alpha: 0.2),
+                  scheme.primary.withValues(alpha: 0.14),
+                  scheme.secondary.withValues(alpha: 0.12),
                 ],
               ),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: const Color(0xFF9333EA).withValues(alpha: 0.3),
+                color: border,
                 width: 1,
               ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.music_note_rounded, size: 14, color: Color(0xFFD8B4FE)),
+                Icon(
+                  Icons.music_note_rounded,
+                  size: 14,
+                  color: scheme.primary.withValues(alpha: 0.9),
+                ),
                 const SizedBox(width: 4),
                 Text(
                   'BÀI HÁT',
                   style: TextStyle(
-                    color: const Color(0xFFD8B4FE).withValues(alpha: 0.9),
+                    color: scheme.primary.withValues(alpha: 0.9),
                     fontSize: 9,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.5,
@@ -529,8 +643,11 @@ class _SongInfoHeader extends StatelessWidget {
         width: 48,
         height: 48,
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF9333EA), Color(0xFFEC4899)],
+          gradient: LinearGradient(
+            colors: [
+              ThemeData().colorScheme.primary,
+              ThemeData().colorScheme.secondary,
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),

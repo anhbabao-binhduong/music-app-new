@@ -14,10 +14,14 @@ class HiveBoxes {
 class HiveSettingsKeys {
   HiveSettingsKeys._();
 
-  static const String themeMode     = 'theme_mode';       // 'dark' | 'light' | 'system'
-  static const String lastSongId    = 'last_song_id';
-  static const String lastPosition  = 'last_position_ms';
-  static const String volumeLevel   = 'volume_level';
+  static const String themeMode            = 'theme_mode'; // 'dark' | 'light' | 'system'
+  static const String lastSongId           = 'last_song_id';
+  static const String lastPosition         = 'last_position_ms';
+  static const String volumeLevel          = 'volume_level';
+  static const String notificationsEnabled = 'notifications_enabled';
+  static const String resumePlayback       = 'resume_playback';
+  static const String downloadOnWifiOnly   = 'download_on_wifi_only';
+  static const String streamQuality        = 'stream_quality';
 
   // Queue persistence — key theo userId để mỗi tài khoản có queue riêng
   // Dùng: queuePrefix + userId  →  e.g. "queue_abc123"

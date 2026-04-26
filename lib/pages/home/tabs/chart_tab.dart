@@ -86,8 +86,10 @@ class _ChartViewState extends State<_ChartView> with SingleTickerProviderStateMi
   // ── build ───────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isLight = theme.brightness == Brightness.light;
     return Scaffold(
-      backgroundColor: _kBg,
+      backgroundColor: isLight ? const Color(0xFFF3F4F8) : _kBg,
       body: BlocConsumer<ChartCubit, ChartState>(
         listener: (_, __) { _anim.reset(); _anim.forward(); },
         builder: (ctx, state) {
@@ -117,19 +119,30 @@ class _ChartViewState extends State<_ChartView> with SingleTickerProviderStateMi
   //  HEADER
   // ═══════════════════════════════════════════════════════════════════
   Widget _header(BuildContext ctx, ChartFilter filter) {
+    final theme = Theme.of(ctx);
+    final onSurface = theme.colorScheme.onSurface;
+    final isLight = theme.brightness == Brightness.light;
+
     return SliverToBoxAdapter(
       child: Container(
         padding: const EdgeInsets.fromLTRB(20, 50, 20, 24),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF3A1078), Color(0xFF1A0537), _kBg],
-            begin: Alignment.topCenter, end: Alignment.bottomCenter,
-            stops: [0.0, 0.55, 1.0],
+            colors: isLight
+                ? [
+                    const Color(0xFF6D28D9),
+                    const Color(0xFF8B5CF6),
+                    Colors.transparent,
+                  ]
+                : [const Color(0xFF3A1078), const Color(0xFF1A0537), _kBg],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            stops: const [0.0, 0.55, 1.0],
           ),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('#zingchart', style: TextStyle(
-            fontSize: 34, fontWeight: FontWeight.w900, color: Colors.white,
+            fontSize: 34, fontWeight: FontWeight.w900, color: isLight ? Colors.white : onSurface,
             letterSpacing: 1, shadows: [
               Shadow(color: _kAccentGlow.withValues(alpha: 0.7), blurRadius: 20),
               Shadow(color: _kAccentGlow.withValues(alpha: 0.4), blurRadius: 40),
@@ -150,6 +163,10 @@ class _ChartViewState extends State<_ChartView> with SingleTickerProviderStateMi
 
   Widget _pill(BuildContext ctx, ChartFilter f, String label, ChartFilter cur) {
     final on = f == cur;
+    final theme = Theme.of(ctx);
+    final onSurface = theme.colorScheme.onSurface;
+    final isLight = theme.brightness == Brightness.light;
+
     return GestureDetector(
       onTap: () => ctx.read<ChartCubit>().loadChart(f),
       child: AnimatedContainer(
@@ -157,12 +174,21 @@ class _ChartViewState extends State<_ChartView> with SingleTickerProviderStateMi
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
         decoration: BoxDecoration(
           gradient: on ? const LinearGradient(colors: [Color(0xFF9333EA), Color(0xFFEC4899)]) : null,
+          color: on
+              ? null
+              : (isLight ? Colors.white.withValues(alpha: 0.82) : Colors.transparent),
           borderRadius: BorderRadius.circular(24),
-          border: on ? null : Border.all(color: Colors.white.withValues(alpha: 0.15)),
+          border: on
+              ? null
+              : Border.all(
+                  color: isLight
+                      ? onSurface.withValues(alpha: 0.12)
+                      : Colors.white.withValues(alpha: 0.15),
+                ),
         ),
         child: Text(label, style: TextStyle(
-          color: on ? Colors.white : Colors.white.withValues(alpha: 0.5),
-          fontWeight: on ? FontWeight.w700 : FontWeight.w400, fontSize: 13.5,
+          color: on ? Colors.white : (isLight ? onSurface : Colors.white.withValues(alpha: 0.5)),
+          fontWeight: on ? FontWeight.w700 : FontWeight.w500, fontSize: 13.5,
         )),
       ),
     );
@@ -172,30 +198,93 @@ class _ChartViewState extends State<_ChartView> with SingleTickerProviderStateMi
   //  SHIMMER
   // ═══════════════════════════════════════════════════════════════════
   Widget _shimmer() => SliverToBoxAdapter(
-    child: Shimmer.fromColors(
-      baseColor: const Color(0xFF1E1E22), highlightColor: const Color(0xFF2C2C32),
-      child: Padding(padding: const EdgeInsets.symmetric(horizontal: 20), child: Column(children: [
-        Container(height: 200, margin: const EdgeInsets.only(bottom: 24),
-          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16))),
-        ...List.generate(5, (_) => Padding(padding: const EdgeInsets.only(bottom: 16), child: Row(children: [
-          Container(width: 32, height: 20, color: Colors.white), const SizedBox(width: 12),
-          const CircleAvatar(radius: 24, backgroundColor: Colors.white), const SizedBox(width: 16),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Container(height: 14, width: 150, color: Colors.white), const SizedBox(height: 8),
-            Container(height: 12, width: 100, color: Colors.white),
-          ])),
-        ]))),
-      ])),
+    child: Builder(
+      builder: (context) {
+        final theme = Theme.of(context);
+        final colorScheme = theme.colorScheme;
+        final isLight = theme.brightness == Brightness.light;
+
+        return Shimmer.fromColors(
+          baseColor: isLight
+              ? colorScheme.surfaceContainerHighest
+              : const Color(0xFF1E1E22),
+          highlightColor: isLight
+              ? colorScheme.surface
+              : const Color(0xFF2C2C32),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              children: [
+                Container(
+                  height: 200,
+                  margin: const EdgeInsets.only(bottom: 24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                ...List.generate(
+                  5,
+                  (_) => Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Row(
+                      children: [
+                        Container(width: 32, height: 20, color: Colors.white),
+                        const SizedBox(width: 12),
+                        const CircleAvatar(radius: 24, backgroundColor: Colors.white),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(height: 14, width: 150, color: Colors.white),
+                              const SizedBox(height: 8),
+                              Container(height: 12, width: 100, color: Colors.white),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     ),
   );
 
-  Widget _error(String msg) => SliverFillRemaining(child: Center(child: Column(
-    mainAxisSize: MainAxisSize.min, children: [
-      Icon(Icons.wifi_off_rounded, color: Colors.white.withValues(alpha: 0.15), size: 56),
-      const SizedBox(height: 12),
-      Text(msg, style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 14)),
-    ],
-  )));
+  Widget _error(String msg) => SliverFillRemaining(
+    child: Builder(
+      builder: (context) {
+        final theme = Theme.of(context);
+        final colorScheme = theme.colorScheme;
+        final isLight = theme.brightness == Brightness.light;
+
+        return Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.wifi_off_rounded,
+                color: colorScheme.onSurface.withValues(alpha: isLight ? 0.28 : 0.15),
+                size: 56,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                msg,
+                style: TextStyle(
+                  color: colorScheme.onSurface.withValues(alpha: isLight ? 0.65 : 0.4),
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    ),
+  );
 
   // ═══════════════════════════════════════════════════════════════════
   //  LINE CHART CARD  (stock-style)
@@ -260,22 +349,66 @@ class _ChartViewState extends State<_ChartView> with SingleTickerProviderStateMi
 
     double ceilingY = maxY <= 1 ? 10 : (maxY * 1.15).ceilToDouble();
 
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isLight = theme.brightness == Brightness.light;
+
     return SliverToBoxAdapter(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
         child: Container(
           decoration: BoxDecoration(
-            color: _kCard,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
+            color: isLight ? Colors.white : _kCard,
+            borderRadius: BorderRadius.circular(20),
+            border: isLight
+                ? null
+                : Border.all(color: Colors.white.withValues(alpha: 0.04)),
+            boxShadow: isLight
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFF7C3AED).withValues(alpha: 0.08),
+                      blurRadius: 24,
+                      offset: const Offset(0, 6),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
           ),
-          padding: const EdgeInsets.fromLTRB(12, 16, 16, 12),
+          padding: const EdgeInsets.fromLTRB(16, 18, 16, 14),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Padding(
-              padding: EdgeInsets.only(left: 4, bottom: 14),
-              child: Text('Xu hướng nghe', style: TextStyle(
-                fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
+            Row(
+              children: [
+                if (isLight) ...[
+                  Container(
+                    width: 4,
+                    height: 18,
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF7C3AED), Color(0xFFEC4899)],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ],
+                Text(
+                  'Xu hướng nghe',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: isLight ? colorScheme.onSurface : Colors.white,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+              ],
             ),
+            const SizedBox(height: 14),
             SizedBox(
               height: 160,
               child: LineChart(
@@ -286,7 +419,11 @@ class _ChartViewState extends State<_ChartView> with SingleTickerProviderStateMi
                     show: true, drawVerticalLine: false,
                     horizontalInterval: (ceilingY / 3).ceilToDouble().clamp(1, double.infinity),
                     getDrawingHorizontalLine: (_) => FlLine(
-                      color: Colors.white.withValues(alpha: 0.04), strokeWidth: 0.8),
+                      color: isLight
+                          ? colorScheme.onSurface.withValues(alpha: 0.08)
+                          : Colors.white.withValues(alpha: 0.04),
+                      strokeWidth: 0.8,
+                    ),
                   ),
                   titlesData: FlTitlesData(
                     leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -310,10 +447,18 @@ class _ChartViewState extends State<_ChartView> with SingleTickerProviderStateMi
                           }
                         }
 
-                        return SideTitleWidget(meta: meta, child: Text(
-                          _displayLabel(label, state.filter),
-                          style: TextStyle(color: Colors.white.withValues(alpha: 0.35), fontSize: 10),
-                        ));
+                        return SideTitleWidget(
+                          meta: meta,
+                          child: Text(
+                            _displayLabel(label, state.filter),
+                            style: TextStyle(
+                              color: isLight
+                                  ? colorScheme.onSurface.withValues(alpha: 0.52)
+                                  : Colors.white.withValues(alpha: 0.35),
+                              fontSize: 10,
+                            ),
+                          ),
+                        );
                       },
                     )),
                   ),
@@ -328,7 +473,7 @@ class _ChartViewState extends State<_ChartView> with SingleTickerProviderStateMi
                             show: true,
                             getDotPainter: (spot, percent, barData, index) {
                               return FlDotCirclePainter(
-                                radius: 7, // 7px on touch
+                                radius: 7,
                                 color: Colors.white,
                                 strokeWidth: 2,
                                 strokeColor: barData.color ?? Colors.white,
@@ -339,7 +484,9 @@ class _ChartViewState extends State<_ChartView> with SingleTickerProviderStateMi
                       }).toList();
                     },
                     touchTooltipData: LineTouchTooltipData(
-                      getTooltipColor: (_) => const Color(0xF0222228),
+                      getTooltipColor: (_) => isLight
+                          ? Colors.white
+                          : const Color(0xF0222228),
                       fitInsideHorizontally: true, fitInsideVertically: true,
                       getTooltipItems: (spots) => spots.map((s) {
                         if (s.barIndex >= top3.length) return null;
@@ -350,7 +497,13 @@ class _ChartViewState extends State<_ChartView> with SingleTickerProviderStateMi
                           TextStyle(color: _lineColors[s.barIndex], fontWeight: FontWeight.w700, fontSize: 12),
                           children: [TextSpan(
                             text: '${s.y.toInt()} lượt · $time',
-                            style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 11, fontWeight: FontWeight.w400),
+                            style: TextStyle(
+                              color: isLight
+                                  ? colorScheme.onSurface.withValues(alpha: 0.72)
+                                  : Colors.white.withValues(alpha: 0.7),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w400,
+                            ),
                           )],
                         );
                       }).toList(),
@@ -413,41 +566,111 @@ class _ChartViewState extends State<_ChartView> with SingleTickerProviderStateMi
   }
 
   Widget _legend(List<ChartTopSong> top3) {
-    return Wrap(spacing: 16, runSpacing: 6, children: List.generate(top3.length, (i) => Row(
-      mainAxisSize: MainAxisSize.min, children: [
-        Container(width: 10, height: 10, decoration: BoxDecoration(
-          color: _lineColors[i], shape: BoxShape.circle,
-          boxShadow: [BoxShadow(color: _lineColors[i].withValues(alpha: 0.4), blurRadius: 4)],
-        )),
-        const SizedBox(width: 6),
-        ConstrainedBox(constraints: const BoxConstraints(maxWidth: 100), child: Text(
-          top3[i].song.title, maxLines: 1, overflow: TextOverflow.ellipsis,
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.55), fontSize: 11.5),
-        )),
-      ],
-    )));
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isLight = theme.brightness == Brightness.light;
+
+    return Wrap(
+      spacing: 16,
+      runSpacing: 6,
+      children: List.generate(
+        top3.length,
+        (i) => Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: _lineColors[i],
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: _lineColors[i].withValues(alpha: 0.4),
+                    blurRadius: 4,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 6),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 100),
+              child: Text(
+                top3[i].song.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: isLight
+                      ? colorScheme.onSurface.withValues(alpha: 0.72)
+                      : Colors.white.withValues(alpha: 0.55),
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   // ═══════════════════════════════════════════════════════════════════
   //  TOP 10 RANKING
   // ═══════════════════════════════════════════════════════════════════
   Widget _rankHeader() => SliverToBoxAdapter(
-    child: Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1500),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text('Bảng Xếp Hạng', style: TextStyle(
-              fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white.withValues(alpha: 0.9))),
+    child: Builder(
+      builder: (context) {
+        final theme = Theme.of(context);
+        final colorScheme = theme.colorScheme;
+        final isLight = theme.brightness == Brightness.light;
+
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1500),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 10),
+              child: Row(
+                children: [
+                  if (isLight) ...[
+                    Container(
+                      width: 4,
+                      height: 22,
+                      margin: const EdgeInsets.only(right: 10),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF7C3AED), Color(0xFFEC4899)],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ],
+                  Text(
+                    'Bảng Xếp Hạng',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.3,
+                      color: isLight
+                          ? colorScheme.onSurface
+                          : Colors.white.withValues(alpha: 0.9),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     ),
   );
 
   Widget _rankList(ChartLoaded state) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isLight = theme.brightness == Brightness.light;
+
     if (state.topSongs.isEmpty) {
       return SliverToBoxAdapter(
         child: Padding(
@@ -455,7 +678,65 @@ class _ChartViewState extends State<_ChartView> with SingleTickerProviderStateMi
           child: Center(
             child: Text(
               'Không có dữ liệu',
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+              style: TextStyle(
+                color: colorScheme.onSurface.withValues(alpha: isLight ? 0.55 : 0.3),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Light mode: wrap the whole list in a card with soft shadow
+    if (isLight) {
+      return SliverToBoxAdapter(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1500),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF7C3AED).withValues(alpha: 0.07),
+                      blurRadius: 24,
+                      offset: const Offset(0, 6),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Column(
+                    children: List.generate(state.topSongs.length, (i) {
+                      final item = state.topSongs[i];
+                      return Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: _rankItem(context, i, item, state.topSongs),
+                          ),
+                          if (i < state.topSongs.length - 1)
+                            Divider(
+                              color: colorScheme.onSurface.withValues(alpha: 0.06),
+                              height: 1,
+                              thickness: 0.5,
+                              indent: 70,
+                              endIndent: 16,
+                            ),
+                        ],
+                      );
+                    }),
+                  ),
+                ),
+              ),
             ),
           ),
         ),
@@ -464,87 +745,213 @@ class _ChartViewState extends State<_ChartView> with SingleTickerProviderStateMi
 
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      sliver: SliverList(delegate: SliverChildBuilderDelegate(
-        (ctx, i) {
-          final item = state.topSongs[i];
-          return Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1500),
-              child: Column(children: [
-                _rankItem(ctx, i, item, state.topSongs),
-                if (i < state.topSongs.length - 1)
-                  Divider(color: _kDivider, height: 1, thickness: 0.5, indent: 56, endIndent: 8),
-              ]),
-            ),
-          );
-        },
-        childCount: state.topSongs.length,
-      )),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (ctx, i) {
+            final item = state.topSongs[i];
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1500),
+                child: Column(
+                  children: [
+                    _rankItem(ctx, i, item, state.topSongs),
+                    if (i < state.topSongs.length - 1)
+                      Divider(
+                        color: _kDivider,
+                        height: 1,
+                        thickness: 0.5,
+                        indent: 56,
+                        endIndent: 8,
+                      ),
+                  ],
+                ),
+              ),
+            );
+          },
+          childCount: state.topSongs.length,
+        ),
+      ),
     );
   }
 
   Widget _rankItem(BuildContext ctx, int idx, ChartTopSong item, List<ChartTopSong> all) {
+    final theme = Theme.of(ctx);
+    final colorScheme = theme.colorScheme;
+    final isLight = theme.brightness == Brightness.light;
+
     // Rank style
-    Color rc; double rs;
-    if (idx == 0)      { rc = const Color(0xFFFFD700); rs = 26; }
-    else if (idx == 1) { rc = const Color(0xFFC0C0C0); rs = 24; }
-    else if (idx == 2) { rc = const Color(0xFFCD7F32); rs = 22; }
-    else               { rc = Colors.white.withValues(alpha: 0.35); rs = 18; }
+    Color rc;
+    double rs;
+    if (idx == 0) {
+      rc = const Color(0xFFFFD700);
+      rs = 26;
+    } else if (idx == 1) {
+      rc = const Color(0xFFC0C0C0);
+      rs = 24;
+    } else if (idx == 2) {
+      rc = const Color(0xFFCD7F32);
+      rs = 22;
+    } else {
+      rc = colorScheme.onSurface.withValues(alpha: isLight ? 0.42 : 0.35);
+      rs = 18;
+    }
 
     // Trend
-    IconData ti; Color tc;
-    if (item.trend == ChartTrend.up)        { ti = Icons.arrow_drop_up_rounded; tc = const Color(0xFF4CAF50); }
-    else if (item.trend == ChartTrend.down) { ti = Icons.arrow_drop_down_rounded; tc = const Color(0xFFE53935); }
-    else                                    { ti = Icons.remove_rounded; tc = Colors.white.withValues(alpha: 0.2); }
+    IconData ti;
+    Color tc;
+    if (item.trend == ChartTrend.up) {
+      ti = Icons.arrow_drop_up_rounded;
+      tc = const Color(0xFF4CAF50);
+    } else if (item.trend == ChartTrend.down) {
+      ti = Icons.arrow_drop_down_rounded;
+      tc = const Color(0xFFE53935);
+    } else {
+      ti = Icons.remove_rounded;
+      tc = colorScheme.onSurface.withValues(alpha: isLight ? 0.28 : 0.2);
+    }
 
     // Thumb border
     final border = idx < 3
         ? [_lineColors[idx], _lineColors[idx].withValues(alpha: 0.3)]
-        : [Colors.white.withValues(alpha: 0.1), Colors.white.withValues(alpha: 0.05)];
+        : [
+            colorScheme.onSurface.withValues(alpha: isLight ? 0.12 : 0.1),
+            colorScheme.onSurface.withValues(alpha: isLight ? 0.06 : 0.05),
+          ];
+
+    final thumbBg = isLight ? const Color(0xFFF3F4F8) : _kCard;
+    final titleColor = colorScheme.onSurface;
+    final subtitleColor = colorScheme.onSurface.withValues(alpha: isLight ? 0.55 : 0.4);
+    // play count: purple accent in light mode
+    const accentPurple = Color(0xFF7C3AED);
+    final countColor = isLight ? accentPurple : colorScheme.onSurface.withValues(alpha: 0.7);
+    final iconColor = isLight ? accentPurple.withValues(alpha: 0.45) : colorScheme.onSurface.withValues(alpha: 0.25);
 
     return InkWell(
       onTap: () => _play(ctx, idx, all),
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(12),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-        child: Row(children: [
-          // Rank + trend
-          SizedBox(width: 36, child: Column(children: [
-            Text('${idx + 1}', style: TextStyle(fontSize: rs, fontWeight: FontWeight.w900, color: rc, height: 1,
-              shadows: idx < 3 ? [Shadow(color: rc.withValues(alpha: 0.4), blurRadius: 6)] : null)),
-            Icon(ti, color: tc, size: 18),
-          ])),
-          const SizedBox(width: 12),
-          // Thumb
-          Container(
-            padding: const EdgeInsets.all(2),
-            decoration: BoxDecoration(shape: BoxShape.circle,
-              gradient: LinearGradient(colors: border, begin: Alignment.topLeft, end: Alignment.bottomRight)),
-            child: ClipOval(child: SizedBox(width: 48, height: 48, child: CachedNetworkImage(
-              imageUrl: item.song.artUrl ?? '', fit: BoxFit.cover,
-              placeholder: (_, __) => Container(color: _kCard),
-              errorWidget: (_, __, ___) => Container(color: _kCard,
-                child: Icon(Icons.music_note_rounded, color: Colors.white.withValues(alpha: 0.2), size: 24)),
-            ))),
-          ),
-          const SizedBox(width: 14),
-          // Info
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(item.song.title, maxLines: 1, overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: Colors.white)),
-            const SizedBox(height: 3),
-            Text(item.song.artist, maxLines: 1, overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.4))),
-          ])),
-          const SizedBox(width: 8),
-          // Count
-          Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Text(_compact(item.playCount), style: TextStyle(
-              fontWeight: FontWeight.w700, fontSize: 14, color: Colors.white.withValues(alpha: 0.7))),
-            const SizedBox(height: 2),
-            Icon(Icons.headset_rounded, size: 13, color: Colors.white.withValues(alpha: 0.25)),
-          ]),
-        ]),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 36,
+              child: Column(
+                children: [
+                  Text(
+                    '${idx + 1}',
+                    style: TextStyle(
+                      fontSize: rs,
+                      fontWeight: FontWeight.w900,
+                      color: rc,
+                      height: 1,
+                      shadows: idx < 3
+                          ? [Shadow(color: rc.withValues(alpha: 0.4), blurRadius: 6)]
+                          : null,
+                    ),
+                  ),
+                  Icon(ti, color: tc, size: 18),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: border,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: ClipOval(
+                child: SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: CachedNetworkImage(
+                    imageUrl: item.song.artUrl ?? '',
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) => Container(color: thumbBg),
+                    errorWidget: (_, __, ___) => Container(
+                      color: thumbBg,
+                      child: Icon(
+                        Icons.music_note_rounded,
+                        color: colorScheme.onSurface.withValues(alpha: isLight ? 0.28 : 0.2),
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.song.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                      color: titleColor,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    item.song.artist,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 13, color: subtitleColor),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                if (isLight)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF7C3AED).withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.headset_rounded, size: 11, color: iconColor),
+                        const SizedBox(width: 4),
+                        Text(
+                          _compact(item.playCount),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                            color: countColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else ...[
+                  Text(
+                    _compact(item.playCount),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      color: countColor,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Icon(Icons.headset_rounded, size: 13, color: iconColor),
+                ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

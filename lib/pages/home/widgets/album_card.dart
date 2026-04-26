@@ -134,7 +134,7 @@ class _AlbumCardState extends State<AlbumCard> {
               Text(
                 widget.album.title,
                 style: TextStyle(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.1,
@@ -147,7 +147,7 @@ class _AlbumCardState extends State<AlbumCard> {
               Text(
                 widget.album.artistName,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.6),
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                   fontSize: 13,
                   fontWeight: FontWeight.w400,
                 ),
