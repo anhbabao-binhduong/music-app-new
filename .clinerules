@@ -79,3 +79,8 @@ Avoid
 - Do not spread a simple change across many folders if one existing feature file is enough.
 - Do not modify secrets/config unless explicitly requested.
 - Do not edit unrelated files just to make style more "perfect".
+
+UI And Design Standards
+- Always read and follow DESIGN_SKILL.md before creating or editing any UI widget, page, or component.
+- Apply the design principles in DESIGN_SKILL.md for typography, colors, spacing, animations, and visual effects.
+- Do not create generic or plain UI — every screen must follow the design tone defined in DESIGN_SKILL.md.

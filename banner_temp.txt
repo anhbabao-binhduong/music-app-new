@@ -1,4 +1,4 @@
-import 'dart:ui';
+﻿import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../../data/local_music_data.dart';
 import '../../../../widgets/auth_guard.dart';
@@ -137,40 +137,36 @@ class _HeroBannerState extends State<HeroBanner>
                       ),
                       const SizedBox(height: 16),
                       // Title
-                      Flexible(
-                        child: Text(
-                          widget.data.label,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 36,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -1,
-                            height: 1.1,
-                            shadows: [
-                              Shadow(
-                                color: Colors.black45,
-                                blurRadius: 10,
-                                offset: Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                      Text(
+                        widget.data.label,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 36,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -1,
+                          height: 1.1,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black45,
+                              blurRadius: 10,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 8),
                       // Subtitle
-                      Flexible(
-                        child: Text(
-                          widget.data.sub,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.8),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      Text(
+                        widget.data.sub,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 20),
                       // Action buttons
@@ -213,7 +209,7 @@ class _PlayButtonState extends State<_PlayButton> {
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: const Text('Chưa có bài hát nào để phát'),
+                  content: const Text('ChÆ°a cĂ³ bĂ i hĂ¡t nĂ o Ä‘á»ƒ phĂ¡t'),
                   backgroundColor: Colors.grey.shade800,
                   behavior: SnackBarBehavior.floating,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -234,7 +230,7 @@ class _PlayButtonState extends State<_PlayButton> {
           ),
           icon: const Icon(Icons.play_arrow_rounded, size: 24),
           label: const Text(
-            'Phát ngay',
+            'PhĂ¡t ngay',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
