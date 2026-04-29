@@ -35,7 +35,7 @@ class _ChartTileState extends State<ChartTile> {
       case 3:
         return const Color(0xFFCD7F32); // Bronze
       default:
-        return Colors.white.withValues(alpha: 0.7);
+        return Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55);
     }
   }
 
@@ -46,12 +46,14 @@ class _ChartTileState extends State<ChartTile> {
 
     showModalBottomSheet(
       context: pageCtx,
-      backgroundColor: const Color(0xFF1E1E28),
+      backgroundColor: Theme.of(pageCtx).colorScheme.surfaceContainerHigh,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       isScrollControlled: true,
       builder: (ctx) {
+        final cs = Theme.of(ctx).colorScheme;
+        final tt = Theme.of(ctx).textTheme;
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
@@ -64,7 +66,7 @@ class _ChartTileState extends State<ChartTile> {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
+                    color: cs.onSurface.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -83,15 +85,17 @@ class _ChartTileState extends State<ChartTile> {
                                   widget.item.artUri.toString(),
                                   fit: BoxFit.cover,
                                   errorBuilder: (_, __, ___) => Container(
-                                    color: const Color(0xFF2A2A2E),
-                                    child: const Icon(Icons.music_note_rounded,
-                                        color: Colors.white30, size: 24),
+                                    color: cs.surfaceContainerHighest,
+                                    child: Icon(Icons.music_note_rounded,
+                                        color: cs.onSurface.withValues(alpha: 0.3),
+                                        size: 24),
                                   ),
                                 )
                               : Container(
-                                  color: const Color(0xFF2A2A2E),
-                                  child: const Icon(Icons.music_note_rounded,
-                                      color: Colors.white30, size: 24),
+                                  color: cs.surfaceContainerHighest,
+                                  child: Icon(Icons.music_note_rounded,
+                                      color: cs.onSurface.withValues(alpha: 0.3),
+                                      size: 24),
                                 ),
                         ),
                       ),
@@ -102,9 +106,8 @@ class _ChartTileState extends State<ChartTile> {
                           children: [
                             Text(
                               widget.item.title,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 15,
+                              style: tt.titleMedium?.copyWith(
+                                color: cs.onSurface,
                                 fontWeight: FontWeight.w700,
                               ),
                               maxLines: 1,
@@ -113,9 +116,8 @@ class _ChartTileState extends State<ChartTile> {
                             const SizedBox(height: 3),
                             Text(
                               widget.item.artist ?? 'Unknown Artist',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.55),
-                                fontSize: 13,
+                              style: tt.bodySmall?.copyWith(
+                                color: cs.onSurface.withValues(alpha: 0.7),
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -126,7 +128,7 @@ class _ChartTileState extends State<ChartTile> {
                     ],
                   ),
                 ),
-                Divider(color: Colors.white.withValues(alpha: 0.08), height: 24),
+                Divider(color: cs.onSurface.withValues(alpha: 0.1), height: 24),
 
                 // Favorite
                 StatefulBuilder(builder: (ctx2, setSheetState) {
@@ -138,11 +140,9 @@ class _ChartTileState extends State<ChartTile> {
                         : Icons.favorite_border_rounded,
                     iconColor: isCurrentlyFav
                         ? const Color(0xFFE91E8C)
-                        : Colors.white70,
-                    label: isCurrentlyFav
-                        ? 'Bỏ yêu thích'
-                        : 'Thêm vào yêu thích',
-                                        onTap: () async {
+                        : cs.onSurface.withValues(alpha: 0.7),
+                    label: isCurrentlyFav ? 'Bỏ yêu thích' : 'Thêm vào yêu thích',
+                    onTap: () async {
                       Navigator.pop(ctx);
                       final wasFav = favCubit.state.contains(widget.item.id);
                       try {
@@ -150,10 +150,15 @@ class _ChartTileState extends State<ChartTile> {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(wasFav ? 'Đã bỏ khỏi yêu thích' : 'Đã thêm vào yêu thích'),
-                              backgroundColor: wasFav ? Colors.grey.shade700 : const Color(0xFFE91E8C),
+                              content: Text(wasFav
+                                  ? 'Đã bỏ khỏi yêu thích'
+                                  : 'Đã thêm vào yêu thích'),
+                              backgroundColor: wasFav
+                                  ? Colors.grey.shade700
+                                  : const Color(0xFFE91E8C),
                               behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
                             ),
                           );
                         }
@@ -178,14 +183,21 @@ class _ChartTileState extends State<ChartTile> {
                   builder: (context, state) {
                     bool isInAnyPlaylist = false;
                     if (state is PlaylistLoaded) {
-                      isInAnyPlaylist = state.playlists.any((pl) => pl.songIds.contains(widget.item.id));
+                      isInAnyPlaylist = state.playlists
+                          .any((pl) => pl.songIds.contains(widget.item.id));
                     }
-
                     return _OptionTile(
-                      icon: isInAnyPlaylist ? Icons.check_circle_rounded : Icons.playlist_add_rounded,
-                      iconColor: isInAnyPlaylist ? const Color(0xFF7C3AED) : Colors.white70,
-                      label: isInAnyPlaylist ? 'Đã thêm vào playlist' : 'Thêm vào playlist',
-                      textColor: isInAnyPlaylist ? const Color(0xFF7C3AED) : Colors.white,
+                      icon: isInAnyPlaylist
+                          ? Icons.check_circle_rounded
+                          : Icons.playlist_add_rounded,
+                      iconColor: isInAnyPlaylist
+                          ? const Color(0xFF7C3AED)
+                          : cs.onSurface.withValues(alpha: 0.7),
+                      label: isInAnyPlaylist
+                          ? 'Đã thêm vào playlist'
+                          : 'Thêm vào playlist',
+                      textColor:
+                          isInAnyPlaylist ? const Color(0xFF7C3AED) : null,
                       onTap: () {
                         Navigator.pop(ctx);
                         _showAddToPlaylistSheet(pageContext, playlistCubit);
@@ -199,22 +211,32 @@ class _ChartTileState extends State<ChartTile> {
                   builder: (context, downloadedIds) {
                     final isDownloaded = downloadedIds.contains(widget.item.id);
                     return _OptionTile(
-                      icon: isDownloaded ? Icons.download_done_rounded : Icons.download_rounded,
-                      iconColor: isDownloaded ? const Color(0xFF1DB954) : Colors.white70,
+                      icon: isDownloaded
+                          ? Icons.download_done_rounded
+                          : Icons.download_rounded,
+                      iconColor: isDownloaded
+                          ? const Color(0xFF1DB954)
+                          : cs.onSurface.withValues(alpha: 0.7),
                       label: isDownloaded ? 'Đã tải' : 'Tải nhạc',
-                      textColor: isDownloaded ? const Color(0xFF1DB954) : Colors.white,
-                                            onTap: () async {
+                      textColor:
+                          isDownloaded ? const Color(0xFF1DB954) : null,
+                      onTap: () async {
                         Navigator.pop(ctx);
                         final wasDown = downloadedIds.contains(widget.item.id);
                         try {
-                          await pageContext.read<DownloadCubit>().toggleDownload(widget.item);
+                          await pageContext
+                              .read<DownloadCubit>()
+                              .toggleDownload(widget.item);
                           if (pageContext.mounted) {
                             ScaffoldMessenger.of(pageContext).showSnackBar(
                               SnackBar(
-                                content: Text(wasDown ? 'Đã xóa khỏi tải về' : 'Đã tải bài hát'),
+                                content: Text(wasDown
+                                    ? 'Đã xóa khỏi tải về'
+                                    : 'Đã tải bài hát'),
                                 backgroundColor: const Color(0xFF1DB954),
                                 behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
                               ),
                             );
                           }
@@ -222,7 +244,8 @@ class _ChartTileState extends State<ChartTile> {
                           if (pageContext.mounted) {
                             ScaffoldMessenger.of(pageContext).showSnackBar(
                               SnackBar(
-                                content: Text(e.toString().replaceFirst('Exception: ', '')),
+                                content: Text(
+                                    e.toString().replaceFirst('Exception: ', '')),
                                 backgroundColor: Colors.red.shade700,
                                 behavior: SnackBarBehavior.floating,
                               ),
@@ -237,13 +260,14 @@ class _ChartTileState extends State<ChartTile> {
                 // Share
                 _OptionTile(
                   icon: Icons.share_rounded,
-                  iconColor: Colors.white70,
+                  iconColor: cs.onSurface.withValues(alpha: 0.7),
                   label: 'Chia sẻ',
                   onTap: () {
                     Navigator.pop(ctx);
                     SharePlus.instance.share(
                       ShareParams(
-                        text: '🎵 Nghe bài "${widget.item.title}" - ${widget.item.artist ?? ''} trên Music App!',
+                        text:
+                            '🎵 Nghe bài "${widget.item.title}" - ${widget.item.artist ?? ''} trên Music App!',
                       ),
                     );
                   },
@@ -258,21 +282,26 @@ class _ChartTileState extends State<ChartTile> {
     );
   }
 
-  void _showAddToPlaylistSheet(BuildContext pageContext, PlaylistCubit playlistCubit) {
+  void _showAddToPlaylistSheet(
+      BuildContext pageContext, PlaylistCubit playlistCubit) {
     showModalBottomSheet(
       context: pageContext,
-      backgroundColor: const Color(0xFF1E1E28),
+      backgroundColor:
+          Theme.of(pageContext).colorScheme.surfaceContainerHigh,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       isScrollControlled: true,
       builder: (ctx) {
+        final cs = Theme.of(ctx).colorScheme;
+        final tt = Theme.of(ctx).textTheme;
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: BlocBuilder<PlaylistCubit, PlaylistState>(
               builder: (context, state) {
-                final playlists = state is PlaylistLoaded ? state.playlists : <PlaylistModel>[];
+                final playlists =
+                    state is PlaylistLoaded ? state.playlists : <PlaylistModel>[];
                 return Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -281,19 +310,19 @@ class _ChartTileState extends State<ChartTile> {
                       height: 4,
                       margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
+                        color: cs.onSurface.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 4),
                       child: Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
                           'Chọn playlist',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
+                          style: tt.titleMedium?.copyWith(
+                            color: cs.onSurface,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -305,7 +334,9 @@ class _ChartTileState extends State<ChartTile> {
                         padding: const EdgeInsets.all(24),
                         child: Text(
                           'Bạn chưa có playlist nào',
-                          style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+                          style: tt.bodyMedium?.copyWith(
+                            color: cs.onSurface.withValues(alpha: 0.5),
+                          ),
                         ),
                       )
                     else
@@ -316,14 +347,15 @@ class _ChartTileState extends State<ChartTile> {
                           itemCount: playlists.length,
                           itemBuilder: (_, i) {
                             final pl = playlists[i];
-                            final isAdded = pl.songIds.contains(widget.item.id);
-
+                            final isAdded =
+                                pl.songIds.contains(widget.item.id);
                             return ListTile(
                               leading: Container(
                                 width: 42,
                                 height: 42,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF7C3AED).withValues(alpha: 0.2),
+                                  color: const Color(0xFF7C3AED)
+                                      .withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: const Icon(Icons.queue_music_rounded,
@@ -331,28 +363,36 @@ class _ChartTileState extends State<ChartTile> {
                               ),
                               title: Text(
                                 pl.name,
-                                style: TextStyle(
-                                    color: isAdded ? const Color(0xFF7C3AED) : Colors.white, 
-                                    fontSize: 14, 
-                                    fontWeight: FontWeight.w500),
+                                style: tt.bodyMedium?.copyWith(
+                                  color: isAdded
+                                      ? const Color(0xFF7C3AED)
+                                      : cs.onSurface,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                               subtitle: Text(
                                 '${pl.songIds.length} bài',
-                                style: TextStyle(
-                                    color: isAdded ? const Color(0xFF7C3AED).withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.4), 
-                                    fontSize: 12),
+                                style: tt.bodySmall?.copyWith(
+                                  color: isAdded
+                                      ? const Color(0xFF7C3AED)
+                                          .withValues(alpha: 0.7)
+                                      : cs.onSurface.withValues(alpha: 0.5),
+                                ),
                               ),
                               trailing: isAdded
-                                  ? const Icon(Icons.check_circle_rounded, color: Color(0xFF7C3AED), size: 22)
+                                  ? const Icon(Icons.check_circle_rounded,
+                                      color: Color(0xFF7C3AED), size: 22)
                                   : null,
                               onTap: () async {
                                 Navigator.pop(ctx);
-                                final err = await playlistCubit.addSongToPlaylist(
+                                final err =
+                                    await playlistCubit.addSongToPlaylist(
                                   pl.id,
                                   widget.item.id,
                                 );
                                 if (pageContext.mounted) {
-                                  ScaffoldMessenger.of(pageContext).showSnackBar(
+                                  ScaffoldMessenger.of(pageContext)
+                                      .showSnackBar(
                                     SnackBar(
                                       content: Text(
                                         err == null
@@ -366,7 +406,8 @@ class _ChartTileState extends State<ChartTile> {
                                           : Colors.red.shade700,
                                       behavior: SnackBarBehavior.floating,
                                       shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12)),
+                                          borderRadius:
+                                              BorderRadius.circular(12)),
                                     ),
                                   );
                                 }
@@ -388,18 +429,25 @@ class _ChartTileState extends State<ChartTile> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final isLight = Theme.of(context).brightness == Brightness.light;
+
+    // Spotify-style card: dark #1A1A1A / #282828 hover; light #F5F5F5 / #EAEAEA hover
+    final cardColor = isLight
+        ? (_isHovered ? const Color(0xFFEAEAEA) : const Color(0xFFF5F5F5))
+        : (_isHovered ? const Color(0xFF282828) : const Color(0xFF1A1A1A));
+
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
-          color: _isHovered
-              ? const Color(0xFF3D2D70)
-              : const Color(0xFF2E2060),
+          color: cardColor,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: const Color(0xFF9B6EFF).withValues(alpha: 0.3),
+            color: cs.outline.withValues(alpha: 0.15),
             width: 1,
           ),
         ),
@@ -407,9 +455,10 @@ class _ChartTileState extends State<ChartTile> {
           color: Colors.transparent,
           child: InkWell(
             onTap: widget.onTap,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
                   // Rank number
@@ -417,12 +466,12 @@ class _ChartTileState extends State<ChartTile> {
                     width: 36,
                     child: Center(
                       child: widget.rank <= 3
-                          ? _RankBadge(rank: widget.rank, color: _getRankColor())
+                          ? _RankBadge(
+                              rank: widget.rank, color: _getRankColor())
                           : Text(
                               '${widget.rank}',
-                              style: const TextStyle(
-                                color: Color(0xFFA3A3A3),
-                                fontSize: 16,
+                              style: tt.bodyLarge?.copyWith(
+                                color: cs.onSurface.withValues(alpha: 0.5),
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -430,44 +479,59 @@ class _ChartTileState extends State<ChartTile> {
                   ),
                   const SizedBox(width: 16),
 
-                  // Thumbnail
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Stack(
-                      children: [
-                        Container(
-                          width: 56,
-                          height: 56,
-                          color: const Color(0xFF2A2A2E),
-                          child: widget.item.artUri != null
-                              ? Image.network(
-                                  widget.item.artUri.toString(),
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => const Icon(
-                                    Icons.music_note_rounded,
-                                    color: Colors.white30,
-                                    size: 24,
-                                  ),
-                                )
-                              : const Icon(
-                                  Icons.music_note_rounded,
-                                  color: Colors.white30,
-                                  size: 24,
-                                ),
+                  // Thumbnail with subtle shadow
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black
+                              .withValues(alpha: isLight ? 0.1 : 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
                         ),
-                        // Play overlay on hover
-                        if (_isHovered)
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Stack(
+                        children: [
                           Container(
                             width: 56,
                             height: 56,
-                            color: Colors.black.withValues(alpha: 0.5),
-                            child: const Icon(
-                              Icons.play_arrow_rounded,
-                              color: Colors.white,
-                              size: 24,
-                            ),
+                            color: cs.surfaceContainerHighest,
+                            child: widget.item.artUri != null
+                                ? Image.network(
+                                    widget.item.artUri.toString(),
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Icon(
+                                      Icons.music_note_rounded,
+                                      color:
+                                          cs.onSurface.withValues(alpha: 0.3),
+                                      size: 24,
+                                    ),
+                                  )
+                                : Icon(
+                                    Icons.music_note_rounded,
+                                    color:
+                                        cs.onSurface.withValues(alpha: 0.3),
+                                    size: 24,
+                                  ),
                           ),
-                      ],
+                          // Play overlay on hover
+                          if (_isHovered)
+                            Container(
+                              width: 56,
+                              height: 56,
+                              color: Colors.black.withValues(alpha: 0.45),
+                              child: const Icon(
+                                Icons.play_arrow_rounded,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -480,9 +544,8 @@ class _ChartTileState extends State<ChartTile> {
                       children: [
                         Text(
                           widget.item.title,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
+                          style: tt.titleMedium?.copyWith(
+                            color: cs.onSurface,
                             fontWeight: FontWeight.w600,
                           ),
                           maxLines: 1,
@@ -491,9 +554,8 @@ class _ChartTileState extends State<ChartTile> {
                         const SizedBox(height: 4),
                         Text(
                           widget.item.artist ?? 'Unknown Artist',
-                          style: const TextStyle(
-                            color: Color(0xFFBBBBBB),
-                            fontSize: 13,
+                          style: tt.bodySmall?.copyWith(
+                            color: cs.onSurface.withValues(alpha: 0.7),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -506,26 +568,26 @@ class _ChartTileState extends State<ChartTile> {
                   // Duration
                   Text(
                     _formatDuration(widget.item.duration),
-                    style: const TextStyle(
-                      color: Color(0xFFBBBBBB),
-                      fontSize: 13,
+                    style: tt.bodySmall?.copyWith(
+                      color: cs.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
                   const SizedBox(width: 8),
 
-                  // More button - always visible, brighter on hover
+                  // More button – always visible, brighter on hover
                   AnimatedOpacity(
                     opacity: _isHovered ? 1.0 : 0.4,
                     duration: const Duration(milliseconds: 150),
                     child: IconButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.more_vert_rounded,
-                        color: Colors.white70,
+                        color: cs.onSurface.withValues(alpha: 0.8),
                         size: 20,
                       ),
                       onPressed: () => _showOptionsSheet(context),
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      constraints:
+                          const BoxConstraints(minWidth: 32, minHeight: 32),
                       splashRadius: 18,
                     ),
                   ),
@@ -545,6 +607,8 @@ class _ChartTileState extends State<ChartTile> {
   }
 }
 
+// ─── Option tile in bottom sheet ───────────────────────────────────────────
+
 class _OptionTile extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
@@ -562,21 +626,22 @@ class _OptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     return ListTile(
       leading: Container(
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.06),
+          color: cs.onSurface.withValues(alpha: 0.07),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(icon, color: iconColor, size: 20),
       ),
       title: Text(
         label,
-        style: TextStyle(
-          color: textColor ?? Colors.white,
-          fontSize: 14,
+        style: tt.bodyMedium?.copyWith(
+          color: textColor ?? cs.onSurface,
           fontWeight: FontWeight.w500,
         ),
       ),
@@ -584,6 +649,8 @@ class _OptionTile extends StatelessWidget {
     );
   }
 }
+
+// ─── Rank badge (top-3) ─────────────────────────────────────────────────────
 
 class _RankBadge extends StatelessWidget {
   final int rank;
@@ -604,7 +671,7 @@ class _RankBadge extends StatelessWidget {
                   color: color.withValues(alpha: 0.4),
                   blurRadius: 8,
                   spreadRadius: 1,
-                )
+                ),
               ]
             : null,
         borderRadius: BorderRadius.circular(6),
@@ -632,4 +699,3 @@ class _RankBadge extends StatelessWidget {
     }
   }
 }
-

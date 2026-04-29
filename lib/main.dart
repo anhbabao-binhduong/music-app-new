@@ -21,6 +21,7 @@ import 'package:music_app/presentation/bloc/comment/comment_cubit.dart';
 import 'package:music_app/presentation/bloc/upload/upload_cubit.dart';
 import 'package:music_app/presentation/bloc/user_songs/user_songs_cubit.dart';
 import 'package:music_app/presentation/bloc/admin/admin_cubit.dart';
+import 'package:device_preview/device_preview.dart';
 
 void _setupAuthListener() {
   final supabase = Supabase.instance.client;
@@ -91,7 +92,9 @@ Future<void> main() async {
 
   // 8. Run app
   runApp(
-    MultiRepositoryProvider(
+  DevicePreview(
+    enabled: true, // đổi thành false
+    builder: (context) => MultiRepositoryProvider(
       providers: [
         RepositoryProvider<MusicPlayerService>(
           create: (_) => musicService,
@@ -137,5 +140,6 @@ Future<void> main() async {
         child: const MyApp(),
       ),
     ),
-  );
+  ),
+);
 }

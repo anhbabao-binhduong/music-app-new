@@ -220,42 +220,31 @@ class _CompactSongTileState extends State<CompactSongTile> {
 
     showModalBottomSheet(
       context: pageCtx,
-      backgroundColor: Colors.transparent,
+      backgroundColor: Theme.of(pageCtx).colorScheme.surfaceContainerHigh,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       isScrollControlled: true,
       builder: (ctx) {
-        return Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFF252530),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-            border: Border(
-              top: BorderSide(color: Colors.white.withValues(alpha: 0.12), width: 1),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.5),
-                blurRadius: 20,
-                offset: const Offset(0, -4),
-              ),
-            ],
-          ),
-          child: SafeArea(
+        final cs = Theme.of(ctx).colorScheme;
+        final tt = Theme.of(ctx).textTheme;
+        return SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Handle bar
                 Container(
                   width: 36,
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
+                    color: cs.onSurface.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
+                // Song Info Header
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                   child: Row(
@@ -270,15 +259,17 @@ class _CompactSongTileState extends State<CompactSongTile> {
                                   widget.item.artUri.toString(),
                                   fit: BoxFit.cover,
                                   errorBuilder: (_, __, ___) => Container(
-                                    color: const Color(0xFF2A2A2E),
-                                    child: const Icon(Icons.music_note_rounded,
-                                        color: Colors.white30, size: 24),
+                                    color: cs.surfaceContainerHighest,
+                                    child: Icon(Icons.music_note_rounded,
+                                        color: cs.onSurface.withValues(alpha: 0.3),
+                                        size: 24),
                                   ),
                                 )
                               : Container(
-                                  color: const Color(0xFF2A2A2E),
-                                  child: const Icon(Icons.music_note_rounded,
-                                      color: Colors.white30, size: 24),
+                                  color: cs.surfaceContainerHighest,
+                                  child: Icon(Icons.music_note_rounded,
+                                      color: cs.onSurface.withValues(alpha: 0.3),
+                                      size: 24),
                                 ),
                         ),
                       ),
@@ -289,9 +280,8 @@ class _CompactSongTileState extends State<CompactSongTile> {
                           children: [
                             Text(
                               widget.item.title,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 15,
+                              style: tt.titleMedium?.copyWith(
+                                color: cs.onSurface,
                                 fontWeight: FontWeight.w700,
                               ),
                               maxLines: 1,
@@ -300,9 +290,8 @@ class _CompactSongTileState extends State<CompactSongTile> {
                             const SizedBox(height: 3),
                             Text(
                               widget.item.artist ?? 'Unknown Artist',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.55),
-                                fontSize: 13,
+                              style: tt.bodySmall?.copyWith(
+                                color: cs.onSurface.withValues(alpha: 0.7),
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -313,7 +302,7 @@ class _CompactSongTileState extends State<CompactSongTile> {
                     ],
                   ),
                 ),
-                Divider(color: Colors.white.withValues(alpha: 0.08), height: 24),
+                Divider(color: cs.onSurface.withValues(alpha: 0.1), height: 24),
 
                 StatefulBuilder(builder: (ctx2, setSheetState) {
                   final favState = context.read<FavoriteCubit>().state;
@@ -324,11 +313,11 @@ class _CompactSongTileState extends State<CompactSongTile> {
                         : Icons.favorite_border_rounded,
                     iconColor: isCurrentlyFav
                         ? const Color(0xFFE91E8C)
-                        : Colors.white70,
+                        : cs.onSurface.withValues(alpha: 0.7),
                     label: isCurrentlyFav
                         ? 'Bỏ yêu thích'
                         : 'Thêm vào yêu thích',
-                                        onTap: () async {
+                    onTap: () async {
                       Navigator.pop(ctx);
                       final wasFav = favCubit.state.contains(widget.item.id);
                       try {
@@ -367,9 +356,11 @@ class _CompactSongTileState extends State<CompactSongTile> {
                     }
                     return _OptionTile(
                       icon: isInAnyPlaylist ? Icons.check_circle_rounded : Icons.playlist_add_rounded,
-                      iconColor: isInAnyPlaylist ? const Color(0xFF7C3AED) : Colors.white70,
+                      iconColor: isInAnyPlaylist
+                          ? const Color(0xFF7C3AED)
+                          : cs.onSurface.withValues(alpha: 0.7),
                       label: isInAnyPlaylist ? 'Đã thêm vào playlist' : 'Thêm vào playlist',
-                      textColor: isInAnyPlaylist ? const Color(0xFF7C3AED) : Colors.white,
+                      textColor: isInAnyPlaylist ? const Color(0xFF7C3AED) : null,
                       onTap: () {
                         Navigator.pop(ctx);
                         _showAddToPlaylistSheet(pageContext, playlistCubit);
@@ -383,10 +374,12 @@ class _CompactSongTileState extends State<CompactSongTile> {
                     final isDownloaded = downloadedIds.contains(widget.item.id);
                     return _OptionTile(
                       icon: isDownloaded ? Icons.download_done_rounded : Icons.download_rounded,
-                      iconColor: isDownloaded ? const Color(0xFF1DB954) : Colors.white70,
+                      iconColor: isDownloaded
+                          ? const Color(0xFF1DB954)
+                          : cs.onSurface.withValues(alpha: 0.7),
                       label: isDownloaded ? 'Đã tải' : 'Tải nhạc',
-                      textColor: isDownloaded ? const Color(0xFF1DB954) : Colors.white,
-                                            onTap: () async {
+                      textColor: isDownloaded ? const Color(0xFF1DB954) : null,
+                      onTap: () async {
                         Navigator.pop(ctx);
                         final wasDown = downloadedIds.contains(widget.item.id);
                         try {
@@ -419,7 +412,7 @@ class _CompactSongTileState extends State<CompactSongTile> {
 
                 _OptionTile(
                   icon: Icons.share_rounded,
-                  iconColor: Colors.white70,
+                  iconColor: cs.onSurface.withValues(alpha: 0.7),
                   label: 'Chia sẻ',
                   onTap: () {
                     Navigator.pop(ctx);
@@ -435,7 +428,6 @@ class _CompactSongTileState extends State<CompactSongTile> {
               ],
             ),
           ),
-        ),
         );
       },
     );
@@ -444,28 +436,15 @@ class _CompactSongTileState extends State<CompactSongTile> {
   void _showAddToPlaylistSheet(BuildContext pageContext, PlaylistCubit playlistCubit) {
     showModalBottomSheet(
       context: pageContext,
-      backgroundColor: Colors.transparent,
+      backgroundColor: Theme.of(pageContext).colorScheme.surfaceContainerHigh,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       isScrollControlled: true,
       builder: (ctx) {
-        return Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFF2D2D3A),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-            border: Border(
-              top: BorderSide(color: Colors.white.withValues(alpha: 0.2), width: 1.5),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.6),
-                blurRadius: 30,
-                offset: const Offset(0, -10),
-              ),
-            ],
-          ),
-          child: SafeArea(
+        final cs = Theme.of(ctx).colorScheme;
+        final tt = Theme.of(ctx).textTheme;
+        return SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: BlocBuilder<PlaylistCubit, PlaylistState>(
@@ -479,19 +458,18 @@ class _CompactSongTileState extends State<CompactSongTile> {
                       height: 4,
                       margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
+                        color: cs.onSurface.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                       child: Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
                           'Chọn playlist',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
+                          style: tt.titleMedium?.copyWith(
+                            color: cs.onSurface,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -503,7 +481,9 @@ class _CompactSongTileState extends State<CompactSongTile> {
                         padding: const EdgeInsets.all(24),
                         child: Text(
                           'Bạn chưa có playlist nào',
-                          style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+                          style: tt.bodyMedium?.copyWith(
+                            color: cs.onSurface.withValues(alpha: 0.5),
+                          ),
                         ),
                       )
                     else
@@ -522,7 +502,7 @@ class _CompactSongTileState extends State<CompactSongTile> {
                                 width: 42,
                                 height: 42,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF7C3AED).withValues(alpha: 0.2),
+                                  color: const Color(0xFF7C3AED).withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: const Icon(Icons.queue_music_rounded,
@@ -530,19 +510,22 @@ class _CompactSongTileState extends State<CompactSongTile> {
                               ),
                               title: Text(
                                 pl.name,
-                                style: TextStyle(
-                                    color: isAdded ? const Color(0xFF7C3AED) : Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500),
+                                style: tt.bodyMedium?.copyWith(
+                                  color: isAdded ? const Color(0xFF7C3AED) : cs.onSurface,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                               subtitle: Text(
                                 '${pl.songIds.length} bài',
-                                style: TextStyle(
-                                    color: isAdded ? const Color(0xFF7C3AED).withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.4),
-                                    fontSize: 12),
+                                style: tt.bodySmall?.copyWith(
+                                  color: isAdded
+                                      ? const Color(0xFF7C3AED).withValues(alpha: 0.7)
+                                      : cs.onSurface.withValues(alpha: 0.5),
+                                ),
                               ),
                               trailing: isAdded
-                                  ? const Icon(Icons.check_circle_rounded, color: Color(0xFF7C3AED), size: 22)
+                                  ? const Icon(Icons.check_circle_rounded,
+                                      color: Color(0xFF7C3AED), size: 22)
                                   : null,
                               onTap: () async {
                                 Navigator.pop(ctx);
@@ -580,7 +563,6 @@ class _CompactSongTileState extends State<CompactSongTile> {
               },
             ),
           ),
-        ),
         );
       },
     );
@@ -588,6 +570,15 @@ class _CompactSongTileState extends State<CompactSongTile> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final isLight = Theme.of(context).brightness == Brightness.light;
+
+    // Spotify-style card: dark #1A1A1A / #282828 hover; light #F5F5F5 / #EAEAEA hover
+    final cardColor = isLight
+        ? (_isHovered ? const Color(0xFFEAEAEA) : const Color(0xFFF5F5F5))
+        : (_isHovered ? const Color(0xFF282828) : const Color(0xFF1A1A1A));
+
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       child: MouseRegion(
@@ -596,12 +587,10 @@ class _CompactSongTileState extends State<CompactSongTile> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
-            color: _isHovered
-                ? const Color(0xFF3D2D70)
-                : const Color(0xFF2E2060),
+            color: cardColor,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: const Color(0xFF9B6EFF).withValues(alpha: 0.3),
+              color: cs.outline.withValues(alpha: 0.15),
               width: 1,
             ),
           ),
@@ -609,7 +598,7 @@ class _CompactSongTileState extends State<CompactSongTile> {
             color: Colors.transparent,
             child: InkWell(
               onTap: widget.onTap,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 child: Row(
@@ -621,43 +610,54 @@ class _CompactSongTileState extends State<CompactSongTile> {
                         child: Text(
                           '${widget.rank}',
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Color(0xFFCCCCCC),
-                            fontSize: 14,
+                          style: tt.bodyMedium?.copyWith(
+                            color: cs.onSurface.withValues(alpha: 0.55),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                       )
                     else if (_isHovered)
-                      const SizedBox(
+                      SizedBox(
                         width: 28,
                         child: Icon(
                           Icons.play_arrow_rounded,
-                          color: Colors.white70,
+                          color: cs.onSurface.withValues(alpha: 0.7),
                           size: 16,
                         ),
                       )
                     else
                       const SizedBox(width: 28),
                     const SizedBox(width: 12),
-                    
+
                     // Thumbnail
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: SizedBox(
-                        width: 48,
-                        height: 48,
-                        child: widget.item.artUri != null
-                            ? Image.network(
-                                widget.item.artUri.toString(),
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => _buildCompactFallback(),
-                              )
-                            : _buildCompactFallback(),
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(6),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: isLight ? 0.1 : 0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: SizedBox(
+                          width: 48,
+                          height: 48,
+                          child: widget.item.artUri != null
+                              ? Image.network(
+                                  widget.item.artUri.toString(),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => _buildCompactFallback(),
+                                )
+                              : _buildCompactFallback(),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
-                    
+
                     // Title and Artist
                     Expanded(
                       child: Column(
@@ -666,9 +666,8 @@ class _CompactSongTileState extends State<CompactSongTile> {
                         children: [
                           Text(
                             widget.item.title,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
+                            style: tt.titleSmall?.copyWith(
+                              color: cs.onSurface,
                               fontWeight: FontWeight.w600,
                             ),
                             maxLines: 1,
@@ -677,9 +676,8 @@ class _CompactSongTileState extends State<CompactSongTile> {
                           const SizedBox(height: 4),
                           Text(
                             widget.item.artist ?? 'Unknown Artist',
-                            style: const TextStyle(
-                              color: Color(0xFFA3A3A3),
-                              fontSize: 12,
+                            style: tt.bodySmall?.copyWith(
+                              color: cs.onSurface.withValues(alpha: 0.7),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -689,17 +687,21 @@ class _CompactSongTileState extends State<CompactSongTile> {
                     ),
                     const SizedBox(width: 8),
 
-                    // More button - always visible
-                    IconButton(
-                      icon: const Icon(
-                        Icons.more_vert_rounded,
-                        color: Colors.white54,
-                        size: 20,
+                    // More button
+                    AnimatedOpacity(
+                      opacity: _isHovered ? 1.0 : 0.4,
+                      duration: const Duration(milliseconds: 150),
+                      child: IconButton(
+                        icon: Icon(
+                          Icons.more_vert_rounded,
+                          color: cs.onSurface.withValues(alpha: 0.8),
+                          size: 20,
+                        ),
+                        onPressed: () => _showOptionsSheet(context),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                        splashRadius: 18,
                       ),
-                      onPressed: () => _showOptionsSheet(context),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                      splashRadius: 18,
                     ),
                   ],
                 ),
@@ -712,11 +714,12 @@ class _CompactSongTileState extends State<CompactSongTile> {
   }
 
   Widget _buildCompactFallback() {
+    final cs = Theme.of(context).colorScheme;
     return Container(
-      color: const Color(0xFF2A2A2E),
-      child: const Icon(
+      color: cs.surfaceContainerHighest,
+      child: Icon(
         Icons.music_note_rounded,
-        color: Colors.white24,
+        color: cs.onSurface.withValues(alpha: 0.2),
         size: 20,
       ),
     );
@@ -740,21 +743,22 @@ class _OptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     return ListTile(
       leading: Container(
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.06),
+          color: cs.onSurface.withValues(alpha: 0.07),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(icon, color: iconColor, size: 20),
       ),
       title: Text(
         label,
-        style: TextStyle(
-          color: textColor ?? Colors.white,
-          fontSize: 14,
+        style: tt.bodyMedium?.copyWith(
+          color: textColor ?? cs.onSurface,
           fontWeight: FontWeight.w500,
         ),
       ),
@@ -762,4 +766,3 @@ class _OptionTile extends StatelessWidget {
     );
   }
 }
-

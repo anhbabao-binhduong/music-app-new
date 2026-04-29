@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:device_preview/device_preview.dart';
 import 'core/constants/app_theme.dart';
 import 'presentation/bloc/theme/theme_bloc.dart';
 import 'pages/root_page.dart';
@@ -16,6 +17,8 @@ class MyApp extends StatelessWidget {
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
         themeMode: themeState.flutterThemeMode,
+        locale: DevicePreview.locale(context),     
+        builder: DevicePreview.appBuilder,           
         home: const RootPage(),
       ),
     );
