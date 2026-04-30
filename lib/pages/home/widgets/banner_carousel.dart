@@ -1,5 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:shimmer/shimmer.dart';
 import '../../../../data/local_music_data.dart';
 import '../../../../widgets/auth_guard.dart';
 
@@ -59,6 +61,10 @@ class _HeroBannerState extends State<HeroBanner>
     final screenWidth = MediaQuery.of(context).size.width;
     final bannerHeight = screenWidth > 750 ? 320.0 : 240.0;
 
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isLight = theme.brightness == Brightness.light;
+
     return FadeTransition(
       opacity: _fadeAnim,
       child: SlideTransition(
@@ -72,10 +78,14 @@ class _HeroBannerState extends State<HeroBanner>
             child: Stack(
               fit: StackFit.expand,
               children: [
-                // Background image
+                // Background image (async shimmer)
                 Image.network(
                   widget.data.imageUrl,
                   fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return _buildBannerShimmer(isLight);
+                  },
                   errorBuilder: (_, __, ___) => Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -86,14 +96,16 @@ class _HeroBannerState extends State<HeroBanner>
                     ),
                   ),
                 ),
+
                 // Blur overlay
                 BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
                   child: Container(
-                    color: Colors.black.withValues(alpha: 0.2),
+                    color: cs.scrim.withValues(alpha: isLight ? 0.14 : 0.22),
                   ),
                 ),
-                // Gradient overlay - stronger at bottom
+
+                // Gradient overlay - stronger at bottom (tokenized scrim)
                 Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -101,13 +113,14 @@ class _HeroBannerState extends State<HeroBanner>
                       end: Alignment.bottomCenter,
                       colors: [
                         Colors.transparent,
-                        Colors.black.withValues(alpha: 0.3),
-                        Colors.black.withValues(alpha: 0.7),
+                        cs.scrim.withValues(alpha: 0.28),
+                        cs.scrim.withValues(alpha: 0.72),
                       ],
-                      stops: const [0.0, 0.5, 1.0],
+                      stops: const [0.0, 0.55, 1.0],
                     ),
                   ),
                 ),
+
                 // Content
                 Padding(
                   padding: const EdgeInsets.all(32),
@@ -122,35 +135,51 @@ class _HeroBannerState extends State<HeroBanner>
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF7C3AED),
-                          borderRadius: BorderRadius.circular(20),
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF9333EA), Color(0xFFEC4899)],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.14),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF9333EA).withValues(alpha: 0.22),
+                              blurRadius: 16,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
                         ),
                         child: Text(
                           'FEATURED',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.9),
+                          style: GoogleFonts.dmSans(
+                            color: Colors.white.withValues(alpha: 0.95),
                             fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.5,
+                            fontWeight: FontWeight.w700,
+                            height: 1.2,
+                            letterSpacing: 0.6,
                           ),
                         ),
                       ),
                       const SizedBox(height: 16),
+
                       // Title
                       Flexible(
                         child: Text(
                           widget.data.label,
-                          style: const TextStyle(
+                          style: GoogleFonts.plusJakartaSans(
                             color: Colors.white,
-                            fontSize: 36,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -1,
+                            fontSize: 32,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.6,
                             height: 1.1,
                             shadows: [
                               Shadow(
-                                color: Colors.black45,
-                                blurRadius: 10,
-                                offset: Offset(0, 2),
+                                color: cs.scrim.withValues(alpha: 0.55),
+                                blurRadius: 14,
+                                offset: const Offset(0, 3),
                               ),
                             ],
                           ),
@@ -159,20 +188,23 @@ class _HeroBannerState extends State<HeroBanner>
                         ),
                       ),
                       const SizedBox(height: 8),
+
                       // Subtitle
                       Flexible(
                         child: Text(
                           widget.data.sub,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.8),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
+                          style: GoogleFonts.dmSans(
+                            color: Colors.white.withValues(alpha: 0.82),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            height: 1.45,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const SizedBox(height: 20),
+
                       // Action buttons
                       Row(
                         children: [
@@ -189,6 +221,22 @@ class _HeroBannerState extends State<HeroBanner>
       ),
     );
   }
+
+  Widget _buildBannerShimmer(bool isLight) {
+    return Shimmer.fromColors(
+      baseColor: isLight ? const Color(0xFFE8E2FF) : const Color(0xFF1E1E2E),
+      highlightColor: isLight ? const Color(0xFFF8F5FF) : const Color(0xFF2B2B40),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: widget.data.gradient,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _PlayButton extends StatefulWidget {
@@ -198,47 +246,80 @@ class _PlayButton extends StatefulWidget {
 
 class _PlayButtonState extends State<_PlayButton> {
   bool _isHovered = false;
+  bool _isPressed = false;
 
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        child: ElevatedButton.icon(
-          onPressed: () {
-            if (localPlaylist.isNotEmpty) {
-              playWithAuthGuard(context, playlist: localPlaylist, index: 0);
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Chưa có bài hát nào để phát'),
-                  backgroundColor: Colors.grey.shade800,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _isPressed = true),
+        onTapUp: (_) => setState(() => _isPressed = false),
+        onTapCancel: () => setState(() => _isPressed = false),
+        child: AnimatedScale(
+          scale: _isPressed ? 0.98 : 1,
+          duration: const Duration(milliseconds: 120),
+          curve: Curves.easeOutCubic,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF9333EA), Color(0xFFEC4899)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(999),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF9333EA).withValues(alpha: _isHovered ? 0.45 : 0.28),
+                  blurRadius: _isHovered ? 22 : 16,
+                  offset: const Offset(0, 10),
                 ),
-              );
-            }
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: _isHovered
-                ? const Color(0xFF8B5CF6)
-                : const Color(0xFF7C3AED),
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30),
+              ],
             ),
-            elevation: _isHovered ? 8 : 4,
-          ),
-          icon: const Icon(Icons.play_arrow_rounded, size: 24),
-          label: const Text(
-            'Phát ngay',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.5,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                if (localPlaylist.isNotEmpty) {
+                  playWithAuthGuard(context, playlist: localPlaylist, index: 0);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Chưa có bài hát nào để phát',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          height: 1.45,
+                        ),
+                      ),
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                elevation: 0,
+              ),
+              icon: const Icon(Icons.play_arrow_rounded, size: 24),
+              label: Text(
+                'Phát ngay',
+                style: GoogleFonts.dmSans(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  height: 1.4,
+                ),
+              ),
             ),
           ),
         ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:music_app/core/constants/colors.dart';
 import '../domain/entities/category_entity.dart';
 
 class CategoryChipRow extends StatefulWidget {
@@ -56,7 +58,6 @@ class _CategoryChipRowState extends State<CategoryChipRow> {
               return Padding(
                 padding: EdgeInsets.only(
                   left: i == 0 ? 0 : 8,
-                  right: i == widget.categories.length - 1 ? 0 : 0,
                 ),
                 child: _CategoryChip(
                   category: category,
@@ -92,27 +93,53 @@ class _CategoryChipState extends State<_CategoryChip> {
   bool _isPressed = false;
 
   Map<String, dynamic> _getMoodConfig() {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isLight = theme.brightness == Brightness.light;
     final name = widget.category.name.toLowerCase();
-    
-    if (name.contains('buồn') || name.contains('buon')) {
-      return {'colors': [const Color(0xFF1a1a2e), const Color(0xFF16213e)], 'icon': '😢', 'textColor': Colors.white};
-    } else if (name.contains('vui')) {
-      return {'colors': [const Color(0xFFf7971e), const Color(0xFFffd200)], 'icon': '😊', 'textColor': Colors.black87};
-    } else if (name.contains('remix')) {
-      return {'colors': [const Color(0xFF642B73), const Color(0xFFC6426E)], 'icon': '🎧', 'textColor': Colors.white};
-    } else if (name.contains('ballad')) {
-      return {'colors': [const Color(0xFF1a1a2e), const Color(0xFF4a00e0)], 'icon': '🎵', 'textColor': Colors.white};
-    } else if (name.contains('rap')) {
-      return {'colors': [const Color(0xFF232526), const Color(0xFF414345)], 'icon': '🎤', 'textColor': Colors.white};
-    } else if (name.contains('rock')) {
-      return {'colors': [const Color(0xFF870000), const Color(0xFF190A05)], 'icon': '🤘', 'textColor': Colors.white};
-    } else if (name.contains('electronic')) {
-      return {'colors': [const Color(0xFF00b09b), const Color(0xFF96c93d)], 'icon': '⚡', 'textColor': Colors.black87};
-    } else if (name.contains('lofi')) {
-      return {'colors': [const Color(0xFF2c3e50), const Color(0xFF3498db)], 'icon': '☕', 'textColor': Colors.white};
+
+    // Keep the same mood/emoji mapping, but drive colors from the project palette
+    // (kAccent/kAccentPink) + theme surface tokens.
+    final baseBg = isLight
+        ? <Color>[cs.surfaceContainerHighest, cs.surfaceContainer]
+        : <Color>[cs.surfaceContainerHigh, cs.surfaceContainerLowest];
+
+    if (name.contains('vui') || name.contains('summer') || name.contains('dance')) {
+      return {
+        'colors': baseBg,
+        'icon': '😊',
+        'textColor': cs.onSurface,
+        'borderColor': kAccentPink,
+      };
+    } else if (name.contains('buồn') || name.contains('buon') || name.contains('lofi')) {
+      return {
+        'colors': baseBg,
+        'icon': '☕',
+        'textColor': cs.onSurface,
+        'borderColor': kAccent,
+      };
+    } else if (name.contains('remix') || name.contains('electronic')) {
+      return {
+        'colors': baseBg,
+        'icon': '⚡',
+        'textColor': cs.onSurface,
+        'borderColor': kAccent,
+      };
+    } else if (name.contains('rap') || name.contains('rock')) {
+      return {
+        'colors': baseBg,
+        'icon': '🎤',
+        'textColor': cs.onSurface,
+        'borderColor': kAccent,
+      };
     }
-    
-    return {'colors': [const Color(0xFF2A2A2E), const Color(0xFF1E1E28)], 'icon': '✨', 'textColor': Colors.white};
+
+    return {
+      'colors': baseBg,
+      'icon': '✨',
+      'textColor': cs.onSurface,
+      'borderColor': kAccent,
+    };
   }
 
   @override
@@ -121,13 +148,14 @@ class _CategoryChipState extends State<_CategoryChip> {
     final List<Color> bgColors = config['colors'];
     final String defaultEmoji = config['icon'];
     final Color textColor = config['textColor'];
-    final Color shadowColor = bgColors[0];
+    final Color borderColor = config['borderColor'];
+    final Color shadowColor = borderColor;
     
     final emoji = widget.category.emoji.isNotEmpty 
         ? widget.category.emoji 
         : defaultEmoji;
 
-    final double scale = _isPressed ? 0.98 : (widget.isSelected ? 1.05 : (_isHovered ? 1.02 : 1.0));
+    final double scale = _isPressed ? 0.98 : (widget.isSelected ? 1.04 : (_isHovered ? 1.01 : 1.0));
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
@@ -141,44 +169,54 @@ class _CategoryChipState extends State<_CategoryChip> {
         onTapCancel: () => setState(() => _isPressed = false),
         child: AnimatedOpacity(
           duration: const Duration(milliseconds: 200),
-          opacity: widget.isSelected ? 1.0 : (_isHovered ? 1.0 : 0.75),
+          opacity: widget.isSelected ? 1.0 : (_isHovered ? 0.96 : 0.82),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             curve: Curves.ease,
             transform: Matrix4.diagonal3Values(scale, scale, 1.0),
             transformAlignment: Alignment.center,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: bgColors,
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(24),
-              border: widget.isSelected 
-                  ? Border.all(color: Colors.white, width: 2) 
-                  : Border.all(color: Colors.transparent, width: 2),
-              boxShadow: widget.isSelected
-                  ? [
-                      BoxShadow(
-                        color: shadowColor.withValues(alpha: 0.6),
-                        blurRadius: 12,
-                        spreadRadius: 2,
-                      ),
-                    ]
-                  : null,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: widget.isSelected
+                    ? borderColor.withValues(alpha: 0.9)
+                    : borderColor.withValues(alpha: _isHovered ? 0.28 : 0.12),
+                width: widget.isSelected ? 1.6 : 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: shadowColor.withValues(alpha: widget.isSelected ? 0.24 : 0.08),
+                  blurRadius: widget.isSelected ? 18 : 10,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(emoji, style: const TextStyle(fontSize: 16)),
+                 Text(
+                   emoji,
+                   style: GoogleFonts.dmSans(
+                     fontSize: 15,
+                     fontWeight: FontWeight.w600,
+                     height: 1.0,
+                   ),
+                 ),
                 const SizedBox(width: 8),
                 Text(
                   widget.category.name,
-                  style: TextStyle(
+                  style: GoogleFonts.dmSans(
                     color: textColor,
-                    fontSize: 14,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
+                    height: 1.2,
+                    letterSpacing: 0.1,
                   ),
                 ),
               ],

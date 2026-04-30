@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:music_app/presentation/bloc/download/download_cubit.dart';
 import 'package:music_app/presentation/bloc/favorite/favorite_cubit.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -114,7 +115,9 @@ class _HomePageState extends State<HomePage> {
     final theme = Theme.of(context);
     final isLight = theme.brightness == Brightness.light;
 
-    final bgColor = isLight ? const Color(0xFFF5F5F5) : const Color(0xFF121212);
+    final bgColor = isLight
+        ? theme.colorScheme.surface
+        : theme.colorScheme.surface;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: isLight ? SystemUiOverlayStyle.dark : SystemUiOverlayStyle.light,
@@ -144,7 +147,7 @@ class _HomePageState extends State<HomePage> {
     if (_currentNavIndex == 2) title = 'Thư viện';
 
     return AppBar(
-      backgroundColor: isLight ? const Color(0xFFF5F5F5) : const Color(0xFF121212),
+      backgroundColor: theme.colorScheme.surface,
       elevation: 0,
       scrolledUnderElevation: 0,
       title: Row(
@@ -165,11 +168,12 @@ class _HomePageState extends State<HomePage> {
           ),
           Text(
             title,
-            style: TextStyle(
-              color: isLight ? const Color(0xFF121212) : Colors.white,
+            style: GoogleFonts.plusJakartaSans(
+              color: theme.colorScheme.onSurface,
               fontSize: 24,
               fontWeight: FontWeight.w800,
-              letterSpacing: -0.5,
+              letterSpacing: -0.4,
+              height: 1.15,
             ),
           ),
         ],
@@ -180,14 +184,17 @@ class _HomePageState extends State<HomePage> {
           margin: const EdgeInsets.only(right: 8),
           decoration: BoxDecoration(
             color: isLight
-                ? const Color(0xFF121212).withValues(alpha: 0.06)
-                : Colors.white.withValues(alpha: 0.08),
+                ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.72)
+                : theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.9),
             shape: BoxShape.circle,
+            border: Border.all(
+              color: theme.colorScheme.onSurface.withValues(alpha: isLight ? 0.12 : 0.16),
+            ),
           ),
           child: IconButton(
             icon: Icon(
               Icons.search_rounded,
-              color: isLight ? const Color(0xFF121212) : Colors.white,
+              color: theme.colorScheme.onSurface,
               size: 22,
             ),
             onPressed: _openSearch,
@@ -230,10 +237,11 @@ class _HomePageState extends State<HomePage> {
                                 alignment: Alignment.center,
                                 child: Text(
                                   _userName.isNotEmpty ? _userName[0].toUpperCase() : '?',
-                                  style: const TextStyle(
+                                  style: GoogleFonts.plusJakartaSans(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w800,
                                     fontSize: 15,
+                                    height: 1.0,
                                   ),
                                 ),
                               ),
@@ -243,10 +251,11 @@ class _HomePageState extends State<HomePage> {
                               alignment: Alignment.center,
                               child: Text(
                                 _userName.isNotEmpty ? _userName[0].toUpperCase() : '?',
-                                style: const TextStyle(
+                                style: GoogleFonts.plusJakartaSans(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w800,
                                   fontSize: 15,
+                                  height: 1.0,
                                 ),
                               ),
                             ),
@@ -262,7 +271,8 @@ class _HomePageState extends State<HomePage> {
   Widget _buildBottomNavBar() {
     final isLight = Theme.of(context).brightness == Brightness.light;
     final activeColor = kAccent;
-    final inactiveColor = isLight ? const Color(0xFF6B6B6B) : const Color(0xFF9E9E9E);
+    final inactiveColor =
+        isLight ? const Color(0xFF6B5EA8) : const Color(0xFF8B8AA8);
 
     const items = [
       BottomNavigationBarItem(
@@ -293,13 +303,14 @@ class _HomePageState extends State<HomePage> {
         child: Container(
           decoration: BoxDecoration(
             color: isLight
-                ? Colors.white.withValues(alpha: 0.92)
-                : const Color(0xFF0D0D0D).withValues(alpha: 0.90),
+                ? Theme.of(context).colorScheme.surface.withValues(alpha: 0.92)
+                : Theme.of(context).colorScheme.surfaceContainerHigh.withValues(alpha: 0.9),
             border: Border(
               top: BorderSide(
-                color: isLight
-                    ? const Color(0xFFE0E0E0)
-                    : kAccent.withValues(alpha: 0.12),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: isLight ? 0.16 : 0.2),
                 width: 0.5,
               ),
             ),
@@ -312,14 +323,17 @@ class _HomePageState extends State<HomePage> {
             type: BottomNavigationBarType.fixed,
             selectedItemColor: activeColor,
             unselectedItemColor: inactiveColor,
-            selectedLabelStyle: const TextStyle(
-              fontWeight: FontWeight.w700,
+            selectedLabelStyle: GoogleFonts.dmSans(
+              fontWeight: FontWeight.w600,
               fontSize: 11,
               letterSpacing: 0.2,
+              height: 1.2,
             ),
-            unselectedLabelStyle: const TextStyle(
+            unselectedLabelStyle: GoogleFonts.dmSans(
+              fontWeight: FontWeight.w600,
               fontSize: 11,
               letterSpacing: 0.2,
+              height: 1.2,
             ),
             items: items,
           ),

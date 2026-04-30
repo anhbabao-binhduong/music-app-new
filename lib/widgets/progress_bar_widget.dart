@@ -1,4 +1,5 @@
 // lib/widgets/progress_bar_widget.dart
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../services/music_player_service.dart';
 
@@ -39,14 +40,70 @@ class ProgressBarWidget extends StatelessWidget {
 
             return Column(
               children: [
-                Slider(
-                  value: progress,
-                  onChanged: (v) {
-                    final ms =
-                        (v * duration.inMilliseconds).round();
-                    onSeek(Duration(milliseconds: ms));
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final width = constraints.maxWidth;
+                    return GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTapDown: (details) {
+                        final v = (details.localPosition.dx / width).clamp(0.0, 1.0);
+                        final ms = (v * duration.inMilliseconds).round();
+                        onSeek(Duration(milliseconds: ms));
+                      },
+                      onHorizontalDragUpdate: (details) {
+                        final v = (details.localPosition.dx / width).clamp(0.0, 1.0);
+                        final ms = (v * duration.inMilliseconds).round();
+                        onSeek(Duration(milliseconds: ms));
+                      },
+                      child: SizedBox(
+                        height: 24,
+                        child: Stack(
+                          alignment: Alignment.centerLeft,
+                          children: [
+                            Container(
+                              height: 3,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            FractionallySizedBox(
+                              widthFactor: progress,
+                              child: Container(
+                                height: 3,
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFF9333EA), Color(0xFFEC4899)],
+                                  ),
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              left: (progress * width - 5).clamp(0.0, math.max(0.0, width - 10)),
+                              child: Container(
+                                width: 10,
+                                height: 10,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: const Color(0xFF9333EA),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFF9333EA).withValues(alpha: 0.7),
+                                      blurRadius: 8,
+                                      spreadRadius: 2,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
                   },
                 ),
+                const SizedBox(height: 8),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Row(

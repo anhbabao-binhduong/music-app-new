@@ -2,6 +2,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../data/local_music_data.dart';
 import '../../../../widgets/auth_guard.dart';
@@ -44,10 +45,9 @@ class _SeeAllPageState extends State<SeeAllPage> {
   Widget build(BuildContext context) {
     final isWide = MediaQuery.of(context).size.width >= 750;
     final theme = Theme.of(context);
-    final isLight = theme.brightness == Brightness.light;
 
     return Scaffold(
-      backgroundColor: isLight ? theme.colorScheme.surface : const Color(0xFF170F23),
+      backgroundColor: theme.colorScheme.surface,
       appBar: _buildAppBar(context, isWide),
       body: _buildBody(context, isWide),
     );
@@ -65,12 +65,16 @@ class _SeeAllPageState extends State<SeeAllPage> {
         onPressed: () => Navigator.of(context).pop(),
       ),
       title: !isWide
-          ? Flexible(
-              child: Text(
-                widget.title,
-                style: TextStyle(color: onSurface, fontSize: 18, fontWeight: FontWeight.w700),
-                overflow: TextOverflow.ellipsis,
+          ? Text(
+              widget.title,
+              style: GoogleFonts.plusJakartaSans(
+                color: onSurface,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                height: 1.2,
+                letterSpacing: -0.2,
               ),
+              overflow: TextOverflow.ellipsis,
             )
           : null,
       centerTitle: false,
@@ -103,12 +107,22 @@ class _SeeAllPageState extends State<SeeAllPage> {
         child: BlocBuilder<AlbumCubit, AlbumState>(
           builder: (context, state) {
             if (state is AlbumLoading) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(child: _SeeAllLoader());
             }
             if (state is AlbumLoaded) {
               return _buildAlbumsDesktopGrid(state.albums);
             }
-            return const Center(child: Text('Không có album', style: TextStyle(color: Colors.white54)));
+            return Center(
+              child: Text(
+                'Không có album',
+                style: GoogleFonts.dmSans(
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  height: 1.4,
+                ),
+              ),
+            );
           },
         ),
       );
@@ -118,7 +132,7 @@ class _SeeAllPageState extends State<SeeAllPage> {
       child: BlocBuilder<AlbumCubit, AlbumState>(
         builder: (context, state) {
           if (state is AlbumLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: _SeeAllLoader());
           }
           if (state is AlbumLoaded) {
             return Column(
@@ -128,7 +142,17 @@ class _SeeAllPageState extends State<SeeAllPage> {
               ],
             );
           }
-          return const Center(child: Text('Không có album', style: TextStyle(color: Colors.white54)));
+          return Center(
+            child: Text(
+              'Không có album',
+              style: GoogleFonts.dmSans(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                height: 1.4,
+              ),
+            ),
+          );
         },
       ),
     );
@@ -143,12 +167,10 @@ class _SeeAllPageState extends State<SeeAllPage> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       decoration: BoxDecoration(
-        color: isLight ? colorScheme.surface : const Color(0xFF170F23),
+        color: isLight ? colorScheme.surface : colorScheme.surfaceContainerLow,
         border: Border(
           bottom: BorderSide(
-            color: isLight
-                ? colorScheme.onSurface.withValues(alpha: 0.08)
-                : Colors.white.withValues(alpha: 0.06),
+            color: colorScheme.onSurface.withValues(alpha: isLight ? 0.08 : 0.06),
           ),
         ),
       ),
@@ -160,20 +182,23 @@ class _SeeAllPageState extends State<SeeAllPage> {
               children: [
                 Text(
                   widget.title,
-                  style: TextStyle(
+                  style: GoogleFonts.plusJakartaSans(
                     color: colorScheme.onSurface,
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: -0.5,
+                    height: 1.2,
+                    letterSpacing: -0.4,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '$totalAlbums album',
-                  style: TextStyle(
+                  style: GoogleFonts.dmSans(
                     color: colorScheme.onSurface.withValues(alpha: 0.6),
                     fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    height: 1.3,
                   ),
                 ),
               ],
@@ -195,12 +220,23 @@ class _SeeAllPageState extends State<SeeAllPage> {
         children: [
           Text(
             widget.title.toUpperCase(),
-            style: TextStyle(color: onSurface, fontSize: 22, fontWeight: FontWeight.w800),
+            style: GoogleFonts.plusJakartaSans(
+              color: onSurface,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              height: 1.2,
+              letterSpacing: -0.3,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             '${albums.length} album',
-            style: TextStyle(color: onSurface.withValues(alpha: 0.6), fontSize: 13),
+            style: GoogleFonts.dmSans(
+              color: onSurface.withValues(alpha: 0.6),
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              height: 1.4,
+            ),
           ),
           const SizedBox(height: 24),
           Expanded(
@@ -252,16 +288,14 @@ class _SeeAllPageState extends State<SeeAllPage> {
     final onSurface = colorScheme.onSurface;
     final panelColor = isLight
         ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.55)
-        : Colors.white.withValues(alpha: 0.04);
-    final panelBorder = isLight
-        ? onSurface.withValues(alpha: 0.08)
-        : Colors.white.withValues(alpha: 0.06);
+        : colorScheme.surfaceContainerHigh.withValues(alpha: 0.42);
+    final panelBorder = onSurface.withValues(alpha: isLight ? 0.08 : 0.06);
 
-    // ignore: no_leading_underscores_for_local_identifiers
-    final _headerStyle = TextStyle(
+    final headerStyle = GoogleFonts.dmSans(
       color: onSurface.withValues(alpha: isLight ? 0.72 : 0.6),
       fontSize: 12,
       fontWeight: FontWeight.w700,
+      height: 1.2,
       letterSpacing: 0.6,
     );
 
@@ -276,17 +310,29 @@ class _SeeAllPageState extends State<SeeAllPage> {
             child: Column(
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(20),
                   child: CachedNetworkImage(
                     imageUrl: imgUrl,
                     width: 300,
                     height: 300,
                     fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(
+                      width: 300,
+                      height: 300,
+                      color: isLight
+                          ? colorScheme.surfaceContainerHighest
+                          : colorScheme.surfaceContainerHigh,
+                      child: const Center(child: _SeeAllLoader()),
+                    ),
                     errorWidget: (context, url, err) => Container(
                       width: 300,
                       height: 300,
                       color: theme.colorScheme.surfaceContainerHighest,
-                      child: const Icon(Icons.music_note, color: Colors.white, size: 80),
+                      child: Icon(
+                        Icons.music_note_rounded,
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.22),
+                        size: 80,
+                      ),
                     ),
                   ),
                 ),
@@ -294,13 +340,24 @@ class _SeeAllPageState extends State<SeeAllPage> {
                 Text(
                   widget.title.toUpperCase(),
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: onSurface, fontSize: 22, fontWeight: FontWeight.w800),
+                  style: GoogleFonts.plusJakartaSans(
+                    color: onSurface,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    height: 1.2,
+                    letterSpacing: -0.3,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 Text(
                   'Cập nhật: Hôm nay\nLượt nghe: 10M+',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: onSurface.withValues(alpha: 0.6), fontSize: 13, height: 1.6),
+                  style: GoogleFonts.dmSans(
+                    color: onSurface.withValues(alpha: 0.6),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    height: 1.6,
+                  ),
                 ),
                 const SizedBox(height: 24),
                 SizedBox(
@@ -313,10 +370,21 @@ class _SeeAllPageState extends State<SeeAllPage> {
                        }
                     },
                     icon: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 24),
-                    label: const Text('PHÁT TẤT CẢ', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                    label: Text(
+                      'PHÁT TẤT CẢ',
+                      style: GoogleFonts.dmSans(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        height: 1.2,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF9b4de0),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                      backgroundColor: const Color(0xFF9333EA),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      elevation: 0,
                     ),
                   ),
                 )
@@ -338,9 +406,10 @@ class _SeeAllPageState extends State<SeeAllPage> {
                 children: [
                   Text(
                     desc,
-                    style: TextStyle(
+                    style: GoogleFonts.dmSans(
                       color: onSurface.withValues(alpha: isLight ? 0.82 : 0.72),
                       fontSize: 14,
+                      fontWeight: FontWeight.w500,
                       height: 1.7,
                     ),
                   ),
@@ -349,13 +418,13 @@ class _SeeAllPageState extends State<SeeAllPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 10),
                     child: Row(
                       children: [
-                        Expanded(flex: 5, child: Text('BÀI HÁT', style: _headerStyle)),
-                        Expanded(flex: 3, child: Text('ALBUM', style: _headerStyle)),
+                        Expanded(flex: 5, child: Text('BÀI HÁT', style: headerStyle)),
+                        Expanded(flex: 3, child: Text('ALBUM', style: headerStyle)),
                         Expanded(
                           flex: 1,
                           child: Align(
                             alignment: Alignment.centerRight,
-                            child: Text('THỜI GIAN', style: _headerStyle),
+                            child: Text('THỜI GIAN', style: headerStyle),
                           ),
                         ),
                       ],
@@ -431,12 +500,10 @@ class _SeeAllPageState extends State<SeeAllPage> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       decoration: BoxDecoration(
-        color: isLight ? colorScheme.surface : const Color(0xFF170F23),
+        color: isLight ? colorScheme.surface : colorScheme.surfaceContainerLow,
         border: Border(
           bottom: BorderSide(
-            color: isLight
-                ? colorScheme.onSurface.withValues(alpha: 0.08)
-                : Colors.white.withValues(alpha: 0.06),
+            color: colorScheme.onSurface.withValues(alpha: isLight ? 0.08 : 0.06),
           ),
         ),
       ),
@@ -450,11 +517,12 @@ class _SeeAllPageState extends State<SeeAllPage> {
               children: [
                 Text(
                   widget.title,
-                  style: TextStyle(
+                  style: GoogleFonts.plusJakartaSans(
                     color: colorScheme.onSurface,
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: -0.5,
+                    height: 1.2,
+                    letterSpacing: -0.4,
                   ),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
@@ -462,9 +530,11 @@ class _SeeAllPageState extends State<SeeAllPage> {
                 const SizedBox(height: 4),
                 Text(
                   '$totalSongs bài hát',
-                  style: TextStyle(
+                  style: GoogleFonts.dmSans(
                     color: colorScheme.onSurface.withValues(alpha: 0.6),
                     fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    height: 1.3,
                   ),
                 ),
               ],
@@ -480,20 +550,28 @@ class _SeeAllPageState extends State<SeeAllPage> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xFF9b4de0),
-                borderRadius: BorderRadius.circular(20),
+                color: const Color(0xFF9333EA),
+                borderRadius: BorderRadius.circular(999),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF9333EA).withValues(alpha: 0.18),
+                    blurRadius: 14,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Icon(Icons.playlist_play, color: Colors.white, size: 16),
-                  SizedBox(width: 4),
+              children: [
+                  const Icon(Icons.playlist_play, color: Colors.white, size: 16),
+                  const SizedBox(width: 4),
                   Text(
                     'Phát tất cả',
-                    style: TextStyle(
+                    style: GoogleFonts.dmSans(
                       color: Colors.white,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
+                      height: 1.2,
                     ),
                   ),
                 ],
@@ -527,20 +605,27 @@ class _SeeAllPageState extends State<SeeAllPage> {
                 TextField(
                   controller: searchController,
                   autofocus: true,
-                  style: TextStyle(color: colorScheme.onSurface),
+                  style: GoogleFonts.dmSans(
+                    color: colorScheme.onSurface,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    height: 1.4,
+                  ),
                   decoration: InputDecoration(
                     hintText: 'Tìm kiếm bài hát...',
-                    hintStyle: TextStyle(
+                    hintStyle: GoogleFonts.dmSans(
                       color: colorScheme.onSurface.withValues(alpha: 0.45),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
                     ),
                     prefixIcon: Icon(
                       Icons.search,
                       color: colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                     filled: true,
-                    fillColor: isLight
-                        ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.7)
-                        : Colors.white.withValues(alpha: 0.05),
+                         fillColor: isLight
+                             ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.7)
+                             : colorScheme.surfaceContainerHigh.withValues(alpha: 0.72),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -555,8 +640,11 @@ class _SeeAllPageState extends State<SeeAllPage> {
                         onPressed: () => Navigator.pop(ctx),
                         child: Text(
                           'Hủy',
-                          style: TextStyle(
+                          style: GoogleFonts.dmSans(
                             color: colorScheme.onSurface.withValues(alpha: 0.65),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            height: 1.2,
                           ),
                         ),
                       ),
@@ -567,12 +655,21 @@ class _SeeAllPageState extends State<SeeAllPage> {
                           Navigator.pop(ctx);
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF9B4DE0),
+                          backgroundColor: const Color(0xFF9333EA),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
+                          elevation: 0,
                         ),
-                        child: const Text('Tìm kiếm'),
+                        child: Text(
+                          'Tìm kiếm',
+                          style: GoogleFonts.dmSans(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            height: 1.2,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -582,6 +679,27 @@ class _SeeAllPageState extends State<SeeAllPage> {
           ),
         );
       },
+    );
+  }
+}
+
+class _SeeAllLoader extends StatelessWidget {
+  const _SeeAllLoader();
+
+  @override
+  Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+
+    return SizedBox(
+      width: 28,
+      height: 28,
+      child: CircularProgressIndicator(
+        strokeWidth: 2.4,
+        color: const Color(0xFF9333EA),
+        backgroundColor: isLight
+            ? const Color(0xFF6B5EA8).withValues(alpha: 0.14)
+            : const Color(0xFF8B8AA8).withValues(alpha: 0.16),
+      ),
     );
   }
 }
@@ -1020,36 +1138,37 @@ class _SeeAllButtonState extends State<SeeAllButton> with SingleTickerProviderSt
             maxHeight: 28,
           ),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF7B1FA2), Color(0xFF1565C0)],
+                colors: [Color(0xFF9333EA), Color(0xFFEC4899)],
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
               ),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(999),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF7B1FA2).withValues(alpha: 0.35),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
+                  color: const Color(0xFF9333EA).withValues(alpha: 0.26),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
-              children: const [
+              children: [
                 Text(
                   'Xem tất cả',
-                  style: TextStyle(
+                  style: GoogleFonts.dmSans(
                     color: Colors.white,
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
+                    height: 1.2,
                     letterSpacing: 0.2,
                   ),
                 ),
-                SizedBox(width: 3),
-                Icon(
+                const SizedBox(width: 3),
+                const Icon(
                   Icons.arrow_forward_ios_rounded,
                   color: Colors.white,
                   size: 9,

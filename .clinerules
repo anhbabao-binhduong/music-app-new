@@ -84,3 +84,8 @@ UI And Design Standards
 - Always read and follow DESIGN_SKILL.md before creating or editing any UI widget, page, or component.
 - Apply the design principles in DESIGN_SKILL.md for typography, colors, spacing, animations, and visual effects.
 - Do not create generic or plain UI — every screen must follow the design tone defined in DESIGN_SKILL.md.
+
+Never re-read the same file more than once per task.
+Never explain why tools are not working — just retry once, 
+then continue with available information.
+Do not ask the user to paste file contents.

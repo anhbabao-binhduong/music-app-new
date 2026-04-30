@@ -2,6 +2,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:music_app/data/models/playlist_model.dart';
 import 'package:music_app/pages/player/player_page.dart';
 import 'package:music_app/presentation/bloc/player/player_bloc.dart';
@@ -68,8 +69,9 @@ class MiniPlayerBar extends StatelessWidget {
             ? position.inMilliseconds / duration.inMilliseconds
             : 0.0;
 
-        final cs = Theme.of(context).colorScheme;
-        final tt = Theme.of(context).textTheme;
+        final theme = Theme.of(context);
+        final cs = theme.colorScheme;
+        final isLight = theme.brightness == Brightness.light;
 
         return GestureDetector(
           onTap: () {
@@ -83,12 +85,16 @@ class MiniPlayerBar extends StatelessWidget {
             );
           },
           child: Container(
-            height: 72,
+            height: 74,
             decoration: BoxDecoration(
-              color: cs.surface,
+              color: isLight
+                  ? cs.surface.withValues(alpha: 0.92)
+                  : cs.surfaceContainerHigh.withValues(alpha: 0.9),
               border: Border(
                 top: BorderSide(
-                    color: cs.outline.withValues(alpha: 0.2), width: 0.5),
+                  color: cs.onSurface.withValues(alpha: isLight ? 0.16 : 0.2),
+                  width: 0.6,
+                ),
               ),
             ),
             child: Column(
@@ -96,17 +102,18 @@ class MiniPlayerBar extends StatelessWidget {
               children: [
                 LinearProgressIndicator(
                   value: progress.clamp(0.0, 1.0),
-                  minHeight: 2,
+                  minHeight: 2.5,
                   color: cs.primary,
-                  backgroundColor: cs.outline.withValues(alpha: 0.2),
+                  backgroundColor:
+                      cs.primary.withValues(alpha: isLight ? 0.14 : 0.18),
                 ),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
                     child: Row(
                       children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(6),
+                         ClipRRect(
+                           borderRadius: BorderRadius.circular(10),
                           child: CachedNetworkImage(
                             imageUrl: song.artUri?.toString() ?? '',
                             width: 44,
@@ -127,20 +134,29 @@ class MiniPlayerBar extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.center,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                song.title,
-                                style: tt.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.bold, fontSize: 13),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              Text(
-                                song.artist ?? 'Unknown Artist',
-                                style: tt.bodySmall?.copyWith(
-                                    color: cs.onSurfaceVariant, fontSize: 11),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                               Text(
+                                 song.title,
+                                 style: GoogleFonts.plusJakartaSans(
+                                   color: cs.onSurface,
+                                   fontSize: 13,
+                                   fontWeight: FontWeight.w700,
+                                   height: 1.2,
+                                   letterSpacing: -0.1,
+                                 ),
+                                 maxLines: 1,
+                                 overflow: TextOverflow.ellipsis,
+                               ),
+                               Text(
+                                 song.artist ?? 'Unknown Artist',
+                                 style: GoogleFonts.dmSans(
+                                   color: cs.onSurface.withValues(alpha: 0.68),
+                                   fontSize: 11,
+                                   fontWeight: FontWeight.w500,
+                                   height: 1.2,
+                                 ),
+                                 maxLines: 1,
+                                 overflow: TextOverflow.ellipsis,
+                               ),
                             ],
                           ),
                         ),
@@ -189,44 +205,80 @@ class MiniPlayerBar extends StatelessWidget {
 
 /// Mở bottom sheet chọn playlist để thêm bài hát đang phát.
 void showAddToPlaylistSheet(BuildContext context, MediaItem song) {
+  final theme = Theme.of(context);
+  final cs = theme.colorScheme;
+  final isLight = theme.brightness == Brightness.light;
+
   // Dùng resolvePlaylistSongId để hỗ trợ cả community songs (UUID) lẫn regular songs (integer)
   final songId = resolvePlaylistSongId(song);
   final controller = TextEditingController();
 
-  void showSnack(String msg, {bool isError = false}) {
-    ScaffoldMessenger.of(context)
-      ..removeCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        content: Text(msg),
-        backgroundColor: isError ? Colors.redAccent : Colors.green,
-        behavior: SnackBarBehavior.floating,
-      ));
-  }
+    void showSnack(String msg, {bool isError = false}) {
+      ScaffoldMessenger.of(context)
+        ..removeCurrentSnackBar()
+        ..showSnackBar(SnackBar(
+          content: Text(
+            msg,
+            style: GoogleFonts.dmSans(
+              color: cs.onInverseSurface,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              height: 1.3,
+            ),
+          ),
+          backgroundColor: isError ? cs.error : cs.inverseSurface,
+          behavior: SnackBarBehavior.floating,
+        ));
+    }
 
   void showCreateDialog() {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF2A2A2E),
-        title: const Text('Tạo danh sách phát mới',
-            style: TextStyle(color: Colors.white)),
+        backgroundColor: isLight ? cs.surface : cs.surfaceContainerHigh,
+        title: Text(
+          'Tạo danh sách phát mới',
+          style: GoogleFonts.plusJakartaSans(
+            color: cs.onSurface,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            height: 1.2,
+          ),
+        ),
         content: TextField(
           controller: controller,
           autofocus: true,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
+          style: GoogleFonts.dmSans(
+            color: cs.onSurface,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+          decoration: InputDecoration(
             hintText: 'Nhập tên playlist...',
-            hintStyle: TextStyle(color: Colors.grey),
+            hintStyle: GoogleFonts.dmSans(
+              color: cs.onSurface.withValues(alpha: 0.5),
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
             enabledBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: Colors.grey)),
+              borderSide: BorderSide(color: cs.onSurface.withValues(alpha: 0.25)),
+            ),
             focusedBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: Colors.white)),
+              borderSide: BorderSide(color: cs.primary),
+            ),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Huỷ', style: TextStyle(color: Colors.grey)),
+            child: Text(
+              'Huỷ',
+              style: GoogleFonts.dmSans(
+                color: cs.onSurface.withValues(alpha: 0.6),
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -243,9 +295,17 @@ void showAddToPlaylistSheet(BuildContext context, MediaItem song) {
               }
             },
             style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.greenAccent,
-                foregroundColor: Colors.black),
-            child: const Text('Tạo'),
+              backgroundColor: cs.primary,
+              foregroundColor: cs.onPrimary,
+              elevation: 0,
+            ),
+            child: Text(
+              'Tạo',
+              style: GoogleFonts.dmSans(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
       ),
@@ -254,7 +314,7 @@ void showAddToPlaylistSheet(BuildContext context, MediaItem song) {
 
   showModalBottomSheet(
     context: context,
-    backgroundColor: const Color(0xFF1E1E1E),
+    backgroundColor: isLight ? cs.surface : cs.surfaceContainerHigh,
     shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
     isScrollControlled: true,
@@ -275,7 +335,7 @@ void showAddToPlaylistSheet(BuildContext context, MediaItem song) {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.white24,
+                    color: cs.onSurface.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -296,9 +356,11 @@ void showAddToPlaylistSheet(BuildContext context, MediaItem song) {
                           errorWidget: (_, __, ___) => Container(
                             width: 44,
                             height: 44,
-                            color: Colors.white10,
-                            child: const Icon(Icons.music_note,
-                                color: Colors.white54),
+                            color: cs.surfaceContainerHighest,
+                            child: Icon(
+                              Icons.music_note,
+                              color: cs.onSurface.withValues(alpha: 0.5),
+                            ),
                           ),
                         ),
                       ),
@@ -309,44 +371,60 @@ void showAddToPlaylistSheet(BuildContext context, MediaItem song) {
                           children: [
                             Text(
                               song.title,
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14),
+                            style: GoogleFonts.plusJakartaSans(
+                              color: cs.onSurface,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                              height: 1.2,
+                            ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                             Text(
                               song.artist ?? 'Unknown Artist',
-                              style: const TextStyle(
-                                  color: Colors.white54, fontSize: 12),
+                              style: GoogleFonts.dmSans(
+                                color: cs.onSurface.withValues(alpha: 0.62),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                height: 1.2,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
                       ),
-                      const Icon(Icons.playlist_add_rounded,
-                          color: Colors.white38),
+                      Icon(
+                        Icons.playlist_add_rounded,
+                        color: cs.onSurface.withValues(alpha: 0.38),
+                      ),
                     ],
                   ),
                 ),
-                const Divider(color: Colors.white12, height: 1),
+                 Divider(
+                   color: cs.onSurface.withValues(alpha: 0.1),
+                   height: 1,
+                 ),
                 // ── Tạo playlist mới ──────────────────────────────────
                 ListTile(
-                  leading: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white10,
-                      borderRadius: BorderRadius.circular(8),
+                          leading: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: cs.onSurface.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(Icons.add_rounded, color: cs.primary),
+                          ),
+                  title: Text(
+                    'Tạo danh sách phát mới',
+                    style: GoogleFonts.dmSans(
+                      color: cs.onSurface,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      height: 1.3,
                     ),
-                    child: const Icon(Icons.add_rounded,
-                        color: Colors.greenAccent),
                   ),
-                  title: const Text('Tạo danh sách phát mới',
-                      style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.w500)),
                   onTap: () {
                     Navigator.pop(sheetCtx);
                     Future.microtask(() => showCreateDialog());
@@ -354,14 +432,21 @@ void showAddToPlaylistSheet(BuildContext context, MediaItem song) {
                 ),
                 // ── Danh sách playlist hiện có ────────────────────────
                 if (playlists.isNotEmpty) ...[
-                  const Divider(color: Colors.white12, height: 1),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  Divider(color: cs.onSurface.withValues(alpha: 0.1), height: 1),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                     child: Align(
                       alignment: Alignment.centerLeft,
-                      child: Text('Danh sách phát của bạn',
-                          style:
-                              TextStyle(color: Colors.white38, fontSize: 11)),
+                      child: Text(
+                        'Danh sách phát của bạn',
+                        style: GoogleFonts.dmSans(
+                          color: cs.onSurface.withValues(alpha: 0.45),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          height: 1.2,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
                     ),
                   ),
                   ConstrainedBox(
@@ -378,31 +463,48 @@ void showAddToPlaylistSheet(BuildContext context, MediaItem song) {
                             height: 40,
                             decoration: BoxDecoration(
                               color: isAdded
-                                  ? Colors.greenAccent.withValues(alpha: 0.15)
-                                  : Colors.white10,
-                              borderRadius: BorderRadius.circular(8),
+                                  ? const Color(0xFF1DB954).withValues(alpha: 0.14)
+                                  : cs.onSurface.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(10),
                             ),
                             child: Icon(
                               isAdded
                                   ? Icons.check_rounded
                                   : Icons.playlist_play_rounded,
                               color: isAdded
-                                  ? Colors.greenAccent
-                                  : Colors.white54,
+                                  ? const Color(0xFF1DB954)
+                                  : cs.onSurface.withValues(alpha: 0.55),
                               size: 20,
                             ),
                           ),
-                          title: Text(p.name,
-                              style: const TextStyle(color: Colors.white)),
+                          title: Text(
+                            p.name,
+                            style: GoogleFonts.dmSans(
+                              color: cs.onSurface,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              height: 1.3,
+                            ),
+                          ),
                           subtitle: Text(
                             '${p.songIds.length} bài',
-                            style: const TextStyle(
-                                color: Colors.white38, fontSize: 11),
+                            style: GoogleFonts.dmSans(
+                              color: cs.onSurface.withValues(alpha: 0.5),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              height: 1.2,
+                            ),
                           ),
                           trailing: isAdded
-                              ? const Text('Đã thêm',
-                                  style: TextStyle(
-                                      color: Colors.greenAccent, fontSize: 12))
+                              ? Text(
+                                  'Đã thêm',
+                                  style: GoogleFonts.dmSans(
+                                    color: const Color(0xFF1DB954),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    height: 1.2,
+                                  ),
+                                )
                               : null,
                           onTap: () async {
                             if (isAdded) {
@@ -426,11 +528,18 @@ void showAddToPlaylistSheet(BuildContext context, MediaItem song) {
                     ),
                   ),
                 ] else ...[
-                  const Divider(color: Colors.white12, height: 1),
-                  const Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Text('Chưa có danh sách phát nào',
-                        style: TextStyle(color: Colors.white54)),
+                  Divider(color: cs.onSurface.withValues(alpha: 0.1), height: 1),
+                  Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      'Chưa có danh sách phát nào',
+                      style: GoogleFonts.dmSans(
+                        color: cs.onSurface.withValues(alpha: 0.6),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        height: 1.4,
+                      ),
+                    ),
                   ),
                 ],
               ],
@@ -443,9 +552,13 @@ void showAddToPlaylistSheet(BuildContext context, MediaItem song) {
 }
 
 void showQueueBottomSheet(BuildContext context) {
+  final theme = Theme.of(context);
+  final cs = theme.colorScheme;
+  final isLight = theme.brightness == Brightness.light;
+
   showModalBottomSheet(
     context: context,
-    backgroundColor: const Color(0xFF1B1B1B),
+    backgroundColor: isLight ? cs.surface : cs.surfaceContainerHigh,
     isScrollControlled: true,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -474,20 +587,32 @@ void showQueueBottomSheet(BuildContext context) {
                         width: 40,
                         height: 4,
                         decoration: BoxDecoration(
-                            color: Colors.white24,
+                            color: cs.onSurface.withValues(alpha: 0.22),
                             borderRadius: BorderRadius.circular(2))),
-                    const Padding(
-                      padding: EdgeInsets.all(20.0),
-                      child: Text("Danh sách đang phát",
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold)),
+                    Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Text(
+                        "Danh sách đang phát",
+                        style: GoogleFonts.plusJakartaSans(
+                          color: cs.onSurface,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          height: 1.2,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
                     ),
-                    const Expanded(
+                    Expanded(
                       child: Center(
-                        child: Text("Không có bài hát trong danh sách",
-                            style: TextStyle(color: Colors.white54)),
+                        child: Text(
+                          "Không có bài hát trong danh sách",
+                          style: GoogleFonts.dmSans(
+                            color: cs.onSurface.withValues(alpha: 0.6),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            height: 1.4,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -501,15 +626,20 @@ void showQueueBottomSheet(BuildContext context) {
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                          color: Colors.white24,
+                          color: cs.onSurface.withValues(alpha: 0.22),
                           borderRadius: BorderRadius.circular(2))),
-                  const Padding(
-                    padding: EdgeInsets.all(20.0),
-                    child: Text("Danh sách đang phát",
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold)),
+                  Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Text(
+                      "Danh sách đang phát",
+                      style: GoogleFonts.plusJakartaSans(
+                        color: cs.onSurface,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        height: 1.2,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
                   ),
                   Expanded(
                     child: ListView.builder(
@@ -524,13 +654,12 @@ void showQueueBottomSheet(BuildContext context) {
                           direction: isCurrentlyPlaying
                               ? DismissDirection.none
                               : DismissDirection.endToStart,
-                          background: Container(
-                            alignment: Alignment.centerRight,
-                            padding: const EdgeInsets.only(right: 20),
-                            color: Colors.redAccent,
-                            child: const Icon(Icons.delete_outline,
-                                color: Colors.white),
-                          ),
+                           background: Container(
+                             alignment: Alignment.centerRight,
+                             padding: const EdgeInsets.only(right: 20),
+                             color: cs.error,
+                             child: Icon(Icons.delete_outline, color: cs.onError),
+                           ),
                           onDismissed: (_) {
                             context
                                 .read<PlayerBloc>()
@@ -544,43 +673,61 @@ void showQueueBottomSheet(BuildContext context) {
                                 width: 45,
                                 height: 45,
                                 fit: BoxFit.cover,
-                                errorWidget: (_, __, ___) => Container(
-                                    color: Colors.grey,
-                                    width: 45,
-                                    height: 45,
-                                    child: const Icon(Icons.music_note)),
+                                 errorWidget: (_, __, ___) => Container(
+                                     color: cs.surfaceContainerHighest,
+                                     width: 45,
+                                     height: 45,
+                                     child: Icon(
+                                       Icons.music_note,
+                                       color: cs.onSurface.withValues(alpha: 0.5),
+                                     )),
                               ),
                             ),
                             title: Text(
                               item.title,
-                              style: TextStyle(
-                                  color: isCurrentlyPlaying
-                                      ? Colors.greenAccent
-                                      : Colors.white,
-                                  fontWeight: isCurrentlyPlaying
-                                      ? FontWeight.bold
-                                      : FontWeight.normal),
+                              style: GoogleFonts.plusJakartaSans(
+                                color:
+                                    isCurrentlyPlaying ? cs.primary : cs.onSurface,
+                                fontWeight:
+                                    isCurrentlyPlaying ? FontWeight.w800 : FontWeight.w600,
+                                fontSize: 14,
+                                height: 1.2,
+                                letterSpacing: -0.1,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            subtitle: Text(item.artist ?? "Unknown",
-                                style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.6),
-                                    fontSize: 12)),
+                            subtitle: Text(
+                              item.artist ?? "Unknown",
+                              style: GoogleFonts.dmSans(
+                                color: cs.onSurface.withValues(alpha: 0.62),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                height: 1.2,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                             trailing: isCurrentlyPlaying
-                                ? const Icon(Icons.bar_chart_rounded,
-                                    color: Colors.greenAccent)
+                                ? Icon(Icons.bar_chart_rounded, color: cs.primary)
                                 : Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Text("${index + 1}",
-                                          style: const TextStyle(
-                                              color: Colors.white24)),
+                                      Text(
+                                        "${index + 1}",
+                                        style: GoogleFonts.dmSans(
+                                          color: cs.onSurface.withValues(alpha: 0.32),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          height: 1.2,
+                                        ),
+                                      ),
                                       PopupMenuButton<String>(
-                                        icon: const Icon(
-                                            Icons.more_vert_rounded,
-                                            size: 20,
-                                            color: Colors.white54),
+                                        icon: Icon(
+                                          Icons.more_vert_rounded,
+                                          size: 20,
+                                          color: cs.onSurface.withValues(alpha: 0.52),
+                                        ),
                                         onSelected: (value) {
                                           if (value == 'up') {
                                             context.read<PlayerBloc>().add(
@@ -694,16 +841,20 @@ class _MiniBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isLight = theme.brightness == Brightness.light;
+
     return IconButton(
       onPressed: onTap,
       padding: EdgeInsets.zero,
       constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
       icon: Icon(
         icon,
-        size: primary ? 30 : 24,
+        size: primary ? 28 : 22,
         color: primary
-            ? Theme.of(context).colorScheme.primary
-            : Theme.of(context).colorScheme.onSurface,
+            ? cs.primary
+            : cs.onSurface.withValues(alpha: isLight ? 0.82 : 0.74),
       ),
     );
   }

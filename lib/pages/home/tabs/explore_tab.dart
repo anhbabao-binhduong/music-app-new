@@ -1,6 +1,8 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:shimmer/shimmer.dart';
 import '../widgets/banner_carousel.dart';
 import '../widgets/chart_tile.dart';
 import '../widgets/see_all_page.dart';
@@ -160,11 +162,12 @@ class _ExploreTabState extends State<ExploreTab> {
           Flexible(
             child: Text(
               title,
-              style: TextStyle(
+              style: GoogleFonts.plusJakartaSans(
                 color: onSurface,
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
-                letterSpacing: -0.5,
+                height: 1.2,
+                letterSpacing: -0.4,
               ),
               overflow: TextOverflow.ellipsis,
             ),
@@ -223,7 +226,7 @@ class _ExploreTabState extends State<ExploreTab> {
                   if (state is AlbumLoading) {
                     return const SizedBox(
                       height: 240,
-                      child: Center(child: CircularProgressIndicator(color: Color(0xFF7C3AED))),
+                      child: Center(child: _SectionLoader()),
                     );
                   }
                   if (state is AlbumLoaded && state.albums.isNotEmpty) {
@@ -259,18 +262,19 @@ class _ExploreTabState extends State<ExploreTab> {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 1500),
                 child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Align(
                     alignment: Alignment.centerLeft,
-                    child: Text(
-                      'Khám phá theo tâm trạng',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
+                       child: Text(
+                         'Khám phá theo tâm trạng',
+                         style: GoogleFonts.plusJakartaSans(
+                           color: Theme.of(context).colorScheme.onSurface,
+                           fontSize: 22,
+                           fontWeight: FontWeight.w800,
+                           height: 1.2,
+                           letterSpacing: -0.4,
+                         ),
+                       ),
                   ),
                 ),
               ),
@@ -310,22 +314,29 @@ class _ExploreTabState extends State<ExploreTab> {
             builder: (context, state) {
               if (state is CategoryLoading) {
                 return const SliverToBoxAdapter(
-                  child: Center(child: Padding(
-                    padding: EdgeInsets.all(32),
-                    child: CircularProgressIndicator(color: Color(0xFF7C3AED)),
-                  )),
+                  child: Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(32),
+                      child: _SectionLoader(),
+                    ),
+                  ),
                 );
               }
                   if (state is CategoryLoaded) {
                 final songs = state.songs;
                 if (songs.isEmpty) {
-                  return const SliverToBoxAdapter(
+                  return SliverToBoxAdapter(
                     child: Center(child: Padding(
-                      padding: EdgeInsets.all(32),
-                      child: Text(
-                        'Không có bài hát nào',
-                        style: TextStyle(color: Colors.white54),
-                      ),
+                      padding: const EdgeInsets.all(32),
+                       child: Text(
+                         'Không có bài hát nào',
+                         style: GoogleFonts.dmSans(
+                           color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                           fontSize: 13,
+                           fontWeight: FontWeight.w500,
+                           height: 1.4,
+                         ),
+                       ),
                     )),
                   );
                 }
@@ -357,7 +368,12 @@ class _ExploreTabState extends State<ExploreTab> {
                     padding: const EdgeInsets.all(32),
                     child: Text(
                       'Lỗi: ${state.message}',
-                      style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                       style: GoogleFonts.dmSans(
+                         color: Colors.redAccent,
+                         fontSize: 12,
+                         fontWeight: FontWeight.w500,
+                         height: 1.4,
+                       ),
                     ),
                   )),
                 );
@@ -440,7 +456,7 @@ class _ExploreTabState extends State<ExploreTab> {
         if (state is CategoryLoading || state is CategoryInitial) {
           return const SizedBox(
             height: 220,
-            child: Center(child: CircularProgressIndicator(color: Color(0xFF7C3AED))),
+            child: Center(child: _SectionLoader()),
           );
         }
         if (state is! CategoryLoaded) return const SizedBox.shrink();
@@ -522,27 +538,29 @@ class _ExploreTabState extends State<ExploreTab> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
-                  // Icon badge with gradient glow
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF9333EA), Color(0xFFEC4899)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF9333EA).withValues(alpha: 0.5),
-                          blurRadius: 16,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    child: const Icon(Icons.people_rounded, color: Colors.white, size: 26),
-                  ),
+                   Container(
+                     width: 52,
+                     height: 52,
+                     decoration: BoxDecoration(
+                       gradient: const LinearGradient(
+                         colors: [Color(0xFF9333EA), Color(0xFFEC4899)],
+                         begin: Alignment.topLeft,
+                         end: Alignment.bottomRight,
+                       ),
+                       borderRadius: BorderRadius.circular(18),
+                       border: Border.all(
+                         color: Colors.white.withValues(alpha: 0.14),
+                       ),
+                       boxShadow: [
+                         BoxShadow(
+                           color: const Color(0xFF9333EA).withValues(alpha: 0.34),
+                           blurRadius: 18,
+                           offset: const Offset(0, 8),
+                         ),
+                       ],
+                     ),
+                     child: const Icon(Icons.people_rounded, color: Colors.white, size: 26),
+                   ),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(
@@ -552,60 +570,32 @@ class _ExploreTabState extends State<ExploreTab> {
                           shaderCallback: (bounds) => const LinearGradient(
                             colors: [Color(0xFF9333EA), Color(0xFFEC4899)],
                           ).createShader(bounds),
-                          child: const Text(
-                            'Nhạc từ cộng đồng',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
+                           child: Text(
+                             'Nhạc từ cộng đồng',
+                             style: GoogleFonts.plusJakartaSans(
+                               color: Theme.of(context).colorScheme.onSurface,
+                               fontSize: 24,
+                               fontWeight: FontWeight.w800,
+                               height: 1.2,
+                               letterSpacing: -0.4,
+                             ),
+                           ),
                         ),
                         const SizedBox(height: 2),
-                        Text(
-                          '${approved.length} bài hát từ cộng đồng',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.5),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
+                         Text(
+                           '${approved.length} bài hát từ cộng đồng',
+                           style: GoogleFonts.dmSans(
+                             color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                             fontSize: 12,
+                             fontWeight: FontWeight.w500,
+                             height: 1.3,
+                           ),
+                         ),
                       ],
                     ),
                   ),
                   // See all button
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF9333EA), Color(0xFF7C3AED)],
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF9333EA).withValues(alpha: 0.35),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Text(
-                          'Xem tất cả',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        SizedBox(width: 4),
-                        Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 14),
-                      ],
-                    ),
-                  ),
+                     SeeAllButton(onTap: () {}),
                 ],
               ),
             ),
@@ -658,7 +648,7 @@ class _ExploreTabState extends State<ExploreTab> {
         if (state is CategoryLoading || state is CategoryInitial) {
           return const SizedBox(
             height: 200,
-            child: Center(child: CircularProgressIndicator(color: Color(0xFF7C3AED))),
+            child: Center(child: _SectionLoader()),
           );
         }
         if (state is! CategoryLoaded) return const SizedBox.shrink();
@@ -674,11 +664,18 @@ class _ExploreTabState extends State<ExploreTab> {
                 ));
               }),
               const SizedBox(height: 12),
-              const Padding(
-                padding: EdgeInsets.all(32),
+              Padding(
+                padding: const EdgeInsets.all(32),
                 child: Center(
-                  child: Text('Chưa có bài hát nào',
-                      style: TextStyle(color: Colors.white54)),
+                  child: Text(
+                    'Chưa có bài hát nào',
+                    style: GoogleFonts.dmSans(
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      height: 1.4,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -728,21 +725,48 @@ class _ExploreTabState extends State<ExploreTab> {
   }
 }
 
+class _SectionLoader extends StatelessWidget {
+  const _SectionLoader();
+
+  @override
+  Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+
+    return SizedBox(
+      width: 28,
+      height: 28,
+      child: CircularProgressIndicator(
+        strokeWidth: 2.4,
+        color: const Color(0xFF9333EA),
+        backgroundColor: isLight
+            ? const Color(0xFF6B5EA8).withValues(alpha: 0.14)
+            : const Color(0xFF8B8AA8).withValues(alpha: 0.16),
+      ),
+    );
+  }
+}
+
 class _CategoryChipSkeleton extends StatelessWidget {
   const _CategoryChipSkeleton();
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+
     return ListView.builder(
       scrollDirection: Axis.horizontal,
       itemCount: 6,
-      itemBuilder: (_, __) => Container(
-        width: 100,
-        height: 36,
-        margin: const EdgeInsets.only(right: 8),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(18),
+      itemBuilder: (_, __) => Shimmer.fromColors(
+        baseColor: isLight ? const Color(0xFFECE6FF) : const Color(0xFF221C30),
+        highlightColor: isLight ? const Color(0xFFF7F3FF) : const Color(0xFF2B2440),
+        child: Container(
+          width: 100,
+          height: 36,
+          margin: const EdgeInsets.only(right: 8),
+          decoration: BoxDecoration(
+            color: isLight ? const Color(0xFFF4EEFF) : const Color(0xFF171624),
+            borderRadius: BorderRadius.circular(999),
+          ),
         ),
       ),
     );
@@ -782,16 +806,35 @@ class _PaginationButtonState extends State<_PaginationButton> {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: widget.isSelected
-                ? const Color(0xFF7C3AED)
-                : (_isHovered ? const Color(0xFF242424) : const Color(0xFF1A1A1A)),
+                ? const Color(0xFF9333EA)
+                : (_isHovered
+                    ? Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.24)
+                    : Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.12)),
             shape: BoxShape.circle,
+            border: Border.all(
+              color: widget.isSelected
+                  ? const Color(0xFF9333EA)
+                  : const Color(0xFF8B8AA8).withValues(alpha: _isHovered ? 0.2 : 0.12),
+            ),
+            boxShadow: widget.isSelected
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFF9333EA).withValues(alpha: 0.22),
+                      blurRadius: 14,
+                      offset: const Offset(0, 6),
+                    ),
+                  ]
+                : null,
           ),
           child: Text(
             '${widget.page}',
-            style: TextStyle(
-              color: widget.isSelected ? Colors.white : Colors.white.withValues(alpha: 0.7),
-              fontWeight: widget.isSelected ? FontWeight.bold : FontWeight.normal,
-              fontSize: 14,
+            style: GoogleFonts.dmSans(
+              color: widget.isSelected
+                  ? Colors.white
+                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+              fontWeight: widget.isSelected ? FontWeight.w700 : FontWeight.w600,
+              fontSize: 13,
+              height: 1.2,
             ),
           ),
         ),
@@ -816,10 +859,15 @@ class _CommunitySectionSkeleton extends StatelessWidget {
               Container(
                 width: 52,
                 height: 52,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(16),
-                ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).brightness == Brightness.light
+                            ? const Color(0xFFF4EEFF)
+                            : Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest
+                                .withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
               ),
               const SizedBox(width: 14),
               Column(
@@ -829,7 +877,7 @@ class _CommunitySectionSkeleton extends StatelessWidget {
                     width: 180,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.08),
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(6),
                     ),
                   ),
@@ -838,7 +886,7 @@ class _CommunitySectionSkeleton extends StatelessWidget {
                     width: 120,
                     height: 12,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.04),
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -862,7 +910,7 @@ class _CommunitySectionSkeleton extends StatelessWidget {
                   width: 160,
                   height: 160,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(20),
                   ),
                 ),
@@ -871,7 +919,7 @@ class _CommunitySectionSkeleton extends StatelessWidget {
                   width: 120,
                   height: 13,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.08),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -880,7 +928,7 @@ class _CommunitySectionSkeleton extends StatelessWidget {
                   width: 80,
                   height: 11,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.04),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -962,16 +1010,17 @@ class _CommunityFeaturedCardState extends State<_CommunityFeaturedCard>
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
-                          children: const [
-                            Icon(Icons.star_rounded, color: Colors.white, size: 11),
-                            SizedBox(width: 3),
+                          children: [
+                            const Icon(Icons.star_rounded, color: Colors.white, size: 11),
+                            const SizedBox(width: 3),
                             Text(
                               'TOP 1',
-                              style: TextStyle(
+                              style: GoogleFonts.dmSans(
                                 color: Colors.white,
                                 fontSize: 10,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 0.5,
+                                fontWeight: FontWeight.w800,
+                                height: 1.1,
+                                letterSpacing: 0.4,
                               ),
                             ),
                           ],
@@ -1011,11 +1060,16 @@ class _CommunityFeaturedCardState extends State<_CommunityFeaturedCard>
                 child: Container(
                   width: 172,
                   padding: const EdgeInsets.all(10),
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
                       colors: [Color(0xFF1A0E2E), Color(0xFF2D1450)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    borderRadius: BorderRadius.vertical(bottom: Radius.circular(22)),
+                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(22)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.08),
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1025,11 +1079,12 @@ class _CommunityFeaturedCardState extends State<_CommunityFeaturedCard>
                         widget.song.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: GoogleFonts.plusJakartaSans(
                           color: Colors.white,
-                          fontSize: 12,
+                          fontSize: 13,
                           fontWeight: FontWeight.w800,
                           height: 1.2,
+                          letterSpacing: -0.1,
                         ),
                       ),
                       Row(
@@ -1049,10 +1104,11 @@ class _CommunityFeaturedCardState extends State<_CommunityFeaturedCard>
                               widget.song.artist,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.7),
+                              style: GoogleFonts.dmSans(
+                                color: Colors.white.withValues(alpha: 0.72),
                                 fontSize: 10,
                                 fontWeight: FontWeight.w500,
+                                height: 1.2,
                               ),
                             ),
                           ),
@@ -1066,10 +1122,11 @@ class _CommunityFeaturedCardState extends State<_CommunityFeaturedCard>
                             const SizedBox(width: 3),
                             Text(
                               _formatDuration(Duration(milliseconds: widget.song.durationMs)),
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.45),
+                              style: GoogleFonts.dmSans(
+                                color: Colors.white.withValues(alpha: 0.48),
                                 fontSize: 9,
                                 fontWeight: FontWeight.w500,
+                                height: 1.2,
                               ),
                             ),
                           ],
@@ -1233,9 +1290,16 @@ class _CommunitySongCardState extends State<_CommunitySongCard> {
                     color: const Color(0xFF161626),
                     borderRadius: const BorderRadius.vertical(bottom: Radius.circular(19)),
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.07),
+                      color: Colors.white.withValues(alpha: 0.08),
                       width: 1,
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF9333EA).withValues(alpha: 0.08),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1245,11 +1309,12 @@ class _CommunitySongCardState extends State<_CommunitySongCard> {
                         widget.song.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: GoogleFonts.plusJakartaSans(
                           color: Colors.white,
-                          fontSize: 11,
+                          fontSize: 12,
                           fontWeight: FontWeight.w700,
                           height: 1.2,
+                          letterSpacing: -0.1,
                         ),
                       ),
                       if (widget.song.artist.isNotEmpty)
@@ -1257,24 +1322,31 @@ class _CommunitySongCardState extends State<_CommunitySongCard> {
                           widget.song.artist,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFF9333EA),
+                          style: GoogleFonts.dmSans(
+                            color: const Color(0xFFC084FC),
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
+                            height: 1.2,
                           ),
                         ),
                       if (widget.song.durationMs > 0)
                         Row(
                           children: [
-                            Icon(Icons.access_time_rounded,
-                                color: Colors.white.withValues(alpha: 0.35), size: 9),
+                            Icon(
+                              Icons.access_time_rounded,
+                              color: Colors.white.withValues(alpha: 0.35),
+                              size: 9,
+                            ),
                             const SizedBox(width: 3),
                             Text(
-                              _formatDuration(Duration(milliseconds: widget.song.durationMs)),
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.35),
+                              _formatDuration(
+                                Duration(milliseconds: widget.song.durationMs),
+                              ),
+                              style: GoogleFonts.dmSans(
+                                color: Colors.white.withValues(alpha: 0.38),
                                 fontSize: 9,
-                                fontWeight: FontWeight.w400,
+                                fontWeight: FontWeight.w500,
+                                height: 1.2,
                               ),
                             ),
                           ],

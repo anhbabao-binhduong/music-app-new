@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:audio_service/audio_service.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:music_app/services/lyrics_service.dart';
+
 
 class LyricsPage extends StatefulWidget {
   final MediaItem song;
@@ -47,6 +49,7 @@ class _LyricsPageState extends State<LyricsPage> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return FutureBuilder<LyricsData?>(
       future: _lyricsFuture,
@@ -56,23 +59,25 @@ class _LyricsPageState extends State<LyricsPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                SizedBox(
-                  width: 28,
-                  height: 28,
-                  child: CircularProgressIndicator(
-                    color: cs.primary,
-                    strokeWidth: 2,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Đang tải lời bài hát...',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5),
-                    fontSize: 13,
-                    letterSpacing: 0.3,
-                  ),
-                ),
+                 SizedBox(
+                   width: 28,
+                   height: 28,
+                   child: CircularProgressIndicator(
+                     color: cs.primary,
+                     strokeWidth: 2,
+                   ),
+                 ),
+                 const SizedBox(height: 16),
+                 Text(
+                   'Đang tải lời bài hát...',
+                   style: GoogleFonts.dmSans(
+                     color: isDark ? Colors.white.withValues(alpha: 0.5) : const Color(0xFF1A1730).withValues(alpha: 0.6),
+                     fontSize: 12,
+                     fontWeight: FontWeight.w500,
+                     letterSpacing: 0.3,
+                     height: 1.35,
+                   ),
+                 ),
               ],
             ),
           );
@@ -80,19 +85,20 @@ class _LyricsPageState extends State<LyricsPage> {
 
         final data = snapshot.data;
 
-        if (data == null || !data.hasAnyLyrics) {
-          return _NoLyrics(title: widget.song.title, onRetry: _fetchLyrics);
-        }
+         if (data == null || !data.hasAnyLyrics) {
+           return _NoLyrics(title: widget.song.title, onRetry: _fetchLyrics, isDark: isDark);
+         }
 
-        if (data.isSynced) {
-          return _SyncedLyricsBody(
-            lyrics: data.syncedLyrics!,
-            positionStream: widget.positionStream,
-            onSeek: widget.onSeek,
-          );
-        }
-
-        return _PlainLyricsBody(lyrics: data.plainLyrics!);
+         if (data.isSynced) {
+           return _SyncedLyricsBody(
+             lyrics: data.syncedLyrics!,
+             positionStream: widget.positionStream,
+             onSeek: widget.onSeek,
+             isDark: isDark,
+           );
+         }
+ 
+         return _PlainLyricsBody(lyrics: data.plainLyrics!, isDark: isDark);
       },
     );
   }
@@ -106,11 +112,13 @@ class _SyncedLyricsBody extends StatefulWidget {
   final List<LyricLine> lyrics;
   final Stream<Duration> positionStream;
   final void Function(Duration position)? onSeek;
+  final bool isDark;
 
   const _SyncedLyricsBody({
     required this.lyrics,
     required this.positionStream,
     this.onSeek,
+    required this.isDark,
   });
 
   @override
@@ -211,53 +219,61 @@ class _SyncedLyricsBodyState extends State<_SyncedLyricsBody> {
                 return const SizedBox(height: 18);
               }
 
-              // Khoảng cách xa active → mờ hơn
-              final distance = (index - activeIndex).abs();
-              final opacity = activeIndex < 0
-                  ? 0.5
-                  : isActive
-                      ? 1.0
-                      : distance == 1
-                          ? 0.45
-                          : distance == 2
-                              ? 0.28
-                              : 0.18;
+               // Khoảng cách xa active → mờ hơn
+               final distance = (index - activeIndex).abs();
+               final opacity = activeIndex < 0
+                   ? 0.5
+                   : isActive
+                       ? 1.0
+                       : distance == 1
+                           ? 0.45
+                           : distance == 2
+                               ? 0.28
+                               : 0.18;
 
-              return GestureDetector(
-                key: _keyFor(index),
-                behavior: HitTestBehavior.opaque,
-                onTap: () => widget.onSeek?.call(line.time),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    vertical: isActive ? 10 : 7,
-                  ),
-                  child: AnimatedDefaultTextStyle(
-                    duration: const Duration(milliseconds: 280),
-                    curve: Curves.easeOutCubic,
-                    style: TextStyle(
-                      fontFamily: 'sans-serif',
-                      fontSize: isActive ? 26 : 18,
-                      fontWeight:
-                          isActive ? FontWeight.w800 : FontWeight.w500,
-                      height: 1.45,
-                      letterSpacing: isActive ? 0.2 : 0.0,
-                      color: Colors.white.withValues(alpha: opacity),
-                      shadows: isActive
-                          ? [
-                              Shadow(
-                                color: Colors.white.withValues(alpha: 0.25),
-                                blurRadius: 20,
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: Text(
-                      line.text,
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-              );
+               // Text color: active = purple accent, inactive = dimmed dark
+               final textColor = isActive
+                   ? (widget.isDark ? const Color(0xFF9333EA) : const Color(0xFF9333EA))
+                   : (widget.isDark
+                       ? Colors.white.withValues(alpha: opacity)
+                       : const Color(0xFF1A1730).withValues(alpha: opacity));
+
+               return GestureDetector(
+                 key: _keyFor(index),
+                 behavior: HitTestBehavior.opaque,
+                 onTap: () => widget.onSeek?.call(line.time),
+                 child: Padding(
+                   padding: EdgeInsets.symmetric(
+                     vertical: isActive ? 10 : 7,
+                   ),
+                   child: AnimatedDefaultTextStyle(
+                     duration: const Duration(milliseconds: 280),
+                     curve: Curves.easeOutCubic,
+                     style: GoogleFonts.plusJakartaSans(
+                       fontSize: isActive ? 26 : 18,
+                       fontWeight:
+                           isActive ? FontWeight.w800 : FontWeight.w500,
+                       height: 1.45,
+                       letterSpacing: isActive ? -0.2 : 0.0,
+                       color: textColor,
+                       shadows: isActive
+                           ? [
+                               Shadow(
+                                 color: widget.isDark
+                                     ? Colors.white.withValues(alpha: 0.25)
+                                     : const Color(0xFF9333EA).withValues(alpha: 0.3),
+                                 blurRadius: 20,
+                               ),
+                             ]
+                           : null,
+                     ),
+                     child: Text(
+                       line.text,
+                       textAlign: TextAlign.center,
+                     ),
+                   ),
+                 ),
+               );
             },
           ),
         );
@@ -272,7 +288,8 @@ class _SyncedLyricsBodyState extends State<_SyncedLyricsBody> {
 
 class _PlainLyricsBody extends StatelessWidget {
   final String lyrics;
-  const _PlainLyricsBody({required this.lyrics});
+  final bool isDark;
+  const _PlainLyricsBody({required this.lyrics, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -301,11 +318,11 @@ class _PlainLyricsBody extends StatelessWidget {
               child: Text(
                 line.trim(),
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 17,
+                style: GoogleFonts.dmSans(
+                  fontSize: 16,
                   height: 1.7,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white.withValues(alpha: 0.75),
+                  color: isDark ? Colors.white.withValues(alpha: 0.75) : const Color(0xFF1A1730).withValues(alpha: 0.7),
                 ),
               ),
             );
@@ -323,74 +340,84 @@ class _PlainLyricsBody extends StatelessWidget {
 class _NoLyrics extends StatelessWidget {
   final String title;
   final VoidCallback onRetry;
+  final bool isDark;
 
-  const _NoLyrics({required this.title, required this.onRetry});
+  const _NoLyrics({required this.title, required this.onRetry, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
+    final bgColor = isDark ? Colors.transparent : const Color(0xFFF5F3FF);
+    
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.lyrics_outlined,
-              size: 52,
-              color: Colors.white.withValues(alpha: 0.25),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Không có lời bài hát',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.6),
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.2,
+      child: Container(
+        color: bgColor,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 40),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.lyrics_outlined,
+                size: 52,
+                color: isDark ? Colors.white.withValues(alpha: 0.25) : const Color(0xFF6B5EA8).withValues(alpha: 0.35),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.35),
-                fontSize: 13,
-              ),
-            ),
-            const SizedBox(height: 28),
-            GestureDetector(
-              onTap: onRetry,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 10),
-                decoration: BoxDecoration(
-                  border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.2)),
-                  borderRadius: BorderRadius.circular(20),
+              const SizedBox(height: 20),
+              Text(
+                'Không có lời bài hát',
+                style: GoogleFonts.plusJakartaSans(
+                  color: isDark ? Colors.white.withValues(alpha: 0.6) : const Color(0xFF1A1730),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.2,
+                  height: 1.25,
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.refresh_rounded,
-                        size: 16,
-                        color: Colors.white.withValues(alpha: 0.6)),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Thử lại',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.6),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.dmSans(
+                  color: isDark ? Colors.white.withValues(alpha: 0.35) : const Color(0xFF6B5EA8),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: 28),
+              GestureDetector(
+                onTap: onRetry,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 20, vertical: 10),
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                        color: isDark ? Colors.white.withValues(alpha: 0.2) : const Color(0xFF6B5EA8).withValues(alpha: 0.3)),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.refresh_rounded,
+                          size: 16,
+                          color: isDark ? Colors.white.withValues(alpha: 0.6) : const Color(0xFF6B5EA8)),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Thử lại',
+                        style: GoogleFonts.dmSans(
+                          color: isDark ? Colors.white.withValues(alpha: 0.6) : const Color(0xFF6B5EA8),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          height: 1.4,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

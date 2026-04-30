@@ -232,6 +232,7 @@ class _PlayerPageState extends State<PlayerPage> {
       body: BlocBuilder<PlayerBloc, PlayerState>(
         builder: (context, state) {
           final MediaItem currentSong = state.song ?? widget.song;
+          final isDark = Theme.of(context).brightness == Brightness.dark;
 
           final isPlaying = state is PlayerPlaying;
           final isShuffle = state is PlayerPlaying
@@ -355,9 +356,11 @@ class _PlayerPageState extends State<PlayerPage> {
                           width: active ? 20 : 6,
                           height: 6,
                           decoration: BoxDecoration(
-                            color: active
-                                ? Theme.of(context).colorScheme.primary
-                                : Colors.white.withValues(alpha: 0.3),
+                          color: active
+                              ? Theme.of(context).colorScheme.primary
+                              : (isDark
+                                  ? Colors.white.withValues(alpha: 0.3)
+                                  : const Color(0xFF1A1730).withValues(alpha: 0.25)),
                             borderRadius: BorderRadius.circular(3),
                           ),
                         );
@@ -426,6 +429,7 @@ class _VinylDiscState extends State<_VinylDisc>
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final discSize =
         (MediaQuery.of(context).size.width * 0.72).clamp(0.0, 300.0);
     final artSize = discSize * 0.42;
@@ -433,7 +437,25 @@ class _VinylDiscState extends State<_VinylDisc>
 
     return Stack(
       alignment: Alignment.center,
+      clipBehavior: Clip.none,
       children: [
+         // Light mode: more visible purple glow ring behind the vinyl
+         Container(
+           width: discSize,
+           height: discSize,
+           decoration: BoxDecoration(
+             shape: BoxShape.circle,
+             boxShadow: isDark
+                 ? const []
+                 : [
+                     BoxShadow(
+                       color: const Color(0xFF9333EA).withValues(alpha: 0.20),
+                       blurRadius: 48,
+                       spreadRadius: 16,
+                     ),
+                   ],
+           ),
+         ),
         AnimatedBuilder(
           animation: _spinCtrl,
           builder: (_, child) => Transform.rotate(
@@ -604,10 +626,20 @@ class _PlayerBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        gradient:
-            AppTheme.playerGradient(Theme.of(context).colorScheme.primary),
+        gradient: isDark
+            ? AppTheme.playerGradient(Theme.of(context).colorScheme.primary)
+            : const RadialGradient(
+                center: Alignment.topCenter,
+                radius: 1.5,
+                colors: [
+                  Color(0xFFEDE9FE),
+                  Color(0xFFF5F3FF),
+                ],
+                stops: [0.0, 0.6],
+              ),
       ),
       child: child,
     );
@@ -630,6 +662,9 @@ class _TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final labelColor = isDark ? Colors.white70 : const Color(0xFF6B5EA8);
+    final titleColor = isDark ? Colors.white : const Color(0xFF1A1730);
     return Container(
       padding: EdgeInsets.only(
         top: MediaQuery.of(context).padding.top + 8,
@@ -649,20 +684,20 @@ class _TopBar extends StatelessWidget {
               children: [
                 Text(
                   isOnPlayerPage ? 'NOW PLAYING' : 'LỜI BÀI HÁT',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white70,
+                    color: labelColor,
                     letterSpacing: 3,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: titleColor,
                     letterSpacing: 0.3,
                   ),
                   textAlign: TextAlign.center,
@@ -735,6 +770,9 @@ class _ActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final inactiveIconColor =
+        isDark ? Colors.white70 : const Color(0xFF1A1730);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 28),
       child: BlocBuilder<DownloadCubit, List<String>>(
@@ -757,7 +795,7 @@ class _ActionRow extends StatelessWidget {
                             ? Icons.favorite_rounded
                             : Icons.favorite_border_rounded,
                         label: 'Yêu thích',
-                        color: isFavorite ? const Color(0xFFE91E8C) : Colors.white70,
+                        color: isFavorite ? const Color(0xFFE91E8C) : inactiveIconColor,
                         onTap: () async {
                           final wasFav = favIds.contains(song.id);
                           try {
@@ -796,7 +834,7 @@ class _ActionRow extends StatelessWidget {
                             ? Icons.playlist_add_check_rounded
                             : Icons.playlist_add_rounded,
                         label: 'Playlist',
-                        color: inAnyPlaylist ? const Color(0xFF7C3AED) : Colors.white70,
+                        color: inAnyPlaylist ? const Color(0xFF7C3AED) : inactiveIconColor,
                         onTap: () => _showPlaylistSheet(context),
                       ),
                       _ActionBtn(
@@ -804,7 +842,7 @@ class _ActionRow extends StatelessWidget {
                             ? Icons.download_done_rounded
                             : Icons.download_rounded,
                         label: isDownloaded ? 'Đã tải' : 'Tải nhạc',
-                        color: isDownloaded ? const Color(0xFF1DB954) : Colors.white70,
+                        color: isDownloaded ? const Color(0xFF1DB954) : inactiveIconColor,
                         onTap: () async {
                           final wasDown = downloadedIds.contains(song.id);
                           try {
@@ -839,7 +877,7 @@ class _ActionRow extends StatelessWidget {
                       _ActionBtn(
                         icon: Icons.share_rounded,
                         label: 'Chia sẻ',
-                        color: Colors.white70,
+                        color: inactiveIconColor,
                         onTap: () => _showShareSheet(context),
                       ),
                     ],
@@ -1276,6 +1314,9 @@ class _Controls extends StatelessWidget {
       repeatColor = cs.primary;
     }
 
+    final isDark = cs.brightness == Brightness.dark;
+    final inactiveColor = isDark ? null : const Color(0xFF4A4966);
+
     return Column(
       children: [
         // HÀNG 1: Trộn bài, Trở lại, Phát/Dừng, Tiếp theo, Lặp lại
@@ -1287,24 +1328,24 @@ class _Controls extends StatelessWidget {
               _IconBtn(
                   icon: Icons.shuffle_rounded,
                   onTap: onShuffle,
-                  color: isShuffle ? cs.primary : cs.onSurface.withValues(alpha: 0.5),
+                  color: isShuffle ? cs.primary : inactiveColor,
                   size: 26),
               _IconBtn(
                   icon: Icons.skip_previous_rounded,
                   onTap: onPrevious,
                   size: 40,
-                  color: cs.onSurface),
+                  color: inactiveColor),
               _PlayButton(
                   isPlaying: isPlaying, onPlay: onPlay, onPause: onPause),
               _IconBtn(
                   icon: Icons.skip_next_rounded,
                   onTap: onNext,
                   size: 40,
-                  color: cs.onSurface),
+                  color: inactiveColor),
               _IconBtn(
                   icon: repeatIcon,
                   onTap: onRepeat,
-                  color: repeatColor ?? cs.onSurface.withValues(alpha: 0.5),
+                  color: repeatColor ?? inactiveColor,
                   size: 26),
             ],
           ),
@@ -1317,59 +1358,19 @@ class _Controls extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Nút Bình luận
-              Material(
-                color: cs.surfaceTint.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(20),
-                child: InkWell(
-                  onTap: onCommentTap,
-                  borderRadius: BorderRadius.circular(20),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.chat_bubble_outline_rounded,
-                            size: 20, color: cs.onSurface.withValues(alpha: 0.7)),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Bình luận',
-                          style: TextStyle(
-                              color: cs.onSurface.withValues(alpha: 0.7),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+              _BottomButton(
+                icon: Icons.chat_bubble_outline_rounded,
+                label: 'Bình luận',
+                onTap: onCommentTap,
+                isDark: cs.brightness == Brightness.dark,
               ),
               const SizedBox(width: 16),
               // Nút Danh sách phát
-              Material(
-                color: cs.surfaceTint.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(20),
-                child: InkWell(
-                  onTap: onQueueTap,
-                  borderRadius: BorderRadius.circular(20),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.queue_music_rounded,
-                            size: 20, color: cs.onSurface.withValues(alpha: 0.7)),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Danh sách phát',
-                          style: TextStyle(
-                              color: cs.onSurface.withValues(alpha: 0.7),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+              _BottomButton(
+                icon: Icons.queue_music_rounded,
+                label: 'Danh sách phát',
+                onTap: onQueueTap,
+                isDark: cs.brightness == Brightness.dark,
               ),
             ],
           ),
@@ -1390,22 +1391,113 @@ class _PlayButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Material(
-      color: cs.primary,
-      shape: const CircleBorder(),
-      child: InkWell(
-        onTap: isPlaying ? onPause : onPlay,
-        customBorder: const CircleBorder(),
-        splashColor: cs.onPrimary.withValues(alpha: 0.2),
-        child: SizedBox.square(
-          dimension: 68,
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            child: Icon(
-              isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-              key: ValueKey(isPlaying),
-              color: cs.onPrimary,
-              size: 36,
+    return Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF9333EA),
+            Color(0xFFEC4899),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF9333EA).withValues(alpha: 0.4),
+            blurRadius: 20,
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        shape: const CircleBorder(),
+        child: InkWell(
+          onTap: isPlaying ? onPause : onPlay,
+          customBorder: const CircleBorder(),
+          splashColor: Colors.white.withValues(alpha: 0.2),
+          child: SizedBox.square(
+            dimension: 68,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: Icon(
+                isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                key: ValueKey(isPlaying),
+                color: Colors.white,
+                size: 36,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BottomButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool isDark;
+
+  const _BottomButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF161626) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: isDark
+            ? Border.all(
+                color: const Color(0xFF9333EA).withValues(alpha: 0.2),
+                width: 1,
+              )
+            : null,
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: const Color(0xFF9333EA).withValues(alpha: 0.08),
+                  blurRadius: 12,
+                  spreadRadius: 0,
+                ),
+              ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon,
+                    size: 20,
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.7)
+                        : const Color(0xFF1A1730)),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.7)
+                        : const Color(0xFF1A1730),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -1704,4 +1796,4 @@ class _CommentsSheetState extends State<_CommentsSheet> {
       ),
     );
   }
-}
+}

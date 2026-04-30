@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:shimmer/shimmer.dart';
 import '../../../presentation/bloc/favorite/favorite_cubit.dart';
 import '../../../presentation/bloc/playlist/playlist_cubit.dart';
 import '../../../presentation/bloc/download/download_cubit.dart';
@@ -53,7 +55,6 @@ class _ChartTileState extends State<ChartTile> {
       isScrollControlled: true,
       builder: (ctx) {
         final cs = Theme.of(ctx).colorScheme;
-        final tt = Theme.of(ctx).textTheme;
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
@@ -106,9 +107,12 @@ class _ChartTileState extends State<ChartTile> {
                           children: [
                             Text(
                               widget.item.title,
-                              style: tt.titleMedium?.copyWith(
+                              style: GoogleFonts.plusJakartaSans(
                                 color: cs.onSurface,
+                                fontSize: 14,
                                 fontWeight: FontWeight.w700,
+                                height: 1.2,
+                                letterSpacing: -0.1,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -116,8 +120,11 @@ class _ChartTileState extends State<ChartTile> {
                             const SizedBox(height: 3),
                             Text(
                               widget.item.artist ?? 'Unknown Artist',
-                              style: tt.bodySmall?.copyWith(
+                              style: GoogleFonts.dmSans(
                                 color: cs.onSurface.withValues(alpha: 0.7),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                height: 1.2,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -294,7 +301,6 @@ class _ChartTileState extends State<ChartTile> {
       isScrollControlled: true,
       builder: (ctx) {
         final cs = Theme.of(ctx).colorScheme;
-        final tt = Theme.of(ctx).textTheme;
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
@@ -321,9 +327,12 @@ class _ChartTileState extends State<ChartTile> {
                         alignment: Alignment.centerLeft,
                         child: Text(
                           'Chọn playlist',
-                          style: tt.titleMedium?.copyWith(
+                          style: GoogleFonts.plusJakartaSans(
                             color: cs.onSurface,
+                            fontSize: 16,
                             fontWeight: FontWeight.w700,
+                            height: 1.2,
+                            letterSpacing: -0.1,
                           ),
                         ),
                       ),
@@ -334,8 +343,11 @@ class _ChartTileState extends State<ChartTile> {
                         padding: const EdgeInsets.all(24),
                         child: Text(
                           'Bạn chưa có playlist nào',
-                          style: tt.bodyMedium?.copyWith(
-                            color: cs.onSurface.withValues(alpha: 0.5),
+                          style: GoogleFonts.dmSans(
+                            color: cs.onSurface.withValues(alpha: 0.6),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            height: 1.4,
                           ),
                         ),
                       )
@@ -363,20 +375,24 @@ class _ChartTileState extends State<ChartTile> {
                               ),
                               title: Text(
                                 pl.name,
-                                style: tt.bodyMedium?.copyWith(
+                                style: GoogleFonts.dmSans(
                                   color: isAdded
                                       ? const Color(0xFF7C3AED)
                                       : cs.onSurface,
-                                  fontWeight: FontWeight.w500,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.3,
                                 ),
                               ),
                               subtitle: Text(
                                 '${pl.songIds.length} bài',
-                                style: tt.bodySmall?.copyWith(
+                                style: GoogleFonts.dmSans(
                                   color: isAdded
-                                      ? const Color(0xFF7C3AED)
-                                          .withValues(alpha: 0.7)
+                                      ? const Color(0xFF7C3AED).withValues(alpha: 0.7)
                                       : cs.onSurface.withValues(alpha: 0.5),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  height: 1.2,
                                 ),
                               ),
                               trailing: isAdded
@@ -429,101 +445,112 @@ class _ChartTileState extends State<ChartTile> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-    final isLight = Theme.of(context).brightness == Brightness.light;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isLight = theme.brightness == Brightness.light;
 
-    // Spotify-style card: dark #1A1A1A / #282828 hover; light #F5F5F5 / #EAEAEA hover
-    final cardColor = isLight
-        ? (_isHovered ? const Color(0xFFEAEAEA) : const Color(0xFFF5F5F5))
-        : (_isHovered ? const Color(0xFF282828) : const Color(0xFF1A1A1A));
+    final baseCardColor =
+        isLight ? cs.surface : cs.surfaceContainerHigh.withValues(alpha: 0.6);
+    final surfaceTint = isLight ? const Color(0xFF6B5EA8) : const Color(0xFF9333EA);
+
+    final hoverCardColor = isLight
+        ? cs.surfaceContainerHighest.withValues(alpha: 0.85)
+        : cs.surfaceContainerHighest.withValues(alpha: 0.18);
+
+    final cardColor = _isHovered ? hoverCardColor : baseCardColor;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
         decoration: BoxDecoration(
           color: cardColor,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: cs.outline.withValues(alpha: 0.15),
+            color: surfaceTint.withValues(alpha: _isHovered ? 0.18 : 0.12),
             width: 1,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: surfaceTint.withValues(alpha: _isHovered ? 0.16 : 0.08),
+              blurRadius: _isHovered ? 18 : 12,
+              offset: const Offset(0, 10),
+            ),
+          ],
         ),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
             onTap: widget.onTap,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               child: Row(
                 children: [
-                  // Rank number
                   SizedBox(
                     width: 36,
                     child: Center(
                       child: widget.rank <= 3
-                          ? _RankBadge(
-                              rank: widget.rank, color: _getRankColor())
+                          ? _RankBadge(rank: widget.rank, color: _getRankColor())
                           : Text(
                               '${widget.rank}',
-                              style: tt.bodyLarge?.copyWith(
-                                color: cs.onSurface.withValues(alpha: 0.5),
-                                fontWeight: FontWeight.w500,
+                              style: GoogleFonts.dmSans(
+                                color: cs.onSurface.withValues(alpha: 0.6),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                height: 1.2,
                               ),
                             ),
                     ),
                   ),
-                  const SizedBox(width: 16),
-
-                  // Thumbnail with subtle shadow
+                  const SizedBox(width: 14),
                   Container(
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black
-                              .withValues(alpha: isLight ? 0.1 : 0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
+                          color: Colors.black.withValues(alpha: isLight ? 0.08 : 0.28),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
                         ),
                       ],
                     ),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                       child: Stack(
                         children: [
-                          Container(
+                          SizedBox(
                             width: 56,
                             height: 56,
-                            color: cs.surfaceContainerHighest,
                             child: widget.item.artUri != null
                                 ? Image.network(
                                     widget.item.artUri.toString(),
                                     fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => Icon(
-                                      Icons.music_note_rounded,
-                                      color:
-                                          cs.onSurface.withValues(alpha: 0.3),
-                                      size: 24,
-                                    ),
+                                    loadingBuilder: (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return _buildImageShimmer(isLight);
+                                    },
+                                    errorBuilder: (_, __, ___) => _buildFallback(),
                                   )
-                                : Icon(
-                                    Icons.music_note_rounded,
-                                    color:
-                                        cs.onSurface.withValues(alpha: 0.3),
-                                    size: 24,
-                                  ),
+                                : _buildFallback(),
                           ),
-                          // Play overlay on hover
                           if (_isHovered)
                             Container(
                               width: 56,
                               height: 56,
-                              color: Colors.black.withValues(alpha: 0.45),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.transparent,
+                                    Colors.black.withValues(alpha: 0.18),
+                                    Colors.black.withValues(alpha: 0.58),
+                                  ],
+                                ),
+                              ),
                               child: const Icon(
                                 Icons.play_arrow_rounded,
                                 color: Colors.white,
@@ -534,9 +561,7 @@ class _ChartTileState extends State<ChartTile> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
-
-                  // Song info
+                  const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -544,9 +569,12 @@ class _ChartTileState extends State<ChartTile> {
                       children: [
                         Text(
                           widget.item.title,
-                          style: tt.titleMedium?.copyWith(
+                          style: GoogleFonts.plusJakartaSans(
                             color: cs.onSurface,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            height: 1.2,
+                            letterSpacing: -0.1,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -554,8 +582,11 @@ class _ChartTileState extends State<ChartTile> {
                         const SizedBox(height: 4),
                         Text(
                           widget.item.artist ?? 'Unknown Artist',
-                          style: tt.bodySmall?.copyWith(
-                            color: cs.onSurface.withValues(alpha: 0.7),
+                          style: GoogleFonts.dmSans(
+                            color: cs.onSurface.withValues(alpha: 0.68),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            height: 1.2,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -563,31 +594,29 @@ class _ChartTileState extends State<ChartTile> {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-
-                  // Duration
+                  const SizedBox(width: 10),
                   Text(
                     _formatDuration(widget.item.duration),
-                    style: tt.bodySmall?.copyWith(
-                      color: cs.onSurface.withValues(alpha: 0.6),
+                    style: GoogleFonts.dmSans(
+                      color: cs.onSurface.withValues(alpha: 0.62),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      height: 1.2,
                     ),
                   ),
                   const SizedBox(width: 8),
-
-                  // More button – always visible, brighter on hover
                   AnimatedOpacity(
-                    opacity: _isHovered ? 1.0 : 0.4,
+                    opacity: _isHovered ? 1.0 : 0.5,
                     duration: const Duration(milliseconds: 150),
                     child: IconButton(
                       icon: Icon(
                         Icons.more_vert_rounded,
-                        color: cs.onSurface.withValues(alpha: 0.8),
+                        color: cs.onSurface.withValues(alpha: 0.82),
                         size: 20,
                       ),
                       onPressed: () => _showOptionsSheet(context),
                       padding: EdgeInsets.zero,
-                      constraints:
-                          const BoxConstraints(minWidth: 32, minHeight: 32),
+                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                       splashRadius: 18,
                     ),
                   ),
@@ -596,6 +625,32 @@ class _ChartTileState extends State<ChartTile> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildImageShimmer(bool isLight) {
+    return Shimmer.fromColors(
+      baseColor: isLight ? const Color(0xFFE8E2FF) : const Color(0xFF1E1E2E),
+      highlightColor: isLight ? const Color(0xFFF8F5FF) : const Color(0xFF2B2B40),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isLight ? const Color(0xFFF4EEFF) : const Color(0xFF1D1B2C),
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFallback() {
+    final cs = Theme.of(context).colorScheme;
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    return Container(
+      color: isLight ? const Color(0xFFF4EEFF) : cs.surfaceContainerHighest,
+      child: Icon(
+        Icons.music_note_rounded,
+        color: isLight ? const Color(0xFF6B5EA8).withValues(alpha: 0.28) : cs.onSurface.withValues(alpha: 0.2),
+        size: 24,
       ),
     );
   }
@@ -627,22 +682,27 @@ class _OptionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
     return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
       leading: Container(
-        width: 40,
-        height: 40,
+        width: 42,
+        height: 42,
         decoration: BoxDecoration(
-          color: cs.onSurface.withValues(alpha: 0.07),
-          borderRadius: BorderRadius.circular(10),
+          color: cs.onSurface.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: cs.onSurface.withValues(alpha: 0.08),
+          ),
         ),
         child: Icon(icon, color: iconColor, size: 20),
       ),
       title: Text(
         label,
-        style: tt.bodyMedium?.copyWith(
+        style: GoogleFonts.dmSans(
           color: textColor ?? cs.onSurface,
-          fontWeight: FontWeight.w500,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          height: 1.3,
         ),
       ),
       onTap: onTap,
@@ -661,20 +721,19 @@ class _RankBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 28,
-      height: 28,
+      width: 30,
+      height: 30,
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.2),
-        boxShadow: rank == 1
-            ? [
-                BoxShadow(
-                  color: color.withValues(alpha: 0.4),
-                  blurRadius: 8,
-                  spreadRadius: 1,
-                ),
-              ]
-            : null,
-        borderRadius: BorderRadius.circular(6),
+        color: color.withValues(alpha: 0.16),
+        border: Border.all(color: color.withValues(alpha: 0.28)),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: rank == 1 ? 0.32 : 0.16),
+            blurRadius: rank == 1 ? 10 : 6,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Center(
         child: Icon(

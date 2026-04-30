@@ -171,3 +171,199 @@ ClipRRect(
 ---
 
 *Mỗi màn hình là một cơ hội để tạo ra trải nghiệm đáng nhớ. Đừng thiết kế chung chung.*
+
+---
+
+## Project Palette (Music App)
+
+Dùng đúng palette này cho toàn bộ UI chính của app, đặc biệt là Home / Chart / Player / Profile:
+
+### Core dark
+- `bg`: `#0D0D1A`
+- `surface`: `#161626`
+- `elevated`: `#1E1E2E`
+
+### Core light
+- `bgLight`: `#F5F3FF`
+- `surfaceLight`: `#FFFFFF`
+- `elevatedLight`: `#EDE9FE`
+
+### Brand
+- `primary`: `#9333EA`
+- `secondaryAccent`: `#EC4899`
+
+### Text
+- `textPrimaryDark`: `#F0EEFF`
+- `textSecondaryDark`: `#8B8AA8`
+- `textMutedDark`: `#4A4966`
+- `textPrimaryLight`: `#1A1730`
+- `textSecondaryLight`: `#6B5EA8`
+
+### Rule
+- Không tự ý thêm màu brand mới nếu chưa có trong palette trên.
+- Gradient brand mặc định: `[Color(0xFF9333EA), Color(0xFFEC4899)]`.
+- Inline colors chỉ dùng cho semantic states (success/warning/error) hoặc rank gold/silver/bronze.
+
+## Project Font System
+
+Font của project này đã được chốt:
+
+- **Heading / Display:** `GoogleFonts.plusJakartaSans`
+- **Body / Supporting text:** `GoogleFonts.dmSans`
+
+### Rule
+- Không chọn font mới cho từng màn hình.
+- Title/heading/label nổi bật dùng `Plus Jakarta Sans`.
+- Body/subtitle/metadata dùng `DM Sans`.
+
+## Fixed Typography Scale
+
+Dùng scale này thay vì tự chọn fontSize ngẫu nhiên:
+
+- `displayHero`: 32 / w800 / letterSpacing -0.6 / height 1.1
+- `pageTitle`: 24 / w800 / letterSpacing -0.4 / height 1.15
+- `sectionTitle`: 20 / w800 / letterSpacing -0.3 / height 1.2
+- `cardTitle`: 16 / w700 / letterSpacing -0.2 / height 1.25
+- `body`: 14 / w400 / height 1.45
+- `bodyStrong`: 14 / w600 / height 1.4
+- `caption`: 12 / w500 / height 1.35
+- `micro`: 10 / w600 / height 1.2
+- `navLabel`: 11 / w600 / letterSpacing 0.2
+
+### Rule
+- Chỉ lệch khỏi scale khi có lý do rõ ràng.
+- Tránh xuất hiện quá nhiều size lẻ trong cùng một màn hình.
+
+## Spacing System (Mandatory)
+
+Project này dùng spacing theo bội số của 4:
+
+- `xs = 4`
+- `sm = 8`
+- `md = 12`
+- `lg = 16`
+- `xl = 20`
+- `2xl = 24`
+- `3xl = 32`
+
+### Rule
+- Không dùng padding/margin random (5, 7, 9, 13, 18...) nếu không thật sự cần.
+- Ưu tiên spacing theo token trên.
+
+## Home Page Layout Rhythm
+
+Áp dụng cho Home / Explore / Chart:
+
+- Horizontal page padding chuẩn: `16`
+- Khoảng cách giữa section lớn: `32`
+- Header → content spacing: `12` hoặc `16`
+- Padding trong card lớn: `16`
+- Padding trong compact card: `12`
+- Title → subtitle spacing: `4`
+- Top spacer của scroll content: `16`
+
+### Rule
+- Mọi section trong Home phải theo cùng 1 vertical rhythm.
+
+## Home Shell Components
+
+### AppBar
+- Title dùng `Plus Jakarta Sans`, `24`, `w800`
+- Có thể dùng 1 accent bar mảnh bên trái title
+- Action buttons nên có surface/glass background (không dùng icon trần nếu UI bị “phẳng”)
+
+### Section Header
+- Title: `sectionTitle`
+- CTA “Xem tất cả” là pill nhỏ (không dùng TextButton mặc định)
+
+### Bottom Navigation
+- Nền dạng surface/blur
+- Selected color luôn là `primary`
+- Label size luôn `11`
+
+### Mini Player
+- Cao độ compact
+- Progress line mảnh
+- Dùng surface + border top nhẹ
+- Typography nhỏ nhưng rõ hierarchy
+
+## Gradient Policy
+
+Chỉ dùng 3 nhóm gradient sau trong app này:
+
+1) **Brand gradient**: `[Color(0xFF9333EA), Color(0xFFEC4899)]`
+2) **Cool purple**: `[Color(0xFF7C3AED), Color(0xFF4F46E5)]`
+3) **Atmospheric overlay**: transparent → black alpha overlay cho hero/media cards
+
+### Rule
+- Không tự ý thêm gradient mới cho từng section nếu không cần.
+
+## Radius & Shadow Tiers
+
+Chốt radius tiers:
+
+- `sm`: 8
+- `md`: 12
+- `lg`: 16
+- `xl`: 20
+- `2xl`: 24
+
+### Rule
+- Thumbnail nhỏ: `8` hoặc `12`
+- Standard card: `16`
+- Hero/modal/featured: `20` hoặc `24`
+
+### Shadow
+- Shadow mềm, blur lớn, alpha thấp
+- Shadow tím chỉ dùng cho branded highlight / hover
+
+## Light / Dark Mode Rules
+
+Project này hỗ trợ cả light và dark theme.
+
+### Dark
+- Ưu tiên depth bằng surface layers
+- Border cực nhẹ
+- Secondary text không quá sáng
+
+### Light
+- Có thể dùng nền tím trắng nhẹ (`#F5F3FF`) thay vì trắng phẳng
+- Card trắng + shadow tím rất nhẹ
+- Tránh border đậm
+
+### Rule
+- Component xuất hiện ở Home/Chart/Profile/Player phải có logic light/dark rõ ràng.
+
+## Token Usage Policy
+
+Thứ tự ưu tiên khi chọn màu/text style:
+
+1) `Theme.of(context).colorScheme` / `textTheme`
+2) project constants (`kAccent`, `kAccentPink`, palette tokens)
+3) inline color chỉ cho semantic/rank
+
+### Rule
+- Không mix tùy tiện nhiều biến thể “tím” mới trong cùng một màn hình.
+
+## Responsive Rules
+
+Breakpoints tham khảo:
+
+- `< 600`: mobile
+- `600 - 1024`: tablet
+- `> 1024`: desktop/web
+
+### Rule
+- Rails/sections có thể dùng `ConstrainedBox(maxWidth: 1200 - 1500)` trên màn hình rộng
+- Không stretch card full-width vô hạn trên desktop
+
+## Text Style Usage Rule
+
+- Ưu tiên `Theme.of(context).textTheme` + `copyWith(...)`
+- Chỉ dùng `TextStyle(...)` trực tiếp khi:
+  - badge/micro label/overlay text
+  - hero headline đặc biệt
+  - trường hợp thật sự “one-off” và có lý do rõ ràng
+
+### Rule
+- Typography phải kế thừa từ theme càng nhiều càng tốt.
