@@ -9,6 +9,7 @@ import '../../../presentation/bloc/admin/admin_cubit.dart';
 import '../../../presentation/bloc/admin/admin_state.dart';
 import '../../../presentation/bloc/player/player_bloc.dart';
 import '../../../presentation/bloc/player/player_event.dart';
+import '../../../presentation/bloc/player/player_state.dart';
 import '../../../presentation/bloc/user_songs/user_songs_cubit.dart';
 import '../../admin/admin_dashboard_page.dart';
 import '../../auth/login_page.dart';
@@ -143,38 +144,44 @@ class _GuestProfile extends StatelessWidget {
     final palette = _ProfilePalette.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return SafeArea(
-      child: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 920),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _HeroGuestCard(palette: palette, isDark: isDark),
-                const SizedBox(height: 24),
-                _SectionTitle(
-                  title: 'Quyền lợi khi đăng nhập',
-                  subtitle: 'Cá nhân hóa trải nghiệm âm nhạc như Spotify',
-                ),
-                const SizedBox(height: 14),
-                ..._kFeatures.map(
-                  (f) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _FeatureRow(
-                      icon: f.$1,
-                      label: f.$2,
-                      sub: f.$3,
+    return BlocBuilder<PlayerBloc, PlayerState>(
+      builder: (context, playerState) {
+        final hasPlayer = playerState is PlayerPlaying || 
+                          playerState is PlayerPaused;
+        final bottomPad = hasPlayer ? 74.0 : 16.0;
+        
+        return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: EdgeInsets.fromLTRB(20, 20, 20, bottomPad),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 920),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _HeroGuestCard(palette: palette, isDark: isDark),
+                  const SizedBox(height: 24),
+                  _SectionTitle(
+                    title: 'Quyền lợi khi đăng nhập',
+                    subtitle: 'Cá nhân hóa trải nghiệm âm nhạc như Spotify',
+                  ),
+                  const SizedBox(height: 14),
+                  ..._kFeatures.map(
+                    (f) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _FeatureRow(
+                        icon: f.$1,
+                        label: f.$2,
+                        sub: f.$3,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -409,127 +416,133 @@ class _LoggedInProfile extends StatelessWidget {
     final palette = _ProfilePalette.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return SafeArea(
-      child: Stack(
-        children: [
-          SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 920),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _ProfileHeader(
-                      userName: userName,
-                      userEmail: userEmail,
-                      userAvatarUrl: userAvatarUrl,
-                      favoriteCount: favoriteCount,
-                      playlistCount: playlistCount,
-                      downloadCount: downloadCount,
-                    ),
-                    const SizedBox(height: 24),
-                    const _SectionTitle(
-                      title: 'Tài khoản',
-                      subtitle: 'Quản lý hồ sơ, hoạt động và cài đặt cá nhân',
-                    ),
-                    const SizedBox(height: 14),
-                    _SurfaceCard(
-                      child: Column(
-                        children: _kMenuItems
-                            .map(
-                              (item) => _MenuItem(
-                                icon: item.$1,
-                                label: item.$2,
-                                onTap: () async {
-                                  if (item.$2 == 'Chỉnh sửa hồ sơ' &&
-                                      userId != null) {
-                                    final user = Supabase
-                                        .instance.client.auth.currentUser;
-                                    final profileData = {
-                                      'name': user?.userMetadata?['name'],
-                                      'avatar_url':
-                                          user?.userMetadata?['avatar_url'],
-                                      'bio': user?.userMetadata?['bio'],
-                                      'location':
-                                          user?.userMetadata?['location'],
-                                      'website': user?.userMetadata?['website'],
-                                    };
-                                    await Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => EditProfilePage(
-                                          profileData: profileData,
-                                        ),
-                                      ),
-                                    );
-                                  } else if (item.$2 == 'Lịch sử bình luận' &&
-                                      userId != null) {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            CommentHistoryPage(userId: userId!),
-                                      ),
-                                    );
-                                  } else if (item.$2 == 'Thông báo' &&
-                                      userId != null) {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            const NotificationsPage(),
-                                      ),
-                                    );
-                                  } else if (item.$2 == 'Cài đặt') {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => const SettingsPage(),
-                                      ),
-                                    );
-                                  }
-                                },
-                              ),
-                            )
-                            .toList(),
+    return BlocBuilder<PlayerBloc, PlayerState>(
+      builder: (context, playerState) {
+        final hasPlayer = playerState is PlayerPlaying || 
+                          playerState is PlayerPaused;
+        final bottomPad = hasPlayer ? 74.0 : 16.0;
+        
+        return Stack(
+          children: [
+            SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: EdgeInsets.fromLTRB(20, 16, 20, bottomPad),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 920),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _ProfileHeader(
+                        userName: userName,
+                        userEmail: userEmail,
+                        userAvatarUrl: userAvatarUrl,
+                        favoriteCount: favoriteCount,
+                        playlistCount: playlistCount,
+                        downloadCount: downloadCount,
                       ),
-                    ),
-                    const SizedBox(height: 18),
-                    _QuickActionBar(
-                      palette: palette,
-                      isDark: isDark,
-                      onUploadTap: () => showUploadMusicSheet(context),
-                    ),
-                    const SizedBox(height: 18),
-                    _MyMusicSection(userId: userId),
-                    const SizedBox(height: 18),
-                    const _AdminSection(),
-                    const SizedBox(height: 18),
-                    _LogoutButton(onLogout: onLogout),
-                  ],
+                      const SizedBox(height: 24),
+                      const _SectionTitle(
+                        title: 'Tài khoản',
+                        subtitle: 'Quản lý hồ sơ, hoạt động và cài đặt cá nhân',
+                      ),
+                      const SizedBox(height: 14),
+                      _SurfaceCard(
+                        child: Column(
+                          children: _kMenuItems
+                              .map(
+                                (item) => _MenuItem(
+                                  icon: item.$1,
+                                  label: item.$2,
+                                  onTap: () async {
+                                    if (item.$2 == 'Chỉnh sửa hồ sơ' &&
+                                        userId != null) {
+                                      final user = Supabase
+                                          .instance.client.auth.currentUser;
+                                      final profileData = {
+                                        'name': user?.userMetadata?['name'],
+                                        'avatar_url':
+                                            user?.userMetadata?['avatar_url'],
+                                        'bio': user?.userMetadata?['bio'],
+                                        'location':
+                                            user?.userMetadata?['location'],
+                                        'website': user?.userMetadata?['website'],
+                                      };
+                                      await Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => EditProfilePage(
+                                            profileData: profileData,
+                                          ),
+                                        ),
+                                      );
+                                    } else if (item.$2 == 'Lịch sử bình luận' &&
+                                        userId != null) {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              CommentHistoryPage(userId: userId!),
+                                        ),
+                                      );
+                                    } else if (item.$2 == 'Thông báo' &&
+                                        userId != null) {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const NotificationsPage(),
+                                        ),
+                                      );
+                                    } else if (item.$2 == 'Cài đặt') {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => const SettingsPage(),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      _QuickActionBar(
+                        palette: palette,
+                        isDark: isDark,
+                        onUploadTap: () => showUploadMusicSheet(context),
+                      ),
+                      const SizedBox(height: 18),
+                      _MyMusicSection(userId: userId),
+                      const SizedBox(height: 18),
+                      const _AdminSection(),
+                      const SizedBox(height: 18),
+                      _LogoutButton(onLogout: onLogout),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          Positioned(
-            bottom: 24,
-            right: 20,
-            child: FloatingActionButton.extended(
-              onPressed: () => showUploadMusicSheet(context),
-              backgroundColor: palette.accent,
-              foregroundColor: Colors.white,
-              elevation: 8,
-              icon: const Icon(Icons.cloud_upload_rounded),
-              label: const Text(
-                'Upload nhạc',
-                style: TextStyle(fontWeight: FontWeight.w800),
+            Positioned(
+              bottom: 24,
+              right: 20,
+              child: FloatingActionButton.extended(
+                onPressed: () => showUploadMusicSheet(context),
+                backgroundColor: palette.accent,
+                foregroundColor: Colors.white,
+                elevation: 8,
+                icon: const Icon(Icons.cloud_upload_rounded),
+                label: const Text(
+                  'Upload nhạc',
+                  style: TextStyle(fontWeight: FontWeight.w800),
+                ),
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        );
+      },
     );
   }
 }

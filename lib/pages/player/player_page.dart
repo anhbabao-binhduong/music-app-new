@@ -1,5 +1,6 @@
 // pages/player/player_page.dart
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:music_app/core/constants/app_theme.dart';
 import 'package:music_app/services/music_player_service.dart';
 import 'package:music_app/presentation/bloc/favorite/favorite_cubit.dart';
@@ -131,7 +132,7 @@ class _PlayerPageState extends State<PlayerPage> {
                                           .read<PlayerBloc>()
                                           .add(RemoveFromQueueEvent(index));
                                     }
-                                  },
+                                },
                                   itemBuilder: (context) {
                                     final isDownloaded = context
                                         .read<DownloadCubit>()
@@ -456,6 +457,23 @@ class _VinylDiscState extends State<_VinylDisc>
                    ],
            ),
          ),
+        // Dramatic vinyl glow
+        Container(
+          width: discSize,
+          height: discSize,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF9333EA).withValues(
+                  alpha: isDark ? 0.35 : 0.25,
+                ),
+                blurRadius: isDark ? 80 : 60,
+                spreadRadius: isDark ? 20 : 16,
+              ),
+            ],
+          ),
+        ),
         AnimatedBuilder(
           animation: _spinCtrl,
           builder: (_, child) => Transform.rotate(
@@ -627,21 +645,36 @@ class _PlayerBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      decoration: BoxDecoration(
-        gradient: isDark
-            ? AppTheme.playerGradient(Theme.of(context).colorScheme.primary)
-            : const RadialGradient(
-                center: Alignment.topCenter,
-                radius: 1.5,
-                colors: [
-                  Color(0xFFEDE9FE),
-                  Color(0xFFF5F3FF),
-                ],
-                stops: [0.0, 0.6],
-              ),
-      ),
-      child: child,
+    return Stack(
+      children: [
+        // Layer 1: Blurred artwork background
+        if (artUrl != null)
+          CachedNetworkImage(
+            imageUrl: artUrl!,
+            width: double.infinity,
+            height: double.infinity,
+            fit: BoxFit.cover,
+            placeholder: (_, __) => Container(
+              color: isDark ? const Color(0xFF0D0D1A) : const Color(0xFFF5F3FF),
+            ),
+            errorWidget: (_, __, ___) => Container(
+              color: isDark ? const Color(0xFF0D0D1A) : const Color(0xFFF5F3FF),
+            ),
+          ),
+        // Layer 2: Blur filter + overlay
+        BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+          child: Container(
+            width: double.infinity,
+            height: double.infinity,
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.55)
+                : Colors.black.withValues(alpha: 0.35),
+          ),
+        ),
+        // Layer 3: Content on top
+        child,
+      ],
     );
   }
 }
@@ -663,8 +696,8 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final labelColor = isDark ? Colors.white70 : const Color(0xFF6B5EA8);
-    final titleColor = isDark ? Colors.white : const Color(0xFF1A1730);
+    final labelColor = isDark ? Colors.white70 : const Color(0xFF9333EA).withValues(alpha: 0.8);
+    final titleColor = Colors.white;
     return Container(
       padding: EdgeInsets.only(
         top: MediaQuery.of(context).padding.top + 8,
@@ -737,13 +770,22 @@ class _SongInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
           song.title,
-          style: tt.displayMedium,
+          style: tt.displayMedium?.copyWith(
+            color: Colors.white,
+            shadows: [
+              const Shadow(
+                color: Colors.black38,
+                blurRadius: 8,
+              ),
+            ],
+          ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.center,
@@ -751,7 +793,11 @@ class _SongInfo extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           song.artist ?? 'Unknown Artist',
-          style: tt.titleMedium,
+          style: (tt.titleMedium)?.copyWith(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.7)
+                : Colors.white.withValues(alpha: 0.75),
+          ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.center,
@@ -772,7 +818,7 @@ class _ActionRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final inactiveIconColor =
-        isDark ? Colors.white70 : const Color(0xFF1A1730);
+        isDark ? Colors.white70 : Colors.white.withValues(alpha: 0.85);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 28),
       child: BlocBuilder<DownloadCubit, List<String>>(
@@ -1315,7 +1361,7 @@ class _Controls extends StatelessWidget {
     }
 
     final isDark = cs.brightness == Brightness.dark;
-    final inactiveColor = isDark ? null : const Color(0xFF4A4966);
+    final inactiveColor = isDark ? null : Colors.white.withValues(alpha: 0.6);
 
     return Column(
       children: [
@@ -1452,23 +1498,24 @@ class _BottomButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF161626) : Colors.white,
+        color: isDark ? const Color(0xFF161626) : const Color(0xFF1A1730),
         borderRadius: BorderRadius.circular(20),
         border: isDark
             ? Border.all(
                 color: const Color(0xFF9333EA).withValues(alpha: 0.2),
                 width: 1,
               )
-            : null,
-        boxShadow: isDark
-            ? null
-            : [
-                BoxShadow(
-                  color: const Color(0xFF9333EA).withValues(alpha: 0.08),
-                  blurRadius: 12,
-                  spreadRadius: 0,
-                ),
-              ],
+            : Border.all(
+                color: const Color(0xFF9333EA).withValues(alpha: 0.3),
+                width: 1,
+              ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF9333EA).withValues(alpha: isDark ? 0.08 : 0.15),
+            blurRadius: 12,
+            spreadRadius: 0,
+          ),
+        ],
       ),
       child: Material(
         color: Colors.transparent,
@@ -1485,14 +1532,14 @@ class _BottomButton extends StatelessWidget {
                     size: 20,
                     color: isDark
                         ? Colors.white.withValues(alpha: 0.7)
-                        : const Color(0xFF1A1730)),
+                        : Colors.white.withValues(alpha: 0.9)),
                 const SizedBox(width: 8),
                 Text(
                   label,
                   style: TextStyle(
                     color: isDark
                         ? Colors.white.withValues(alpha: 0.7)
-                        : const Color(0xFF1A1730),
+                        : Colors.white.withValues(alpha: 0.9),
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),

@@ -165,44 +165,46 @@ class _HeroBannerState extends State<HeroBanner>
                       ),
                       const SizedBox(height: 16),
 
-                      // Title
-                      Flexible(
-                        child: Text(
-                          widget.data.label,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
-                            fontSize: 32,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.6,
-                            height: 1.1,
-                            shadows: [
-                              Shadow(
-                                color: cs.scrim.withValues(alpha: 0.55),
-                                blurRadius: 14,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
+                       // Title
+                       Flexible(
+                         child: Text(
+                           widget.data.label,
+                           style: GoogleFonts.plusJakartaSans(
+                             color: Colors.white,
+                             fontSize: 32,
+                             fontWeight: FontWeight.w800,
+                             letterSpacing: -0.6,
+                             height: 1.1,
+                             shadows: [
+                               Shadow(
+                                 color: cs.scrim.withValues(alpha: 0.55),
+                                 blurRadius: 14,
+                                 offset: const Offset(0, 3),
+                               ),
+                             ],
+                           ),
+                           maxLines: 2,
+                           overflow: TextOverflow.visible,
+                           softWrap: true,
+                         ),
+                       ),
                       const SizedBox(height: 8),
 
-                      // Subtitle
-                      Flexible(
-                        child: Text(
-                          widget.data.sub,
-                          style: GoogleFonts.dmSans(
-                            color: Colors.white.withValues(alpha: 0.82),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            height: 1.45,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
+                       // Subtitle
+                       Flexible(
+                         child: Text(
+                           widget.data.sub,
+                           style: GoogleFonts.dmSans(
+                             color: Colors.white.withValues(alpha: 0.82),
+                             fontSize: 14,
+                             fontWeight: FontWeight.w500,
+                             height: 1.45,
+                           ),
+                           maxLines: 1,
+                           overflow: TextOverflow.visible,
+                           softWrap: true,
+                         ),
+                       ),
                       const SizedBox(height: 20),
 
                       // Action buttons

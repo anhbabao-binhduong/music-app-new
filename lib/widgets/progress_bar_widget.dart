@@ -24,6 +24,7 @@ class ProgressBarWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return StreamBuilder<Duration>(
       stream: service.positionStream,
@@ -109,8 +110,22 @@ class ProgressBarWidget extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(_format(position), style: tt.bodySmall),
-                      Text(_format(duration),  style: tt.bodySmall),
+                      Text(
+                        _format(position),
+                        style: tt.bodySmall?.copyWith(
+                          color: isDark
+                              ? null
+                              : Colors.white.withValues(alpha: 0.65),
+                        ),
+                      ),
+                      Text(
+                        _format(duration),
+                        style: tt.bodySmall?.copyWith(
+                          color: isDark
+                              ? null
+                              : Colors.white.withValues(alpha: 0.65),
+                        ),
+                      ),
                     ],
                   ),
                 ),

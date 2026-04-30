@@ -24,15 +24,15 @@ class AppTheme {
     final secondary = isLight ? const Color(0xFF6B5EA8) : _textSecondary;
 
     return TextTheme(
-      displayLarge: GoogleFonts.plusJakartaSans(
+      displayLarge: GoogleFonts.syne(
         fontSize: 28, fontWeight: FontWeight.w800,
         color: primary, letterSpacing: -0.5,
       ),
-      displayMedium: GoogleFonts.plusJakartaSans(
+      displayMedium: GoogleFonts.syne(
         fontSize: 22, fontWeight: FontWeight.w700,
         color: primary, letterSpacing: -0.3,
       ),
-      titleLarge: GoogleFonts.plusJakartaSans(
+      titleLarge: GoogleFonts.syne(
         fontSize: 16, fontWeight: FontWeight.w600,
         color: primary,
       ),
@@ -47,7 +47,7 @@ class AppTheme {
       bodyMedium: GoogleFonts.dmSans(
         fontSize: 14, color: primary,
       ),
-      labelLarge: GoogleFonts.plusJakartaSans(
+      labelLarge: GoogleFonts.syne(
         fontSize: 14, fontWeight: FontWeight.w600,
         color: primary,
       ),
@@ -84,7 +84,7 @@ class AppTheme {
       backgroundColor: Colors.transparent,
       elevation: 0,
       centerTitle: true,
-      titleTextStyle: GoogleFonts.plusJakartaSans(
+      titleTextStyle: GoogleFonts.syne(
         fontSize: 17, fontWeight: FontWeight.w700,
         color: _textPrimary,
       ),
@@ -137,7 +137,7 @@ class AppTheme {
       backgroundColor: Colors.transparent,
       elevation: 0,
       centerTitle: true,
-      titleTextStyle: GoogleFonts.plusJakartaSans(
+      titleTextStyle: GoogleFonts.syne(
         fontSize: 17, fontWeight: FontWeight.w700,
         color: const Color(0xFF1A1730),
       ),

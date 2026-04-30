@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/di/service_locator.dart';
 import '../../../domain/entities/chart_top_song.dart';
@@ -19,10 +20,10 @@ const _kCard = Color(0xFF161626);
 const _kDivider = Color(0xFF2A2A2E);
 const _kAccentGlow = Color(0xFFEC4899);
 
-// Line colors for top 3 songs
-const _kLine1 = Color(0xFF4A90E2); // Blue
-const _kLine2 = Color(0xFF1DB954); // Green
-const _kLine3 = Color(0xFFFF6B6B); // Orange/Red
+// Line colors for top 3 songs (updated brand colors)
+const _kLine1 = Color(0xFF9333EA); // Brand primary
+const _kLine2 = Color(0xFFEC4899); // Brand accent
+const _kLine3 = Color(0xFF06B6D4); // Cyan/teal
 
 class ChartTab extends StatelessWidget {
   const ChartTab({super.key});
@@ -330,20 +331,29 @@ class _ChartViewState extends State<_ChartView> with SingleTickerProviderStateMi
         curveSmoothness: 0.35,
         preventCurveOverShooting: true,
         color: color,
-        barWidth: 1.5,
+        barWidth: 3.0,
         isStrokeCapRound: true,
         dotData: FlDotData(
           show: true,
           getDotPainter: (spot, percent, barData, index) {
             return FlDotCirclePainter(
-              radius: 4, // 4px dot
-              color: Colors.white,
-              strokeWidth: 1.5,
-              strokeColor: color,
+              radius: 0,
+              color: Colors.transparent,
+              strokeWidth: 0,
             );
           },
         ),
-        belowBarData: BarAreaData(show: false),
+        belowBarData: BarAreaData(
+          show: true,
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              color.withValues(alpha: 0.15),
+              color.withValues(alpha: 0.0),
+            ],
+          ),
+        ),
       ));
     }
 
@@ -358,48 +368,36 @@ class _ChartViewState extends State<_ChartView> with SingleTickerProviderStateMi
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
         child: Container(
           decoration: BoxDecoration(
-            color: isLight ? Colors.white : _kCard,
-            borderRadius: BorderRadius.circular(20),
+            color: isLight ? const Color(0xFFF8F6FF) : _kCard,
+            borderRadius: BorderRadius.circular(16),
             border: isLight
-                ? null
+                ? Border.all(color: const Color(0xFF9333EA).withValues(alpha: 0.08))
                 : Border.all(color: Colors.white.withValues(alpha: 0.04)),
             boxShadow: isLight
                 ? [
                     BoxShadow(
-                      color: const Color(0xFF7C3AED).withValues(alpha: 0.08),
-                      blurRadius: 24,
-                      offset: const Offset(0, 6),
-                    ),
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+                      color: const Color(0xFF9333EA).withValues(alpha: 0.07),
+                      blurRadius: 16,
                     ),
                   ]
                 : null,
           ),
-          padding: const EdgeInsets.fromLTRB(16, 18, 16, 14),
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(
               children: [
-                if (isLight) ...[
-                  Container(
-                    width: 4,
-                    height: 18,
-                    margin: const EdgeInsets.only(right: 8),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF7C3AED), Color(0xFFEC4899)],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
+                Container(
+                  width: 3,
+                  height: 16,
+                  margin: const EdgeInsets.only(right: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF9333EA),
+                    borderRadius: BorderRadius.circular(2),
                   ),
-                ],
+                ),
                 Text(
                   'Xu hướng nghe',
-                  style: TextStyle(
+                  style: GoogleFonts.plusJakartaSans(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: isLight ? colorScheme.onSurface : Colors.white,
@@ -410,7 +408,7 @@ class _ChartViewState extends State<_ChartView> with SingleTickerProviderStateMi
             ),
             const SizedBox(height: 14),
             SizedBox(
-              height: 160,
+              height: 200,
               child: LineChart(
                 LineChartData(
                   minY: 0, maxY: ceilingY,
@@ -420,9 +418,9 @@ class _ChartViewState extends State<_ChartView> with SingleTickerProviderStateMi
                     horizontalInterval: (ceilingY / 3).ceilToDouble().clamp(1, double.infinity),
                     getDrawingHorizontalLine: (_) => FlLine(
                       color: isLight
-                          ? colorScheme.onSurface.withValues(alpha: 0.08)
-                          : Colors.white.withValues(alpha: 0.04),
-                      strokeWidth: 0.8,
+                          ? const Color(0xFF1A1730).withValues(alpha: 0.10)
+                          : Colors.white.withValues(alpha: 0.10),
+                      strokeWidth: 1,
                     ),
                   ),
                   titlesData: FlTitlesData(
@@ -430,7 +428,7 @@ class _ChartViewState extends State<_ChartView> with SingleTickerProviderStateMi
                     rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                     topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                     bottomTitles: AxisTitles(sideTitles: SideTitles(
-                      showTitles: true, reservedSize: 26, interval: 1,
+                      showTitles: true, reservedSize: 28, interval: 1,
                       getTitlesWidget: (val, meta) {
                         final idx = val.toInt();
                         if (idx < 0 || idx >= slots.length) return const SizedBox.shrink();
@@ -451,11 +449,11 @@ class _ChartViewState extends State<_ChartView> with SingleTickerProviderStateMi
                           meta: meta,
                           child: Text(
                             _displayLabel(label, state.filter),
-                            style: TextStyle(
-                              color: isLight
-                                  ? colorScheme.onSurface.withValues(alpha: 0.52)
-                                  : Colors.white.withValues(alpha: 0.35),
+                            style: GoogleFonts.dmSans(
                               fontSize: 10,
+                              color: isLight
+                                  ? const Color(0xFF6B5EA8)
+                                  : const Color(0xFF8B8AA8),
                             ),
                           ),
                         );
@@ -473,7 +471,7 @@ class _ChartViewState extends State<_ChartView> with SingleTickerProviderStateMi
                             show: true,
                             getDotPainter: (spot, percent, barData, index) {
                               return FlDotCirclePainter(
-                                radius: 7,
+                                radius: 8,
                                 color: Colors.white,
                                 strokeWidth: 2,
                                 strokeColor: barData.color ?? Colors.white,
@@ -579,17 +577,11 @@ class _ChartViewState extends State<_ChartView> with SingleTickerProviderStateMi
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 10,
-              height: 10,
+              width: 8,
+              height: 8,
               decoration: BoxDecoration(
                 color: _lineColors[i],
                 shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: _lineColors[i].withValues(alpha: 0.4),
-                    blurRadius: 4,
-                  ),
-                ],
               ),
             ),
             const SizedBox(width: 6),
@@ -599,12 +591,12 @@ class _ChartViewState extends State<_ChartView> with SingleTickerProviderStateMi
                 top3[i].song.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: isLight
-                      ? colorScheme.onSurface.withValues(alpha: 0.72)
-                      : Colors.white.withValues(alpha: 0.55),
-                  fontSize: 11.5,
+                style: GoogleFonts.dmSans(
+                  fontSize: 11,
                   fontWeight: FontWeight.w500,
+                  color: isLight
+                      ? const Color(0xFF6B5EA8)
+                      : const Color(0xFF8B8AA8),
                 ),
               ),
             ),

@@ -17,6 +17,7 @@ import '../library/library_page.dart';
 import 'package:music_app/services/supabase_auth_service.dart';
 import 'package:music_app/presentation/bloc/player/player_bloc.dart';
 import 'package:music_app/presentation/bloc/player/player_event.dart';
+import 'package:music_app/presentation/bloc/player/player_state.dart';
 
 import 'package:music_app/core/constants/colors.dart';
 
@@ -125,13 +126,26 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: bgColor,
       extendBody: true,
       appBar: (_currentNavIndex == 1 || _currentNavIndex == 3) ? null : _buildAppBar(),
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 220),
-        child: KeyedSubtree(
-          key: ValueKey(_currentNavIndex),
-          child: _buildBody(),
-        ),
-      ),
+       body: BlocBuilder<PlayerBloc, PlayerState>(
+         builder: (context, state) {
+           final hasPlayer = state is PlayerPlaying || state is PlayerPaused;
+           const miniPlayerHeight = 74.0;
+           const bottomNavHeight = 0.0;
+           final systemBottom = MediaQuery.of(context).padding.bottom;
+           final bottomPad = hasPlayer ? 74.0 : 0.0;
+           
+           return Padding(
+             padding: EdgeInsets.only(bottom: bottomPad),
+             child: AnimatedSwitcher(
+               duration: const Duration(milliseconds: 220),
+               child: KeyedSubtree(
+                 key: ValueKey(_currentNavIndex),
+                 child: _buildBody(),
+               ),
+             ),
+           );
+         },
+       ),
       bottomSheet: const MiniPlayerBar(),
       bottomNavigationBar: _buildBottomNavBar(),
       ),

@@ -208,12 +208,12 @@ Dùng đúng palette này cho toàn bộ UI chính của app, đặc biệt là 
 
 Font của project này đã được chốt:
 
-- **Heading / Display:** `GoogleFonts.plusJakartaSans`
+- **Heading / Display:** `GoogleFonts.syne`
 - **Body / Supporting text:** `GoogleFonts.dmSans`
 
 ### Rule
 - Không chọn font mới cho từng màn hình.
-- Title/heading/label nổi bật dùng `Plus Jakarta Sans`.
+- Title/heading/label nổi bật dùng `Syne`.
 - Body/subtitle/metadata dùng `DM Sans`.
 
 ## Fixed Typography Scale
@@ -268,7 +268,7 @@ Project này dùng spacing theo bội số của 4:
 ## Home Shell Components
 
 ### AppBar
-- Title dùng `Plus Jakarta Sans`, `24`, `w800`
+- Title dùng `Syne`, `24`, `w800`
 - Có thể dùng 1 accent bar mảnh bên trái title
 - Action buttons nên có surface/glass background (không dùng icon trần nếu UI bị “phẳng”)
 
