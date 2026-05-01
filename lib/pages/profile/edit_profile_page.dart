@@ -641,6 +641,19 @@ class _EditProfilePageState extends State<EditProfilePage>
     final textColor = isDark ? Colors.white : const Color(0xFF0F0F1A);
     final dropdownBg = isDark ? const Color(0xFF1C1C2E) : Colors.white;
 
+    Text dropdownText(String text, {Color? color}) {
+      return Text(
+        text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: color ?? textColor,
+          fontSize: 15,
+          fontWeight: FontWeight.w500,
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -665,6 +678,7 @@ class _EditProfilePageState extends State<EditProfilePage>
           ),
           child: DropdownButtonFormField<T>(
             initialValue: value,
+            isExpanded: true,
             decoration: InputDecoration(
               border: InputBorder.none,
               prefixIcon: Icon(icon, color: subColor, size: 20),
@@ -678,24 +692,56 @@ class _EditProfilePageState extends State<EditProfilePage>
             ),
             icon: Icon(Icons.keyboard_arrow_down_rounded, color: subColor),
             hint: hint != null
-                ? Text(hint,
-                    style: TextStyle(
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.25)
-                          : const Color(0xFFB0B7C3),
-                      fontSize: 14,
-                    ))
+                ? dropdownText(
+                    hint,
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.25)
+                        : const Color(0xFFB0B7C3),
+                  )
                 : null,
+            selectedItemBuilder: (context) => items
+                .map((item) => Align(
+                      alignment: Alignment.centerLeft,
+                      child: dropdownText(itemLabel(item)),
+                    ))
+                .toList(),
             items: items
                 .map((item) => DropdownMenuItem<T>(
                       value: item,
-                      child: Text(itemLabel(item)),
+                      child: dropdownText(itemLabel(item)),
                     ))
                 .toList(),
             onChanged: _isLoading ? null : onChanged,
           ),
         ),
       ],
+    );
+  }
+
+  Widget _responsiveFieldRow({
+    required Widget left,
+    required Widget right,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 560) {
+          return Column(
+            children: [
+              left,
+              const SizedBox(height: 14),
+              right,
+            ],
+          );
+        }
+
+        return Row(
+          children: [
+            Expanded(child: left),
+            const SizedBox(width: 12),
+            Expanded(child: right),
+          ],
+        );
+      },
     );
   }
 
@@ -1316,117 +1362,89 @@ class _EditProfilePageState extends State<EditProfilePage>
                               iconColor: _kAccentPink,
                             ),
                             const SizedBox(height: 14),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _field(
-                                    label: 'VỊ TRÍ',
-                                    controller: _locationController,
-                                    icon: Icons.location_on_outlined,
-                                    isDark: isDark,
-                                    hint: 'TP. Hồ Chí Minh',
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: _field(
-                                    label: 'QUỐC GIA',
-                                    controller: _countryController,
-                                    icon: Icons.flag_outlined,
-                                    isDark: isDark,
-                                    hint: 'Việt Nam',
-                                  ),
-                                ),
-                              ],
+                            _responsiveFieldRow(
+                              left: _field(
+                                label: 'VỊ TRÍ',
+                                controller: _locationController,
+                                icon: Icons.location_on_outlined,
+                                isDark: isDark,
+                                hint: 'TP. Hồ Chí Minh',
+                              ),
+                              right: _field(
+                                label: 'QUỐC GIA',
+                                controller: _countryController,
+                                icon: Icons.flag_outlined,
+                                isDark: isDark,
+                                hint: 'Việt Nam',
+                              ),
                             ),
                             const SizedBox(height: 14),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _field(
-                                    label: 'NGHỀ NGHIỆP',
-                                    controller: _occupationController,
-                                    icon: Icons.work_outline_rounded,
-                                    isDark: isDark,
-                                    hint: 'Producer, Singer...',
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: _field(
-                                    label: 'SỐ ĐIỆN THOẠI',
-                                    controller: _phoneController,
-                                    icon: Icons.phone_outlined,
-                                    isDark: isDark,
-                                    hint: '09xxxxxxxx',
-                                    keyboardType: TextInputType.phone,
-                                  ),
-                                ),
-                              ],
+                            _responsiveFieldRow(
+                              left: _field(
+                                label: 'NGHỀ NGHIỆP',
+                                controller: _occupationController,
+                                icon: Icons.work_outline_rounded,
+                                isDark: isDark,
+                                hint: 'Producer, Singer...',
+                              ),
+                              right: _field(
+                                label: 'SỐ ĐIỆN THOẠI',
+                                controller: _phoneController,
+                                icon: Icons.phone_outlined,
+                                isDark: isDark,
+                                hint: '09xxxxxxxx',
+                                keyboardType: TextInputType.phone,
+                              ),
                             ),
                             const SizedBox(height: 14),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _dropdownField<String>(
-                                    label: 'GIỚI TÍNH',
-                                    value: _selectedGender,
-                                    items: _genderOptions,
-                                    itemLabel: (g) => g,
-                                    onChanged: (v) => setState(() => _selectedGender = v),
-                                    icon: Icons.wc_rounded,
-                                    isDark: isDark,
-                                    hint: 'Chọn giới tính',
-                                  ),
+                            _responsiveFieldRow(
+                              left: _dropdownField<String>(
+                                label: 'GIỚI TÍNH',
+                                value: _selectedGender,
+                                items: _genderOptions,
+                                itemLabel: (g) => g,
+                                onChanged: (v) => setState(() => _selectedGender = v),
+                                icon: Icons.wc_rounded,
+                                isDark: isDark,
+                                hint: 'Chọn giới tính',
+                              ),
+                              right: _field(
+                                label: 'NGÀY SINH',
+                                controller: _birthDateController,
+                                icon: Icons.cake_outlined,
+                                isDark: isDark,
+                                hint: 'dd/mm/yyyy',
+                                readOnly: true,
+                                onTap: _pickBirthDate,
+                                suffixIcon: Icon(
+                                  Icons.calendar_today_rounded,
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.45)
+                                      : const Color(0xFF6B7280),
+                                  size: 18,
                                 ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: _field(
-                                    label: 'NGÀY SINH',
-                                    controller: _birthDateController,
-                                    icon: Icons.cake_outlined,
-                                    isDark: isDark,
-                                    hint: 'dd/mm/yyyy',
-                                    readOnly: true,
-                                    onTap: _pickBirthDate,
-                                    suffixIcon: Icon(
-                                      Icons.calendar_today_rounded,
-                                      color: isDark
-                                          ? Colors.white.withValues(alpha: 0.45)
-                                          : const Color(0xFF6B7280),
-                                      size: 18,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
                             const SizedBox(height: 14),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _field(
-                                    label: 'WEBSITE / PORTFOLIO',
-                                    controller: _websiteController,
-                                    icon: Icons.link_rounded,
-                                    isDark: isDark,
-                                    hint: 'https://your-site.com',
-                                    keyboardType: TextInputType.url,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: _dropdownField<String>(
-                                    label: 'NGÔN NGỮ ƯA THÍCH',
-                                    value: _selectedLanguage,
-                                    items: _kLanguages,
-                                    itemLabel: (l) => l,
-                                    onChanged: (v) => setState(() => _selectedLanguage = v),
-                                    icon: Icons.language_rounded,
-                                    isDark: isDark,
-                                    hint: 'Chọn ngôn ngữ',
-                                  ),
-                                ),
-                              ],
+                            _responsiveFieldRow(
+                              left: _field(
+                                label: 'WEBSITE / PORTFOLIO',
+                                controller: _websiteController,
+                                icon: Icons.link_rounded,
+                                isDark: isDark,
+                                hint: 'https://your-site.com',
+                                keyboardType: TextInputType.url,
+                              ),
+                              right: _dropdownField<String>(
+                                label: 'NGÔN NGỮ ƯA THÍCH',
+                                value: _selectedLanguage,
+                                items: _kLanguages,
+                                itemLabel: (l) => l,
+                                onChanged: (v) => setState(() => _selectedLanguage = v),
+                                icon: Icons.language_rounded,
+                                isDark: isDark,
+                                hint: 'Chọn ngôn ngữ',
+                              ),
                             ),
                           ],
                         ),
@@ -1515,33 +1533,26 @@ class _EditProfilePageState extends State<EditProfilePage>
                               iconColor: const Color(0xFFFF0000),
                             ),
                             const SizedBox(height: 14),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _field(
-                                    label: 'TIKTOK',
-                                    controller: _tiktokController,
-                                    icon: Icons.music_video_rounded,
-                                    isDark: isDark,
-                                    hint: '@username',
-                                    iconColor: isDark
-                                        ? Colors.white
-                                        : const Color(0xFF010101),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: _field(
-                                    label: 'SPOTIFY',
-                                    controller: _spotifyUrlController,
-                                    icon: Icons.headphones_rounded,
-                                    isDark: isDark,
-                                    hint: 'https://open.spotify.com/...',
-                                    keyboardType: TextInputType.url,
-                                    iconColor: _kGreen,
-                                  ),
-                                ),
-                              ],
+                            _responsiveFieldRow(
+                              left: _field(
+                                label: 'TIKTOK',
+                                controller: _tiktokController,
+                                icon: Icons.music_video_rounded,
+                                isDark: isDark,
+                                hint: '@username',
+                                iconColor: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF010101),
+                              ),
+                              right: _field(
+                                label: 'SPOTIFY',
+                                controller: _spotifyUrlController,
+                                icon: Icons.headphones_rounded,
+                                isDark: isDark,
+                                hint: 'https://open.spotify.com/...',
+                                keyboardType: TextInputType.url,
+                                iconColor: _kGreen,
+                              ),
                             ),
                           ],
                         ),
