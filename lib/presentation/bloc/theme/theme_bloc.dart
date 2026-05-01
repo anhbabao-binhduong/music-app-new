@@ -51,12 +51,12 @@ class ThemeBloc extends Bloc<ThemeEvent, ThemeState> {
   }
 
   Future<void> _onLoad(LoadThemeEvent event, Emitter<ThemeState> emit) async {
-    final saved = _settings.get(
+    final savedMode = _settings.get(
       HiveSettingsKeys.themeMode,
       defaultValue: 'dark',
     ) as String;
 
-    final mode = switch (saved) {
+    final mode = switch (savedMode) {
       'light'  => AppThemeMode.light,
       'system' => AppThemeMode.system,
       _        => AppThemeMode.dark,

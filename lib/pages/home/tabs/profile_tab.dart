@@ -30,6 +30,7 @@ class ProfileTab extends StatelessWidget {
   final int favoriteCount;
   final int playlistCount;
   final int downloadCount;
+  final VoidCallback? onProfileUpdated;
 
   const ProfileTab({
     super.key,
@@ -42,6 +43,7 @@ class ProfileTab extends StatelessWidget {
     this.favoriteCount = 0,
     this.playlistCount = 0,
     this.downloadCount = 0,
+    this.onProfileUpdated,
   });
 
   @override
@@ -56,6 +58,7 @@ class ProfileTab extends StatelessWidget {
             favoriteCount: favoriteCount,
             playlistCount: playlistCount,
             downloadCount: downloadCount,
+            onProfileUpdated: onProfileUpdated,
           )
         : const _GuestProfile();
   }
@@ -398,6 +401,7 @@ class _LoggedInProfile extends StatelessWidget {
   final int favoriteCount;
   final int playlistCount;
   final int downloadCount;
+  final VoidCallback? onProfileUpdated;
 
   const _LoggedInProfile({
     required this.userName,
@@ -408,6 +412,7 @@ class _LoggedInProfile extends StatelessWidget {
     required this.favoriteCount,
     required this.playlistCount,
     required this.downloadCount,
+    this.onProfileUpdated,
   });
 
   @override
@@ -476,6 +481,9 @@ class _LoggedInProfile extends StatelessWidget {
                                           ),
                                         ),
                                       );
+                                      if (context.mounted) {
+                                        onProfileUpdated?.call();
+                                      }
                                     } else if (item.$2 == 'Lịch sử bình luận' &&
                                         userId != null) {
                                       Navigator.push(

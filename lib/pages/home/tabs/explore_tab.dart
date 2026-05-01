@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../widgets/banner_carousel.dart';
 import '../widgets/chart_tile.dart';
 import '../widgets/see_all_page.dart';
@@ -13,7 +14,10 @@ import '../../../../widgets/category_chip_row.dart';
 import '../../../../domain/entities/song_entity.dart';
 import '../../../../domain/entities/album_entity.dart';
 import '../../../../services/music_player_service.dart';
+import '../../../../services/recommendation_service.dart';
 import '../../../../core/di/service_locator.dart';
+import '../../profile/edit_profile_page.dart';
+import '../for_you_page.dart';
 
 import '../widgets/album_card.dart';
 import '../../library/album_detail_page.dart';
@@ -24,7 +28,13 @@ import '../../../../data/models/user_song_model.dart';
 
 class ExploreTab extends StatefulWidget {
   final bool isLoggedIn;
-  const ExploreTab({super.key, required this.isLoggedIn});
+  final int refreshToken;
+
+  const ExploreTab({
+    super.key,
+    required this.isLoggedIn,
+    this.refreshToken = 0,
+  });
 
   @override
   State<ExploreTab> createState() => _ExploreTabState();
@@ -33,6 +43,9 @@ class ExploreTab extends StatefulWidget {
 class _ExploreTabState extends State<ExploreTab> {
   int _chartPage = 1;
   late Future<List<UserSongModel>> _approvedSongsFuture;
+  late Future<RecommendationResult> _recommendationsFuture;
+  final _supabase = Supabase.instance.client;
+  final _recommendationService = RecommendationService();
 
   final BannerData _banner = const BannerData(
     imageUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=800&q=80',
@@ -46,6 +59,18 @@ class _ExploreTabState extends State<ExploreTab> {
     super.initState();
     context.read<CategoryCubit>().loadAll();
     _approvedSongsFuture = context.read<UserSongsCubit>().loadApprovedSongs();
+    _recommendationsFuture = _recommendationService.getRecommendedSongs();
+  }
+
+  @override
+  void didUpdateWidget(covariant ExploreTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.refreshToken != widget.refreshToken ||
+        oldWidget.isLoggedIn != widget.isLoggedIn) {
+      setState(() {
+        _recommendationsFuture = _recommendationService.getRecommendedSongs();
+      });
+    }
   }
 
   @override
@@ -150,6 +175,31 @@ class _ExploreTabState extends State<ExploreTab> {
     );
   }
 
+  Future<void> _openProfileSettingsPrompt() async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return;
+
+    final profileData = {
+      'name': user.userMetadata?['name'],
+      'avatar_url': user.userMetadata?['avatar_url'],
+      'bio': user.userMetadata?['bio'],
+      'location': user.userMetadata?['location'],
+      'website': user.userMetadata?['website'],
+    };
+
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => EditProfilePage(profileData: profileData),
+      ),
+    );
+
+    if (mounted) {
+      setState(() {
+        _recommendationsFuture = _recommendationService.getRecommendedSongs();
+      });
+    }
+  }
+
   Widget _buildSectionHeader(String title, VoidCallback onSeeAll) {
     final onSurface = Theme.of(context).colorScheme.onSurface;
 
@@ -214,6 +264,12 @@ class _ExploreTabState extends State<ExploreTab> {
           // Hero Banner
           SliverToBoxAdapter(
             child: HeroBanner(data: _banner),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 32)),
+
+          // Personalized Recommendations Section
+          SliverToBoxAdapter(
+            child: _buildForYouSection(context),
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 32)),
 
@@ -383,6 +439,227 @@ class _ExploreTabState extends State<ExploreTab> {
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
+      ),
+    );
+  }
+
+  Widget _buildForYouSection(BuildContext context) {
+    return FutureBuilder<RecommendationResult>(
+      future: _recommendationsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const SizedBox(
+            height: 220,
+            child: Center(child: _SectionLoader()),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return const SizedBox.shrink();
+        }
+
+        final result = snapshot.data;
+        if (result == null) return const SizedBox.shrink();
+
+        final songs = result.songs;
+        final allItems = songs.map(_songEntityToMediaItem).toList();
+        final displayItems = allItems.take(5).toList();
+
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1800),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF9333EA), Color(0xFFEC4899)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF9333EA).withValues(alpha: 0.28),
+                              blurRadius: 18,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.music_note_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Dành cho bạn',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontSize: 24,
+                                fontWeight: FontWeight.w800,
+                                height: 1.15,
+                                letterSpacing: -0.4,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Dựa trên sở thích của bạn',
+                              style: GoogleFonts.dmSans(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withValues(alpha: 0.62),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                height: 1.3,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (result.hasPreferences && allItems.isNotEmpty) ...[
+                        const SizedBox(width: 12),
+                        SeeAllButton(
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => ForYouPage(items: allItems),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                if (!result.hasPreferences)
+                  _buildForYouPromptCard(context)
+                else if (allItems.isEmpty)
+                  const SizedBox.shrink()
+                else
+                  SizedBox(
+                    height: 220,
+                      child: ListView.separated(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: displayItems.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 12),
+                        itemBuilder: (context, index) => HorizontalSongCard(
+                          width: 160,
+                          item: displayItems[index],
+                          onTap: () => _playSongFromMediaItems(allItems, index),
+                        ),
+                      ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildForYouPromptCard(BuildContext context) {
+    final theme = Theme.of(context);
+    final isLight = theme.brightness == Brightness.light;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: isLight
+              ? theme.colorScheme.surface
+              : theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.68),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF9333EA).withValues(alpha: isLight ? 0.08 : 0.16),
+              blurRadius: 18,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF9333EA), Color(0xFFEC4899)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: const Icon(
+                Icons.tune_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Cập nhật sở thích âm nhạc để nhận gợi ý phù hợp',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: theme.colorScheme.onSurface,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      height: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    height: 42,
+                    child: FilledButton(
+                      onPressed: widget.isLoggedIn ? _openProfileSettingsPrompt : null,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF9333EA),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                      ),
+                      child: Text(
+                        'Cài đặt ngay',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

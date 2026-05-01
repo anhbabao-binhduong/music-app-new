@@ -72,6 +72,8 @@ class _EditProfilePageState extends State<EditProfilePage>
 
   final _supabase = Supabase.instance.client;
 
+  Map<String, dynamic> _profileData = {};
+
   Uint8List? _selectedImageBytes;
   String? _selectedImageExt;
   String? _selectedGender;
@@ -91,60 +93,129 @@ class _EditProfilePageState extends State<EditProfilePage>
   @override
   void initState() {
     super.initState();
-    final meta = widget.profileData;
     final user = _supabase.auth.currentUser;
+    _profileData = Map<String, dynamic>.from(widget.profileData);
 
     _emailController = TextEditingController(text: user?.email ?? '');
-    _nameController = TextEditingController(text: meta['name']?.toString() ?? '');
-    _bioController = TextEditingController(text: meta['bio']?.toString() ?? '');
-    _locationController = TextEditingController(text: meta['location']?.toString() ?? '');
-    _websiteController = TextEditingController(text: meta['website']?.toString() ?? '');
-    _phoneController = TextEditingController(text: meta['phone']?.toString() ?? '');
-    _occupationController = TextEditingController(text: meta['occupation']?.toString() ?? '');
-    _birthDateController = TextEditingController(text: meta['birth_date']?.toString() ?? '');
+    _nameController = TextEditingController();
+    _bioController = TextEditingController();
+    _locationController = TextEditingController();
+    _websiteController = TextEditingController();
+    _phoneController = TextEditingController();
+    _occupationController = TextEditingController();
+    _birthDateController = TextEditingController();
     _passwordController = TextEditingController();
     _confirmPasswordController = TextEditingController();
-    _facebookController = TextEditingController(text: meta['facebook']?.toString() ?? '');
-    _instagramController = TextEditingController(text: meta['instagram']?.toString() ?? '');
-    _twitterController = TextEditingController(text: meta['twitter']?.toString() ?? '');
-    _youtubeController = TextEditingController(text: meta['youtube']?.toString() ?? '');
-    _tiktokController = TextEditingController(text: meta['tiktok']?.toString() ?? '');
-    _spotifyUrlController = TextEditingController(text: meta['spotify_url']?.toString() ?? '');
-    _countryController = TextEditingController(text: meta['country']?.toString() ?? '');
-    _mottoController = TextEditingController(text: meta['motto']?.toString() ?? '');
+    _facebookController = TextEditingController();
+    _instagramController = TextEditingController();
+    _twitterController = TextEditingController();
+    _youtubeController = TextEditingController();
+    _tiktokController = TextEditingController();
+    _spotifyUrlController = TextEditingController();
+    _countryController = TextEditingController();
+    _mottoController = TextEditingController();
 
-    final initialGender = meta['gender']?.toString();
-    if (_genderOptions.contains(initialGender)) _selectedGender = initialGender;
+    _applyProfileData(_profileData);
+    _loadProfile();
+  }
 
-    final initialLanguage = meta['preferred_language']?.toString();
-    if (_kLanguages.contains(initialLanguage)) _selectedLanguage = initialLanguage;
+  Future<void> _loadProfile() async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return;
 
-    final initialLevel = meta['music_level']?.toString();
-    if (_kMusicLevels.contains(initialLevel)) _selectedMusicLevel = initialLevel;
+    try {
+      setState(() => _isLoading = true);
+      final profile = await _supabase
+          .from('profiles')
+          .select()
+          .eq('id', user.id)
+          .maybeSingle();
 
-    final rawGenres = meta['favorite_genres'];
-    if (rawGenres is List) {
-      for (final g in rawGenres) {
-        if (_kGenres.contains(g.toString())) _selectedGenres.add(g.toString());
+      if (profile == null || !mounted) return;
+
+      setState(() {
+        _applyProfileData(Map<String, dynamic>.from(profile));
+      });
+    } catch (e) {
+      if (!mounted) return;
+      _showSnack('Không thể tải hồ sơ: $e', isError: true);
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
       }
-    } else if (rawGenres is String && rawGenres.isNotEmpty) {
-      for (final g in rawGenres.split(',')) {
-        final trimmed = g.trim();
-        if (_kGenres.contains(trimmed)) _selectedGenres.add(trimmed);
+    }
+  }
+
+  void _applyProfileData(Map<String, dynamic> profile) {
+    _profileData = {..._profileData, ...profile};
+
+    _nameController.text =
+        (_profileData['display_name'] ?? _profileData['name'] ?? '')
+            .toString();
+    _bioController.text = _profileData['bio']?.toString() ?? '';
+    _locationController.text = _profileData['location']?.toString() ?? '';
+    _websiteController.text =
+        (_profileData['website_url'] ?? _profileData['website'] ?? '')
+            .toString();
+    _phoneController.text = _profileData['phone']?.toString() ?? '';
+    _occupationController.text = _profileData['occupation']?.toString() ?? '';
+    _birthDateController.text = _normalizeBirthDate(_profileData['birth_date']);
+    _facebookController.text = _profileData['facebook']?.toString() ?? '';
+    _instagramController.text = _profileData['instagram']?.toString() ?? '';
+    _twitterController.text = _profileData['twitter']?.toString() ?? '';
+    _youtubeController.text = _profileData['youtube']?.toString() ?? '';
+    _tiktokController.text = _profileData['tiktok']?.toString() ?? '';
+    _spotifyUrlController.text = _profileData['spotify_url']?.toString() ?? '';
+    _countryController.text = _profileData['country']?.toString() ?? '';
+    _mottoController.text = _profileData['motto']?.toString() ?? '';
+
+    final gender = _profileData['gender']?.toString();
+    _selectedGender = _genderOptions.contains(gender) ? gender : null;
+
+    final language = _profileData['preferred_language']?.toString();
+    _selectedLanguage = _kLanguages.contains(language) ? language : null;
+
+    final level = _profileData['music_level']?.toString();
+    _selectedMusicLevel = _kMusicLevels.contains(level) ? level : null;
+
+    _selectedGenres
+      ..clear()
+      ..addAll(_extractAllowedValues(_profileData['favorite_genres'], _kGenres));
+
+    _selectedMoods
+      ..clear()
+      ..addAll(
+        _extractAllowedValues(_profileData['listening_moods'], _kListeningMoods),
+      );
+  }
+
+  Set<String> _extractAllowedValues(dynamic rawValues, List<String> allowed) {
+    final values = <String>{};
+
+    if (rawValues is List) {
+      for (final value in rawValues) {
+        final normalized = value.toString().trim();
+        if (allowed.contains(normalized)) values.add(normalized);
+      }
+    } else if (rawValues is String && rawValues.isNotEmpty) {
+      for (final value in rawValues.split(',')) {
+        final normalized = value.trim();
+        if (allowed.contains(normalized)) values.add(normalized);
       }
     }
 
-    final rawMoods = meta['listening_moods'];
-    if (rawMoods is List) {
-      for (final m in rawMoods) {
-        if (_kListeningMoods.contains(m.toString())) _selectedMoods.add(m.toString());
-      }
-    } else if (rawMoods is String && rawMoods.isNotEmpty) {
-      for (final m in rawMoods.split(',')) {
-        final trimmed = m.trim();
-        if (_kListeningMoods.contains(trimmed)) _selectedMoods.add(trimmed);
-      }
-    }
+    return values;
+  }
+
+  String _normalizeBirthDate(dynamic value) {
+    final raw = value?.toString().trim() ?? '';
+    if (raw.isEmpty) return '';
+    if (raw.contains('/')) return raw;
+
+    final parsed = DateTime.tryParse(raw);
+    if (parsed == null) return raw;
+
+    return _formatDate(parsed);
   }
 
   @override
@@ -198,7 +269,7 @@ class _EditProfilePageState extends State<EditProfilePage>
     final genresFilled = _selectedGenres.isNotEmpty ? 1 : 0;
     final moodsFilled = _selectedMoods.isNotEmpty ? 1 : 0;
     final avatarFilled = (_selectedImageBytes != null ||
-            (widget.profileData['avatar_url']?.toString().isNotEmpty ?? false))
+            (_profileData['avatar_url']?.toString().isNotEmpty ?? false))
         ? 1
         : 0;
     final total = fields.length + 6 + 1 + 1 + 1; // fields + socials + genres + moods + avatar
@@ -350,10 +421,9 @@ class _EditProfilePageState extends State<EditProfilePage>
       final user = _supabase.auth.currentUser;
       if (user == null) throw Exception('Chưa đăng nhập');
 
-      String? newAvatarUrl = widget.profileData['avatar_url']?.toString();
+      String? newAvatarUrl = _profileData['avatar_url']?.toString();
       if (_selectedImageBytes != null) {
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final path = '${user.id}_$timestamp.${_selectedImageExt ?? 'png'}';
+        final path = 'public/${user.id}.${_selectedImageExt ?? 'png'}';
         await _supabase.storage.from('avatars').uploadBinary(
               path,
               _selectedImageBytes!,
@@ -362,17 +432,33 @@ class _EditProfilePageState extends State<EditProfilePage>
         newAvatarUrl = _supabase.storage.from('avatars').getPublicUrl(path);
       }
 
-      final profileUpdates = <String, dynamic>{
-        'name': name,
+      final profileUpsert = <String, dynamic>{
+        'id': user.id,
+        'display_name': name,
+        'avatar_url': newAvatarUrl,
+        'gender': _selectedGender,
+        'birth_date': birthDate.isEmpty ? null : birthDate,
+        'preferred_language': _selectedLanguage,
+        'music_level': _selectedMusicLevel,
+        'favorite_genres': _selectedGenres.toList(),
+        'listening_moods': _selectedMoods.toList(),
         'bio': bio,
+        'motto': motto,
         'location': location,
-        'website': website,
-        if (newAvatarUrl != null) 'avatar_url': newAvatarUrl,
+        'country': country,
+        'website_url': website,
+        'updated_at': DateTime.now().toIso8601String(),
       };
 
       final metadataUpdates = <String, dynamic>{
-        ...widget.profileData,
-        ...profileUpdates,
+        ..._profileData,
+        'name': name,
+        'display_name': name,
+        'bio': bio,
+        'location': location,
+        'website': website,
+        'website_url': website,
+        'avatar_url': newAvatarUrl,
         'phone': phone,
         'occupation': occupation,
         'birth_date': birthDate,
@@ -387,11 +473,11 @@ class _EditProfilePageState extends State<EditProfilePage>
         'motto': motto,
         'preferred_language': _selectedLanguage,
         'music_level': _selectedMusicLevel,
-        'favorite_genres': _selectedGenres.join(','),
-        'listening_moods': _selectedMoods.join(','),
+        'favorite_genres': _selectedGenres.toList(),
+        'listening_moods': _selectedMoods.toList(),
       };
 
-      await _supabase.from('profiles').update(profileUpdates).eq('id', user.id);
+      await _supabase.from('profiles').upsert(profileUpsert);
       await _supabase.auth.updateUser(UserAttributes(
         data: metadataUpdates,
         password: password.isNotEmpty ? password : null,
@@ -406,7 +492,14 @@ class _EditProfilePageState extends State<EditProfilePage>
       }
 
       if (!mounted) return;
-      _showSnack('Cập nhật hồ sơ thành công!', isSuccess: true);
+      setState(() {
+        _profileData = {
+          ..._profileData,
+          ...profileUpsert,
+          ...metadataUpdates,
+        };
+      });
+      _showSnack('Cập nhật hồ sơ thành công', isSuccess: true);
       Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
@@ -979,10 +1072,11 @@ class _EditProfilePageState extends State<EditProfilePage>
     final isDark = theme.brightness == Brightness.dark;
     final bgColor = isDark ? const Color(0xFF0F0F1A) : const Color(0xFFF2F2F8);
 
-    final currentAvatarUrl = widget.profileData['avatar_url']?.toString();
-    final currentName = widget.profileData['name']?.toString() ?? '';
-    final memberSince = widget.profileData['created_at']?.toString();
-    final accountRole = widget.profileData['role']?.toString() ?? 'Người dùng';
+    final currentAvatarUrl = _profileData['avatar_url']?.toString();
+    final currentName =
+        (_profileData['display_name'] ?? _profileData['name'])?.toString() ?? '';
+    final memberSince = _profileData['created_at']?.toString();
+    final accountRole = _profileData['role']?.toString() ?? 'Người dùng';
     final completion = _profileCompletion;
 
     // Avatar widget

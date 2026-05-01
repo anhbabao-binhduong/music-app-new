@@ -30,6 +30,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _currentNavIndex = 0;
+  int _exploreRefreshToken = 0;
   final _supabase = Supabase.instance.client;
 
   User? _user;
@@ -85,10 +86,18 @@ class _HomePageState extends State<HomePage> {
     setState(() {});
   }
 
+  void _refreshExploreRecommendations() {
+    if (!mounted) return;
+    setState(() => _exploreRefreshToken++);
+  }
+
   Widget _buildBody() {
     switch (_currentNavIndex) {
       case 0:
-        return ExploreTab(isLoggedIn: _isLoggedIn);
+        return ExploreTab(
+          isLoggedIn: _isLoggedIn,
+          refreshToken: _exploreRefreshToken,
+        );
       case 1:
         return const ChartTab();
       case 2:
@@ -105,9 +114,13 @@ class _HomePageState extends State<HomePage> {
           favoriteCount: totalFavorites,
           downloadCount: totalDownloads,
           onLogout: _onLogout,
+          onProfileUpdated: _refreshExploreRecommendations,
         );
       default:
-        return ExploreTab(isLoggedIn: _isLoggedIn);
+        return ExploreTab(
+          isLoggedIn: _isLoggedIn,
+          refreshToken: _exploreRefreshToken,
+        );
     }
   }
 
@@ -129,21 +142,15 @@ class _HomePageState extends State<HomePage> {
        body: BlocBuilder<PlayerBloc, PlayerState>(
          builder: (context, state) {
            final hasPlayer = state is PlayerPlaying || state is PlayerPaused;
-           const miniPlayerHeight = 74.0;
-           const bottomNavHeight = 0.0;
-           final systemBottom = MediaQuery.of(context).padding.bottom;
            final bottomPad = hasPlayer ? 74.0 : 0.0;
            
-           return Padding(
-             padding: EdgeInsets.only(bottom: bottomPad),
-             child: AnimatedSwitcher(
-               duration: const Duration(milliseconds: 220),
-               child: KeyedSubtree(
-                 key: ValueKey(_currentNavIndex),
-                 child: _buildBody(),
-               ),
-             ),
-           );
+            return Padding(
+              padding: EdgeInsets.only(bottom: bottomPad),
+              child: KeyedSubtree(
+                key: ValueKey(_currentNavIndex),
+                child: _buildBody(),
+              ),
+            );
          },
        ),
       bottomSheet: const MiniPlayerBar(),
