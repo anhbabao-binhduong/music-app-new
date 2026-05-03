@@ -89,3 +89,24 @@ Never re-read the same file more than once per task.
 Never explain why tools are not working — just retry once, 
 then continue with available information.
 Do not ask the user to paste file contents.
+
+## Supabase Quick Reference
+- Auth: Supabase auth (email/password + Google OAuth via `supabase_auth_service.dart`)
+- Key tables: `songs`, `categories`, `albums`, `album_songs`, `song_categories`, `play_history`, `users`, `comments`, `user_songs`, `profiles`
+- Storage buckets: `songs` (official audio), `user-audio`, `user-covers` (user uploads)
+- RPC functions: `get_chart_top_songs`, `get_chart_trends`, `get_user_comments_with_songs`, `get_admin_stats`
+- Config: `lib/core/config/supabase_config.dart`
+- Read `supabase/migrations/` for exact schema when needed
+
+## Key Services (lib/services/)
+- `music_player_service.dart` — singleton; wraps `MyAudioHandler`, exposes playback API
+- `audio_handler.dart` — `MyAudioHandler`; audio URL from `MediaItem.extras['url']`, NOT `MediaItem.id`
+- `supabase_auth_service.dart` — email/password + Google Sign-In (web: OAuth redirect; mobile: `GoogleSignIn`)
+- `lyrics_service.dart` — fetches/parses LRC from `lrclib.net`
+- `playlist_storage_service.dart` — CRUD playlists + `playlist_songs` on Supabase
+
+## Design Quick Reference
+- Read `DESIGN_SKILL.md` fully before any UI task
+- Never hardcode colors inline — use `AppColors` from `core/config/app_theme.dart`
+- Never hardcode `TextStyle` inline — use `AppTextStyles` or `GoogleFonts.*`
+- Spacing must use multiples of 4 or 8 (`AppSpacing.sm`, `AppSpacing.md`, etc.)
