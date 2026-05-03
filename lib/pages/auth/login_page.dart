@@ -1,8 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:music_app/core/di/service_locator.dart';
 import 'package:music_app/pages/auth/auth_shared.dart';
+import 'package:music_app/pages/auth/forgot_password_page.dart';
 import 'package:music_app/pages/auth/register_page.dart';
 import 'package:music_app/pages/root_page.dart';
+import 'package:music_app/presentation/bloc/forgot_password/forgot_password_cubit.dart';
 import 'package:music_app/services/supabase_auth_service.dart';
 
 class LoginPage extends StatefulWidget {
@@ -251,6 +255,28 @@ class _LoginPageState extends State<LoginPage>
                   : Icons.visibility_outlined,
               color: kAuthSubText,
               size: 20,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => BlocProvider(
+                  create: (_) => getIt<ForgotPasswordCubit>(),
+                  child: const ForgotPasswordPage(),
+                ),
+              ),
+            ),
+            child: const Text(
+              'Quên mật khẩu?',
+              style: TextStyle(
+                color: kAuthAccent,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ),

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -22,6 +23,45 @@ import 'package:music_app/presentation/bloc/upload/upload_cubit.dart';
 import 'package:music_app/presentation/bloc/user_songs/user_songs_cubit.dart';
 import 'package:music_app/presentation/bloc/admin/admin_cubit.dart';
 import 'package:device_preview/device_preview.dart';
+import 'package:music_app/core/router/app_routes.dart';
+
+Map<String, String> _readAuthParamsFromUrl(Uri uri) {
+  final params = <String, String>{...uri.queryParameters};
+
+  if (uri.fragment.isNotEmpty) {
+    final fragment = uri.fragment.startsWith('?')
+        ? uri.fragment.substring(1)
+        : uri.fragment;
+    params.addAll(Uri.splitQueryString(fragment));
+  }
+
+  return params;
+}
+
+Future<bool> _handleWebPasswordRecoveryRedirect() async {
+  if (!kIsWeb) return false;
+
+  final supabase = Supabase.instance.client;
+  final params = _readAuthParamsFromUrl(Uri.base);
+
+  final hasRecoveryType = params['type'] == 'recovery';
+  final hasAccessToken = params.containsKey('access_token');
+
+  if (!hasRecoveryType && !hasAccessToken) return false;
+
+  try {
+    final code = params['code'];
+    final refreshToken = params['refresh_token'];
+
+    if (code != null && code.isNotEmpty) {
+      await supabase.auth.exchangeCodeForSession(code);
+    } else if (refreshToken != null && refreshToken.isNotEmpty) {
+      await supabase.auth.setSession(refreshToken);
+    }
+  } catch (_) {}
+
+  return true;
+}
 
 void _setupAuthListener() {
   final supabase = Supabase.instance.client;
@@ -36,6 +76,16 @@ void _setupAuthListener() {
       getIt<DownloadCubit>().clear();
       // ✅ Xóa sạch lịch sử khỏi bộ nhớ ngay lập tức
       getIt<HistoryCubit>().clearLocalData();
+    }
+
+    if (event.event == AuthChangeEvent.passwordRecovery) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        appNavigatorKey.currentState?.pushNamedAndRemoveUntil(
+          AppRoutes.resetPassword,
+          (route) => false,
+        );
+      });
+      return;
     }
 
     if (event.event == AuthChangeEvent.signedIn ||
@@ -90,7 +140,10 @@ Future<void> main() async {
   // 7. Auth listener
   _setupAuthListener();
 
-  // 8. Run app
+  // 8. Handle web password recovery redirect
+  final shouldOpenResetPassword = await _handleWebPasswordRecoveryRedirect();
+
+  // 9. Run app
   runApp(
   DevicePreview(
     enabled: true, // đổi thành false
@@ -142,4 +195,10 @@ Future<void> main() async {
     ),
   ),
 );
+
+  if (shouldOpenResetPassword) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      appNavigatorKey.currentState?.pushNamed(AppRoutes.resetPassword);
+    });
+  }
 }

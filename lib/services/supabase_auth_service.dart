@@ -105,6 +105,22 @@ class SupabaseAuthService {
     await _client.auth.signOut();
   }
 
+  Future<void> resetPasswordForEmail(String email) async {
+    final redirectTo =
+        kIsWeb ? 'http://localhost:3000' : 'com.datmusicapp://reset-password';
+
+    await _client.auth.resetPasswordForEmail(
+      email,
+      redirectTo: redirectTo,
+    );
+  }
+
+  Future<void> updatePassword(String newPassword) {
+    return _client.auth.updateUser(
+      UserAttributes(password: newPassword),
+    );
+  }
+
   String mapError(Object error) {
     final message = error.toString().toLowerCase();
 

@@ -33,6 +33,8 @@ import '../../presentation/bloc/comment/comment_cubit.dart';
 import '../../presentation/bloc/upload/upload_cubit.dart';
 import '../../presentation/bloc/user_songs/user_songs_cubit.dart';
 import '../../presentation/bloc/admin/admin_cubit.dart';
+import '../../presentation/bloc/forgot_password/forgot_password_cubit.dart';
+import '../../services/supabase_auth_service.dart';
 
 final getIt = GetIt.instance;
 
@@ -118,4 +120,10 @@ Future<void> setupServiceLocator() async {
 
   // ─── Admin feature ────────────────────────────────────────────────────────
   getIt.registerLazySingleton<AdminCubit>(() => AdminCubit());
-}
+
+  // ─── Forgot password feature ──────────────────────────────────────────────
+  getIt.registerLazySingleton<SupabaseAuthService>(() => SupabaseAuthService());
+  getIt.registerFactory<ForgotPasswordCubit>(
+    () => ForgotPasswordCubit(getIt<SupabaseAuthService>()),
+  );
+}
