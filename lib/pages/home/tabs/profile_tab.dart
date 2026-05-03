@@ -423,10 +423,17 @@ class _LoggedInProfile extends StatelessWidget {
 
     return BlocBuilder<PlayerBloc, PlayerState>(
       builder: (context, playerState) {
-        final hasPlayer = playerState is PlayerPlaying || 
-                          playerState is PlayerPaused;
-        final bottomPad = hasPlayer ? 74.0 : 16.0;
-        
+        final hasPlayer =
+            playerState is PlayerPlaying || playerState is PlayerPaused;
+
+        // Ensure the last items (especially the Logout button) are scrollable
+        // and not covered by the floating Upload button / mini player.
+        const fabHeight = 56.0;
+        const fabBottomMargin = 24.0;
+        const fabExtraScrollSpace = fabHeight + fabBottomMargin + 16.0;
+
+        final bottomPad = (hasPlayer ? 74.0 : 16.0) + fabExtraScrollSpace;
+
         return Stack(
           children: [
             SingleChildScrollView(
@@ -534,7 +541,7 @@ class _LoggedInProfile extends StatelessWidget {
               ),
             ),
             Positioned(
-              bottom: 24,
+              bottom: (hasPlayer ? 74.0 : 0.0) + 24.0,
               right: 20,
               child: FloatingActionButton.extended(
                 onPressed: () => showUploadMusicSheet(context),

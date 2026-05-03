@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:music_app/pages/admin/admin_theme.dart';
+import 'package:music_app/pages/admin/user_detail_page.dart';
 import 'package:music_app/pages/admin/widgets/admin_widgets.dart';
 import 'package:music_app/presentation/bloc/admin/admin_cubit.dart';
 import 'package:music_app/presentation/bloc/admin/admin_state.dart';
@@ -164,6 +165,14 @@ class _UserCard extends StatelessWidget {
             : null,
       ),
       child: ListTile(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => UserDetailPage(user: user),
+            ),
+          );
+        },
         contentPadding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
         leading: _Avatar(user: user),
         title: Row(children: [
