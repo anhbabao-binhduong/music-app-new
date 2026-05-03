@@ -429,7 +429,8 @@ class _EditProfilePageState extends State<EditProfilePage>
               _selectedImageBytes!,
               fileOptions: const FileOptions(upsert: true),
             );
-        newAvatarUrl = _supabase.storage.from('avatars').getPublicUrl(path);
+        final rawUrl = _supabase.storage.from('avatars').getPublicUrl(path);
+        newAvatarUrl = '$rawUrl?t=${DateTime.now().millisecondsSinceEpoch}';
       }
 
       final profileUpsert = <String, dynamic>{

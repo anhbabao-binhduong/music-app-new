@@ -5,48 +5,89 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/constants/colors.dart';
 import 'edit_profile_page.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  Map<String, dynamic> _profileData = {};
+  User? _user;
+
+  @override
+  void initState() {
+    super.initState();
+    _reloadProfile();
+  }
+
+  Future<void> _reloadProfile() async {
+    final auth = Supabase.instance.client.auth;
+    final currentUser = auth.currentUser;
+
+    if (currentUser == null) {
+      if (!mounted) return;
+      setState(() {
+        _user = null;
+        _profileData = {};
+      });
+      return;
+    }
+
+    Map<String, dynamic> metadata = {
+      ...?currentUser.userMetadata,
+    };
+
+    try {
+      final profile = await Supabase.instance.client
+          .from('profiles')
+          .select()
+          .eq('id', currentUser.id)
+          .maybeSingle();
+
+      if (profile is Map<String, dynamic>) {
+        metadata = {
+          ...metadata,
+          ...profile,
+        };
+      }
+    } catch (_) {}
+
+    final refreshedUser = auth.currentUser;
+
+    if (!mounted) return;
+    setState(() {
+      _user = refreshedUser ?? currentUser;
+      _profileData = metadata;
+    });
+  }
+
+  Future<void> _openEditProfile() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditProfilePage(profileData: _profileData),
+      ),
+    );
+
+    await _reloadProfile();
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-    final user = Supabase.instance.client.auth.currentUser;
+    final user = _user ?? Supabase.instance.client.auth.currentUser;
 
-    final userName = (user?.userMetadata?['name'] as String?)?.trim().isNotEmpty ==
-            true
-        ? user!.userMetadata!['name'] as String
+    final userName = (_profileData['name'] as String?)?.trim().isNotEmpty == true
+        ? _profileData['name'] as String
         : (user?.email?.split('@').first ?? 'Người dùng');
     final userEmail = user?.email ?? 'Chưa có email';
-    final avatarUrl = user?.userMetadata?['avatar_url'] as String?;
-    final bio = user?.userMetadata?['bio'] as String?;
-    final location = user?.userMetadata?['location'] as String?;
-
-    final profileData = {
-      'name': user?.userMetadata?['name'],
-      'avatar_url': user?.userMetadata?['avatar_url'],
-      'bio': user?.userMetadata?['bio'],
-      'location': user?.userMetadata?['location'],
-      'website': user?.userMetadata?['website'],
-      'phone': user?.userMetadata?['phone'],
-      'occupation': user?.userMetadata?['occupation'],
-      'birth_date': user?.userMetadata?['birth_date'],
-      'gender': user?.userMetadata?['gender'],
-      'facebook': user?.userMetadata?['facebook'],
-      'instagram': user?.userMetadata?['instagram'],
-      'twitter': user?.userMetadata?['twitter'],
-      'youtube': user?.userMetadata?['youtube'],
-      'tiktok': user?.userMetadata?['tiktok'],
-      'spotify_url': user?.userMetadata?['spotify_url'],
-      'country': user?.userMetadata?['country'],
-      'motto': user?.userMetadata?['motto'],
-      'preferred_language': user?.userMetadata?['preferred_language'],
-      'music_level': user?.userMetadata?['music_level'],
-      'favorite_genres': user?.userMetadata?['favorite_genres'],
-      'listening_moods': user?.userMetadata?['listening_moods'],
-    };
+    final avatarUrl = _profileData['avatar_url'] as String?;
+    final bio = _profileData['bio'] as String?;
+    final location = _profileData['location'] as String?;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -67,12 +108,7 @@ class ProfilePage extends StatelessWidget {
                     avatarUrl: avatarUrl,
                     bio: bio,
                     location: location,
-                    onEdit: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => EditProfilePage(profileData: profileData),
-                      ),
-                    ),
+                    onEdit: _openEditProfile,
                   ),
                   const SizedBox(height: 24),
                   _SectionLabel(
@@ -124,13 +160,7 @@ class ProfilePage extends StatelessWidget {
                       _ActionRow(
                         icon: Icons.edit_outlined,
                         label: 'Chỉnh sửa hồ sơ',
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                EditProfilePage(profileData: profileData),
-                          ),
-                        ),
+                        onTap: _openEditProfile,
                       ),
                     ],
                   ),

@@ -50,11 +50,38 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _user = _supabase.auth.currentUser;
+    _syncAvatarIfNeeded();
     _authSub = _supabase.auth.onAuthStateChange.listen((data) {
       if (!mounted) return;
       final newUser = data.session?.user;
       setState(() => _user = newUser);
     });
+  }
+
+  Future<void> _syncAvatarIfNeeded() async {
+    final user = _user;
+    if (user == null) return;
+    try {
+      final profile = await _supabase
+          .from('profiles')
+          .select('avatar_url')
+          .eq('id', user.id)
+          .maybeSingle();
+
+      if (profile is Map<String, dynamic>) {
+        final profileAvatarUrl = profile['avatar_url'] as String?;
+        final authAvatarUrl = user.userMetadata?['avatar_url'] as String?;
+
+        if (profileAvatarUrl != null && profileAvatarUrl != authAvatarUrl) {
+          await _supabase.auth.updateUser(UserAttributes(
+            data: {
+              ...(user.userMetadata ?? {}),
+              'avatar_url': profileAvatarUrl,
+            },
+          ));
+        }
+      }
+    } catch (_) {}
   }
 
   @override
