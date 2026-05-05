@@ -16,6 +16,7 @@ import '../../auth/login_page.dart';
 import '../../auth/register_page.dart';
 import '../../profile/comment_history_page.dart';
 import '../../profile/edit_profile_page.dart';
+import '../../profile/help_detail_page.dart';
 import '../../profile/notifications_page.dart';
 import '../../profile/settings_page.dart';
 import '../../upload/upload_music_sheet.dart';
@@ -514,6 +515,14 @@ class _LoggedInProfile extends StatelessWidget {
                                         context,
                                         MaterialPageRoute(
                                           builder: (_) => const SettingsPage(),
+                                        ),
+                                      );
+                                    } else if (item.$2 ==
+                                        'Trợ giúp & Phản hồi') {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => HelpPages.faq(),
                                         ),
                                       );
                                     }

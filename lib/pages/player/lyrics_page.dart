@@ -222,14 +222,14 @@ class _SyncedLyricsBodyState extends State<_SyncedLyricsBody> {
                // Khoảng cách xa active → mờ hơn
                final distance = (index - activeIndex).abs();
                final opacity = activeIndex < 0
-                   ? 0.5
+                   ? (widget.isDark ? 0.5 : 0.78)
                    : isActive
                        ? 1.0
                        : distance == 1
-                           ? 0.45
+                           ? (widget.isDark ? 0.45 : 0.72)
                            : distance == 2
-                               ? 0.28
-                               : 0.18;
+                               ? (widget.isDark ? 0.28 : 0.62)
+                               : (widget.isDark ? 0.18 : 0.54);
 
                // Text color: active = purple accent, inactive = dimmed dark
                final textColor = isActive
@@ -322,7 +322,7 @@ class _PlainLyricsBody extends StatelessWidget {
                   fontSize: 16,
                   height: 1.7,
                   fontWeight: FontWeight.w500,
-                  color: isDark ? Colors.white.withValues(alpha: 0.75) : const Color(0xFF1A1730).withValues(alpha: 0.7),
+                  color: isDark ? Colors.white.withValues(alpha: 0.75) : const Color(0xFF1A1730).withValues(alpha: 0.9),
                 ),
               ),
             );

@@ -1,5 +1,6 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:music_app/data/local_music_data.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class DownloadCubit extends Cubit<List<String>> {
@@ -45,21 +46,22 @@ class DownloadCubit extends Cubit<List<String>> {
       throw Exception('Bạn cần đăng nhập để lưu nhạc đã tải');
     }
 
-    final isDownloaded = state.contains(song.id);
+    final resolvedSongId = resolvePlaylistSongId(song);
+    final isDownloaded = state.contains(resolvedSongId);
 
     if (isDownloaded) {
       await _supabase
           .from('downloads')
           .delete()
           .eq('user_id', uid)
-          .eq('song_id', song.id);
+          .eq('song_id', resolvedSongId);
       await _loadDownloads();
       return;
     }
 
     await _supabase.from('downloads').insert({
       'user_id': uid,
-      'song_id': song.id,
+      'song_id': resolvedSongId,
       'title': song.title,
       'artist': song.artist,
       'album': song.album,

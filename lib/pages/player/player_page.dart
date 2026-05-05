@@ -1,7 +1,6 @@
 // pages/player/player_page.dart
 import 'dart:math' as math;
 import 'dart:ui' as ui;
-import 'package:music_app/core/constants/app_theme.dart';
 import 'package:music_app/services/music_player_service.dart';
 import 'package:music_app/presentation/bloc/favorite/favorite_cubit.dart';
 import 'package:music_app/presentation/bloc/player/player_bloc.dart';
@@ -134,10 +133,11 @@ class _PlayerPageState extends State<PlayerPage> {
                                     }
                                 },
                                   itemBuilder: (context) {
+                                    final normalizedItemId = resolvePlaylistSongId(item);
                                     final isDownloaded = context
                                         .read<DownloadCubit>()
                                         .state
-                                        .contains(item.id);
+                                        .contains(normalizedItemId);
                                     return [
                                       const PopupMenuItem(
                                         value: 'up',
@@ -823,16 +823,19 @@ class _ActionRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 28),
       child: BlocBuilder<DownloadCubit, List<String>>(
         builder: (context, downloadedIds) {
-          final isDownloaded = downloadedIds.contains(song.id);
+          final normalizedSongId = resolvePlaylistSongId(song);
+          // Dùng resolvePlaylistSongId: trả về UUID cho community song, numeric string cho regular song
+          final favDownloadId = normalizedSongId;
+          final isDownloaded = downloadedIds.contains(favDownloadId);
           return BlocBuilder<PlaylistCubit, PlaylistState>(
             builder: (context, plState) {
               bool inAnyPlaylist = false;
               if (plState is PlaylistLoaded) {
-                inAnyPlaylist = plState.playlists.any((p) => p.songIds.contains(song.id));
+                inAnyPlaylist = plState.playlists.any((p) => p.songIds.contains(normalizedSongId));
               }
               return BlocBuilder<FavoriteCubit, List<String>>(
                 builder: (context, favIds) {
-                  final isFavorite = favIds.contains(song.id);
+                  final isFavorite = favIds.contains(favDownloadId);
                   return Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
@@ -843,9 +846,9 @@ class _ActionRow extends StatelessWidget {
                         label: 'Yêu thích',
                         color: isFavorite ? const Color(0xFFE91E8C) : inactiveIconColor,
                         onTap: () async {
-                          final wasFav = favIds.contains(song.id);
+                          final wasFav = favIds.contains(favDownloadId);
                           try {
-                            await context.read<FavoriteCubit>().toggleFavorite(song.id);
+                            await context.read<FavoriteCubit>().toggleFavorite(favDownloadId);
                             if (context.mounted) {
                               ScaffoldMessenger.of(context)
                                 ..removeCurrentSnackBar()
@@ -890,7 +893,7 @@ class _ActionRow extends StatelessWidget {
                         label: isDownloaded ? 'Đã tải' : 'Tải nhạc',
                         color: isDownloaded ? const Color(0xFF1DB954) : inactiveIconColor,
                         onTap: () async {
-                          final wasDown = downloadedIds.contains(song.id);
+                          final wasDown = downloadedIds.contains(favDownloadId);
                           try {
                             await context.read<DownloadCubit>().toggleDownload(song);
                             if (context.mounted) {
@@ -939,6 +942,7 @@ class _ActionRow extends StatelessWidget {
 
   void _showPlaylistSheet(BuildContext pageContext) {
     final playlistCubit = pageContext.read<PlaylistCubit>();
+    final songId = resolvePlaylistSongId(song);
     showModalBottomSheet(
       context: pageContext,
       backgroundColor: Colors.transparent,
@@ -1015,7 +1019,7 @@ class _ActionRow extends StatelessWidget {
                             itemCount: playlists.length,
                             itemBuilder: (_, i) {
                               final pl = playlists[i];
-                              final isAdded = pl.songIds.contains(song.id);
+                              final isAdded = pl.songIds.contains(songId);
                               return ListTile(
                                 leading: Container(
                                   width: 40, height: 40,
@@ -1436,7 +1440,6 @@ class _PlayButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
         shape: BoxShape.circle,

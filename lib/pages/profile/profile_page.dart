@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/constants/colors.dart';
 import 'edit_profile_page.dart';
+import 'help_feedback_section.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -164,6 +165,8 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 24),
+                  const HelpFeedbackSection(),
                 ],
               ),
             ),
