@@ -14,6 +14,10 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
   final HistoryCubit _historyCubit;
   StreamSubscription? _playerSubscription;
   StreamSubscription? _mediaSubscription;
+  // Track lượt nghe: lưu songId của bài đã được đếm
+  // Reset khi: bài kết thúc (completed), bài đổi sang bài khác, hoặc position trở về 0
+  String? _lastCountedSongId;
+  Duration _prevPosition = Duration.zero; // position của lần update trước
 
   PlayerBloc(this._audioHandler, this._historyCubit) : super(const PlayerInitial()) {
     on<LoadPlaylistEvent>(_onLoadPlaylist);
@@ -129,6 +133,11 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
   // ─── LoadPlaylist ────────────────────────────────────────────────────────────
   Future<void> _onLoadPlaylist(
       LoadPlaylistEvent event, Emitter<PlayerState> emit) async {
+    // Reset bộ đếm để lần phát mới luôn được ghi nhận
+    _lastCountedSongId = null;
+    _prevPosition = Duration.zero;
+    _historyCubit.clearPlayDebounce();
+
     await _audioHandler.updateQueue(event.playlist);
     await _audioHandler.skipToQueueItem(event.startIndex);
     await _audioHandler.play();
@@ -254,10 +263,37 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     final duration = mediaItem.duration ?? Duration.zero;
     final position = playbackState.position;
 
-    // Lưu vào lịch sử khi bài đang phát (không lưu khi pause)
-    if (playbackState.playing) {
+    // Phát hiện bài bắt đầu mới: position reset về gần 0 sau khi đã ở vị trí khác,
+    // hoặc bài hát thay đổi, hoặc bài vừa completed và bắt đầu lại
+    final positionJumpedToStart = _prevPosition > const Duration(seconds: 3) &&
+        position <= const Duration(seconds: 2);
+    final isDifferentSong = _lastCountedSongId != mediaItem.id;
+
+    // Reset flag nếu bài khác hoặc position nhảy về đầu
+    if (isDifferentSong || positionJumpedToStart) {
+      _lastCountedSongId = null;
+    }
+
+    final isFreshPlaybackStart = playbackState.playing &&
+        position <= const Duration(seconds: 2) &&
+        _lastCountedSongId == null;
+
+    if (isFreshPlaybackStart) {
+      _lastCountedSongId = mediaItem.id;
+      if (kDebugMode) {
+        print(
+          '[PlayerBloc] Count listen: songId=${mediaItem.id}, positionMs=${position.inMilliseconds}',
+        );
+      }
       _historyCubit.addSong(mediaItem);
     }
+
+    // Reset khi bài kết thúc để cho phép đếm lại lần phát tiếp theo
+    if (playbackState.processingState == AudioProcessingState.completed) {
+      _lastCountedSongId = null;
+    }
+
+    _prevPosition = position;
 
     final isShuffle = playbackState.shuffleMode == AudioServiceShuffleMode.all;
     final repeatModeState = playbackState.repeatMode == AudioServiceRepeatMode.none

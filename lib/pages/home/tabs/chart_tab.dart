@@ -72,7 +72,10 @@ class _ChartViewState extends State<_ChartView> with SingleTickerProviderStateMi
         id: s.id, title: s.title, artist: s.artist, album: s.album,
         artUri: s.artUrl != null ? Uri.tryParse(s.artUrl!) : null,
         duration: Duration(milliseconds: s.durationMs),
-        extras: {'url': s.audioUrl},
+        extras: {
+          'url': s.audioUrl,
+          'songDbId': s.id, // ID số từ bảng songs → dùng để đếm lượt nghe
+        },
       );
     }).toList();
     ctx.read<PlayerBloc>().add(LoadPlaylistEvent(q, startIndex: idx));

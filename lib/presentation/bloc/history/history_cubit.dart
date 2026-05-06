@@ -14,9 +14,11 @@ class HistoryCubit extends Cubit<List<MediaItem>> {
   // Tránh ghi đè state khi đang thực hiện thao tác xóa bài
   bool _isModifying = false;
 
-  // Debounce: tránh gọi addSong liên tục mỗi tick
+  // Debounce: tránh double-insert khi addSong gọi liên tiếp trong cùng 1 lần phát
+  // Lưu theo cả songId và thời điểm để vẫn cho phép nghe lại bài sau đó
   String? _lastAddedSongId;
   DateTime? _lastAddedAt;
+  static const _debounceSeconds = 5; // khoảng thời gian tối thiểu giữa 2 lần ghi cùng bài
 
   HistoryCubit() : super([]) {
     _loadHiveThenSync();
@@ -70,10 +72,14 @@ class HistoryCubit extends Cubit<List<MediaItem>> {
 
       if (_isModifying) return; // Check lại lần nữa sau khi await
 
-      final remoteItems = (res as List).map((row) {
+      final latestBySongId = <String, MediaItem>{};
+      for (final row in (res as List)) {
+        final songId = row['song_id'] as String;
+        if (latestBySongId.containsKey(songId)) continue;
+
         final Map<String, dynamic> extras = _parseExtras(row['song_extras']);
-        return MediaItem(
-          id: row['song_id'] as String,
+        latestBySongId[songId] = MediaItem(
+          id: songId,
           title: row['song_title'] as String? ?? '',
           artist: _nonEmpty(row['song_artist'] as String?),
           artUri: _parseUri(row['song_art_uri'] as String?),
@@ -81,7 +87,9 @@ class HistoryCubit extends Cubit<List<MediaItem>> {
               Duration(milliseconds: (row['song_duration_ms'] as num? ?? 0).toInt()),
           extras: extras,
         );
-      }).toList();
+      }
+
+      final remoteItems = latestBySongId.values.toList();
 
       if (remoteItems.isNotEmpty) {
         emit(remoteItems);
@@ -110,19 +118,42 @@ class HistoryCubit extends Cubit<List<MediaItem>> {
       final userId = _userId;
       if (userId == null) return;
 
-      await _supabase.from('listening_history').upsert({
+      // Lấy song_id thực từ extras nếu có:
+      // - 'songDbId': ID số từ bảng songs (normal songs)
+      // - 'userSongId': UUID của user_songs (community songs)
+      // - fallback: item.id (có thể là URL nếu không set extras)
+      final extras = item.extras ?? {};
+      final songId = (extras['songDbId']?.toString())
+          ?? (extras['userSongId']?.toString())
+          ?? item.id;
+
+      final payload = {
         'user_id': userId,
-        'song_id': item.id,
+        'song_id': songId,
         'song_title': item.title,
         'song_artist': item.artist ?? '',
         'song_art_uri': item.artUri?.toString() ?? '',
         'song_duration_ms': item.duration?.inMilliseconds ?? 0,
-        'song_extras': jsonEncode(item.extras ?? {}),
+        'song_extras': jsonEncode(extras),
         'played_at': DateTime.now().toUtc().toIso8601String(),
-      }, onConflict: 'user_id,song_id');
+      };
+
+      if (kDebugMode) {
+        print('[HistoryCubit] INSERT listening_history: songId=$songId title="${item.title}"');
+      }
+
+      await _supabase.from('listening_history').insert(payload);
     } catch (e) {
       if (kDebugMode) print('[HistoryCubit] save supabase error: $e');
     }
+  }
+
+  /// Gọi bởi PlayerBloc mỗi khi user chủ động nhấn play (LoadPlaylist).
+  /// Reset debounce để lần nghe tiếp theo luôn được ghi nhận.
+  void clearPlayDebounce() {
+    _lastAddedSongId = null;
+    _lastAddedAt = null;
+    if (kDebugMode) print('[HistoryCubit] Play debounce cleared (new play session)');
   }
 
   void clearLocalData() {
@@ -150,9 +181,14 @@ class HistoryCubit extends Cubit<List<MediaItem>> {
     if (userId == null) return;
 
     final now = DateTime.now();
+    // Debounce: chặn double-insert nếu cùng bài được gọi trong _debounceSeconds giây
+    // PlayerBloc đã xử lý reset đúng, nên debounce này chỉ là lới bảo vệ
     if (_lastAddedSongId == item.id &&
         _lastAddedAt != null &&
-        now.difference(_lastAddedAt!).inSeconds < 30) {
+        now.difference(_lastAddedAt!).inSeconds < _debounceSeconds) {
+      if (kDebugMode) {
+        print('[HistoryCubit] Debounce skip: ${item.id} (${now.difference(_lastAddedAt!).inSeconds}s ago)');
+      }
       return;
     }
     _lastAddedSongId = item.id;
@@ -168,6 +204,9 @@ class HistoryCubit extends Cubit<List<MediaItem>> {
     try {
       await _saveToHive(userId, current);
       await _saveToSupabase(item);
+      if (kDebugMode) {
+        print('[HistoryCubit] Saved listen event for: ${item.title}');
+      }
     } finally {
       _isModifying = false;
     }

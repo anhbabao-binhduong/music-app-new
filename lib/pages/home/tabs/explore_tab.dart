@@ -153,7 +153,10 @@ class _ExploreTabState extends State<ExploreTab> {
           album:    s.album,
           artUri:   s.artUrl != null ? Uri.parse(s.artUrl!) : null,
           duration: Duration(milliseconds: s.durationMs),
-          extras:   {'url': audioUrl},
+          extras:   {
+            'url': audioUrl,
+            'songDbId': s.id, // ID số từ bảng songs
+          },
         );
       }).toList();
 
@@ -171,7 +174,10 @@ class _ExploreTabState extends State<ExploreTab> {
       album:    s.album,
       artUri:   s.artUrl != null ? Uri.parse(s.artUrl!) : null,
       duration: Duration(milliseconds: s.durationMs),
-      extras:   {'url': _normalizeAudioUrl(s.audioUrl)},
+      extras:   {
+        'url': _normalizeAudioUrl(s.audioUrl),
+        'songDbId': s.id, // ID số từ bảng songs → dùng để đếm lượt nghe
+      },
     );
   }
 
