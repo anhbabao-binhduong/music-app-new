@@ -50,6 +50,11 @@ flutter pub get
 flutter run
 ```
 
+## Chạy app
+
+- Windows: chạy file `run_web.bat`
+- Mac/Linux: chạy file `run_web.sh`
+
 ## Tài liệu bổ sung
 
 - Kiến trúc chi tiết: `docs/architecture.md`
@@ -91,4 +96,3 @@ TODO: Chưa thấy thông tin maintainer/owner trong codebase.
 5. `lib/main.dart` + `lib/core/di/service_locator.dart`
 
 Điều này giúp hiểu nhanh cấu trúc và luồng nghiệp vụ trước khi chỉnh sửa code.
-

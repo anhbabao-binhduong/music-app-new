@@ -14,6 +14,7 @@ import 'tabs/explore_tab.dart';
 import 'tabs/chart_tab.dart';
 import 'tabs/profile_tab.dart';
 import '../library/library_page.dart';
+import '../news/news_page.dart';
 import 'package:music_app/services/supabase_auth_service.dart';
 import 'package:music_app/presentation/bloc/player/player_bloc.dart';
 import 'package:music_app/presentation/bloc/player/player_event.dart';
@@ -130,6 +131,8 @@ class _HomePageState extends State<HomePage> {
       case 2:
         return const LibraryPage();
       case 3:
+        return const NewsPage();
+      case 4:
         final totalFavorites = context.watch<FavoriteCubit>().state.length;
         final totalDownloads = context.watch<DownloadCubit>().state.length;
         return ProfileTab(
@@ -165,7 +168,7 @@ class _HomePageState extends State<HomePage> {
       child: Scaffold(
       backgroundColor: bgColor,
       extendBody: true,
-      appBar: (_currentNavIndex == 1 || _currentNavIndex == 3) ? null : _buildAppBar(),
+      appBar: (_currentNavIndex == 1 || _currentNavIndex == 3 || _currentNavIndex == 4) ? null : _buildAppBar(),
        body: BlocBuilder<PlayerBloc, PlayerState>(
          builder: (context, state) {
            final hasPlayer = state is PlayerPlaying || state is PlayerPaused;
@@ -191,7 +194,7 @@ class _HomePageState extends State<HomePage> {
     final isLight = theme.brightness == Brightness.light;
 
     String title = 'Khám phá';
-    if (_currentNavIndex == 1) title = 'Radio';
+    if (_currentNavIndex == 1) title = '#zingchart';
     if (_currentNavIndex == 2) title = 'Thư viện';
 
     return AppBar(
@@ -251,7 +254,7 @@ class _HomePageState extends State<HomePage> {
         Padding(
           padding: const EdgeInsets.only(right: 16),
           child: GestureDetector(
-            onTap: () => setState(() => _currentNavIndex = 3),
+            onTap: () => setState(() => _currentNavIndex = 4),
             child: Container(
               width: 36,
               height: 36,
@@ -337,6 +340,11 @@ class _HomePageState extends State<HomePage> {
         icon: Icon(Icons.library_music_outlined),
         activeIcon: Icon(Icons.library_music_rounded),
         label: 'Thư viện',
+      ),
+      BottomNavigationBarItem(
+        icon: Icon(Icons.newspaper_outlined),
+        activeIcon: Icon(Icons.newspaper_rounded),
+        label: 'Tin tức',
       ),
       BottomNavigationBarItem(
         icon: Icon(Icons.person_outline_rounded),

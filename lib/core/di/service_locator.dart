@@ -36,6 +36,12 @@ import '../../presentation/bloc/admin/admin_cubit.dart';
 import '../../presentation/bloc/forgot_password/forgot_password_cubit.dart';
 import '../../services/supabase_auth_service.dart';
 
+// 👇 IMPORT CHO NEWS
+import '../../domain/repositories/news_repository.dart';
+import '../../data/repositories/news_repository_impl.dart';
+import '../../domain/usecases/fetch_news_usecase.dart';
+import '../../presentation/bloc/news/news_cubit.dart';
+
 final getIt = GetIt.instance;
 
 Future<void> setupServiceLocator() async {
@@ -125,5 +131,12 @@ Future<void> setupServiceLocator() async {
   getIt.registerLazySingleton<SupabaseAuthService>(() => SupabaseAuthService());
   getIt.registerFactory<ForgotPasswordCubit>(
     () => ForgotPasswordCubit(getIt<SupabaseAuthService>()),
+  );
+
+  // ─── News feature ─────────────────────────────────────────────────────────
+  getIt.registerLazySingleton<NewsRepository>(() => NewsRepositoryImpl());
+  getIt.registerLazySingleton(() => FetchNewsUsecase(getIt<NewsRepository>()));
+  getIt.registerFactory<NewsCubit>(
+    () => NewsCubit(fetchNewsUsecase: getIt<FetchNewsUsecase>()),
   );
 }

@@ -22,6 +22,7 @@ import 'package:music_app/presentation/bloc/comment/comment_cubit.dart';
 import 'package:music_app/presentation/bloc/upload/upload_cubit.dart';
 import 'package:music_app/presentation/bloc/user_songs/user_songs_cubit.dart';
 import 'package:music_app/presentation/bloc/admin/admin_cubit.dart';
+import 'package:music_app/presentation/bloc/news/news_cubit.dart'; // 👈 THÊM
 import 'package:device_preview/device_preview.dart';
 import 'package:music_app/core/router/app_routes.dart';
 
@@ -188,6 +189,9 @@ Future<void> main() async {
           ),
           BlocProvider<AdminCubit>.value(
             value: getIt<AdminCubit>(),
+          ),
+          BlocProvider<NewsCubit>(
+            create: (_) => getIt<NewsCubit>(),
           ),
         ],
         child: const MyApp(),
