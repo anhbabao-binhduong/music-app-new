@@ -6,7 +6,7 @@ import '../../domain/repositories/news_repository.dart';
 import '../models/news_article_model.dart';
 
 class NewsRepositoryImpl implements NewsRepository {
-  /// Map nguồn RSS âm nhạc / giải trí Việt Nam
+  /// Map nguồn RSS âm nhạc / giải trí Việt N+am
   static const Map<String, String> rssSources = {
     'VnExpress': 'https://vnexpress.net/rss/giai-tri.rss',
     'Kenh14': 'https://kenh14.vn/star.rss',
