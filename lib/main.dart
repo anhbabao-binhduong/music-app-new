@@ -200,7 +200,6 @@ Future<void> main() async {
   ),
 );
 
-  if (shouldOpenResetPassword) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       appNavigatorKey.currentState?.pushNamed(AppRoutes.resetPassword);
     });
