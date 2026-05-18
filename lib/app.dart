@@ -11,6 +11,8 @@ import 'package:music_app/presentation/bloc/forgot_password/forgot_password_cubi
 import 'core/constants/app_theme.dart';
 import 'presentation/bloc/theme/theme_bloc.dart';
 import 'pages/root_page.dart';
+import 'pages/user_search/user_search_page.dart';
+import 'pages/user_search/user_profile_view_page.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -37,6 +39,7 @@ class MyApp extends StatelessWidget {
                 create: (_) => getIt<ForgotPasswordCubit>(),
                 child: const ResetPasswordPage(),
               ),
+          AppRoutes.userSearch: (_) => const UserSearchPage(),
         },
         onGenerateRoute: (settings) {
           if (settings.name == AppRoutes.forgotPasswordCheckEmail) {
@@ -46,6 +49,12 @@ class MyApp extends StatelessWidget {
                 create: (_) => getIt<ForgotPasswordCubit>(),
                 child: ForgotPasswordCheckEmailPage(email: email),
               ),
+            );
+          }
+          if (settings.name == AppRoutes.userProfile) {
+            final userId = settings.arguments as String;
+            return MaterialPageRoute(
+              builder: (_) => UserProfileViewPage(userId: userId),
             );
           }
           return null;

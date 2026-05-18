@@ -20,6 +20,7 @@ import '../../profile/help_detail_page.dart';
 import '../../profile/notifications_page.dart';
 import '../../profile/settings_page.dart';
 import '../../upload/upload_music_sheet.dart';
+import '../../user_search/user_search_page.dart';
 
 class ProfileTab extends StatelessWidget {
   final bool isLoggedIn;
@@ -492,6 +493,14 @@ class _LoggedInProfile extends StatelessWidget {
                                       if (context.mounted) {
                                         onProfileUpdated?.call();
                                       }
+                                    } else if (item.$2 == 'Tìm người dùng') {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const UserSearchPage(),
+                                        ),
+                                      );
                                     } else if (item.$2 == 'Lịch sử bình luận' &&
                                         userId != null) {
                                       Navigator.push(
@@ -906,6 +915,7 @@ class _StatChip extends StatelessWidget {
 
 const _kMenuItems = [
   (Icons.manage_accounts_outlined, 'Chỉnh sửa hồ sơ'),
+  (Icons.person_search_rounded, 'Tìm người dùng'),
   (Icons.comment_rounded, 'Lịch sử bình luận'),
   (Icons.notifications_outlined, 'Thông báo'),
   (Icons.settings_outlined, 'Cài đặt'),

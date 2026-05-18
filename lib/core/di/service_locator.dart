@@ -42,6 +42,14 @@ import '../../data/repositories/news_repository_impl.dart';
 import '../../domain/usecases/fetch_news_usecase.dart';
 import '../../presentation/bloc/news/news_cubit.dart';
 
+// 👇 IMPORT CHO USER SEARCH
+import '../../domain/repositories/user_repository.dart';
+import '../../data/repositories/user_repository_impl.dart';
+import '../../domain/usecases/search_users_usecase.dart';
+import '../../domain/usecases/get_user_profile_usecase.dart';
+import '../../presentation/bloc/user_search/user_search_cubit.dart';
+import '../../presentation/bloc/user_profile/user_profile_cubit.dart';
+
 final getIt = GetIt.instance;
 
 Future<void> setupServiceLocator() async {
@@ -138,5 +146,23 @@ Future<void> setupServiceLocator() async {
   getIt.registerLazySingleton(() => FetchNewsUsecase(getIt<NewsRepository>()));
   getIt.registerFactory<NewsCubit>(
     () => NewsCubit(fetchNewsUsecase: getIt<FetchNewsUsecase>()),
+  );
+
+  // ─── User Search feature ──────────────────────────────────────────────────
+  getIt.registerLazySingleton<UserRepository>(
+    () => UserRepositoryImpl(getIt<SupabaseClient>()),
+  );
+  getIt.registerLazySingleton(
+    () => SearchUsersUsecase(getIt<UserRepository>()),
+  );
+  getIt.registerLazySingleton(
+    () => GetUserProfileUsecase(getIt<UserRepository>()),
+  );
+  getIt.registerFactory<UserSearchCubit>(
+    () => UserSearchCubit(searchUsersUsecase: getIt<SearchUsersUsecase>()),
+  );
+  getIt.registerFactory<UserProfileCubit>(
+    () => UserProfileCubit(
+        getUserProfileUsecase: getIt<GetUserProfileUsecase>()),
   );
 }

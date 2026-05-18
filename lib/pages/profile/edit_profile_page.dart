@@ -435,7 +435,9 @@ class _EditProfilePageState extends State<EditProfilePage>
 
       final profileUpsert = <String, dynamic>{
         'id': user.id,
+        'name': name,
         'display_name': name,
+        'email': user.email,
         'avatar_url': newAvatarUrl,
         'gender': _selectedGender,
         'birth_date': birthDate.isEmpty ? null : birthDate,
