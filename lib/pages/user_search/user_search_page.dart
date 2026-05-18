@@ -70,7 +70,7 @@ class _UserSearchPageState extends State<UserSearchPage> {
                     return const _InfoState(
                       icon: Icons.person_search_rounded,
                       title: 'Tìm bạn bè',
-                      subtitle: 'Nhập tên, email hoặc ID để tìm người dùng',
+                      subtitle: 'Nhập tên hoặc ID để tìm người dùng',
                     );
                   } else if (state is UserSearchLoading) {
                     return const Center(
@@ -148,7 +148,7 @@ class _SearchBar extends StatelessWidget {
         onChanged: onChanged,
         style: const TextStyle(fontWeight: FontWeight.w600),
         decoration: InputDecoration(
-          hintText: 'Tìm theo tên, email hoặc ID',
+          hintText: 'Tìm theo tên hoặc ID',
           hintStyle: TextStyle(
             color: Colors.grey.withValues(alpha: 0.6),
             fontWeight: FontWeight.w500,

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:device_preview/device_preview.dart';
 import 'package:music_app/core/di/service_locator.dart';
 import 'package:music_app/core/router/app_routes.dart';
 import 'package:music_app/pages/auth/forgot_password_check_email_page.dart';
@@ -26,8 +25,6 @@ class MyApp extends StatelessWidget {
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
         themeMode: themeState.flutterThemeMode,
-        locale: DevicePreview.locale(context),
-        builder: DevicePreview.appBuilder,
         navigatorKey: appNavigatorKey,
         routes: {
           AppRoutes.login: (_) => const LoginPage(),
