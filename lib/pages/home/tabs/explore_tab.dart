@@ -820,79 +820,100 @@ class _ExploreTabState extends State<ExploreTab> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                   Container(
-                     width: 52,
-                     height: 52,
-                     decoration: BoxDecoration(
-                       gradient: const LinearGradient(
-                         colors: [Color(0xFF9333EA), Color(0xFFEC4899)],
-                         begin: Alignment.topLeft,
-                         end: Alignment.bottomRight,
-                       ),
-                       borderRadius: BorderRadius.circular(18),
-                       border: Border.all(
-                         color: Colors.white.withValues(alpha: 0.14),
-                       ),
-                       boxShadow: [
-                         BoxShadow(
-                           color: const Color(0xFF9333EA).withValues(alpha: 0.34),
-                           blurRadius: 18,
-                           offset: const Offset(0, 8),
-                         ),
-                       ],
-                     ),
-                     child: const Icon(Icons.people_rounded, color: Colors.white, size: 26),
-                   ),
-                  const SizedBox(width: 14),
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF9333EA), Color(0xFFEC4899)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.12),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF9333EA).withValues(alpha: 0.28),
+                          blurRadius: 14,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.people_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         ShaderMask(
                           shaderCallback: (bounds) => const LinearGradient(
                             colors: [Color(0xFF9333EA), Color(0xFFEC4899)],
                           ).createShader(bounds),
-                           child: Text(
-                             'Nhạc từ cộng đồng',
-                             style: GoogleFonts.plusJakartaSans(
-                               color: Theme.of(context).colorScheme.onSurface,
-                               fontSize: 24,
-                               fontWeight: FontWeight.w800,
-                               height: 1.2,
-                               letterSpacing: -0.4,
-                             ),
-                           ),
+                          child: Text(
+                            'Nhạc từ cộng đồng',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Theme.of(context).colorScheme.onSurface,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              height: 1.2,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
                         ),
-                        const SizedBox(height: 2),
-                         Text(
-                           '${approved.length} bài hát từ cộng đồng',
-                           style: GoogleFonts.dmSans(
-                             color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                             fontSize: 12,
-                             fontWeight: FontWeight.w500,
-                             height: 1.3,
-                           ),
-                         ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${approved.length} bài hát từ cộng đồng',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.dmSans(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.62),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            height: 1.3,
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                  // See all button
-                     SeeAllButton(onTap: () {}),
+                  const SizedBox(width: 8),
+                  _CommunitySeeAllButton(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => SeeAllPage(title: 'Nhạc từ cộng đồng'),
+                        ),
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
             // ═══ FEATURED + SCROLL ════════════════════════════════════════
             SizedBox(
-              height: 260,
+              height: 240,
               child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.fromLTRB(16, 0, 20, 0),
                 scrollDirection: Axis.horizontal,
                 physics: const BouncingScrollPhysics(),
                 itemCount: approved.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 14),
+                separatorBuilder: (_, __) => const SizedBox(width: 12),
                 itemBuilder: (ctx, i) {
                   if (i == 0) {
                     return _CommunityFeaturedCard(
@@ -1126,12 +1147,67 @@ class _PaginationButtonState extends State<_PaginationButton> {
   }
 }
 
+class _CommunitySeeAllButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _CommunitySeeAllButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isLight = theme.brightness == Brightness.light;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: isLight
+                ? const Color(0xFF9333EA).withValues(alpha: 0.1)
+                : scheme.surfaceContainerHighest.withValues(alpha: 0.24),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: const Color(0xFF9333EA).withValues(alpha: isLight ? 0.28 : 0.36),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Xem tất cả',
+                style: GoogleFonts.dmSans(
+                  color: scheme.onSurface.withValues(alpha: 0.88),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  height: 1.2,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(
+                Icons.arrow_forward_rounded,
+                size: 14,
+                color: scheme.onSurface.withValues(alpha: 0.82),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ─── COMMUNITY SECTION SKELETON ───────────────────────────────────────
 class _CommunitySectionSkeleton extends StatelessWidget {
   const _CommunitySectionSkeleton();
 
   @override
   Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1140,79 +1216,98 @@ class _CommunitySectionSkeleton extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                width: 52,
-                height: 52,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).brightness == Brightness.light
-                            ? const Color(0xFFF4EEFF)
-                            : Theme.of(context)
-                                .colorScheme
-                                .surfaceContainerHighest
-                                .withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(18),
-                      ),
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: onSurface.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
               ),
-              const SizedBox(width: 14),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 180,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(6),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 178,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        color: onSurface.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Container(
-                    width: 120,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(4),
+                    const SizedBox(height: 6),
+                    Container(
+                      width: 136,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: onSurface.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                width: 88,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: onSurface.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(999),
+                ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
         SizedBox(
           height: 240,
           child: ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.fromLTRB(16, 0, 20, 0),
             scrollDirection: Axis.horizontal,
             itemCount: 4,
-            separatorBuilder: (_, __) => const SizedBox(width: 14),
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemBuilder: (_, __) => Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 160,
-                  height: 160,
+                  width: 152,
+                  height: 152,
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(20),
+                    color: onSurface.withValues(alpha: 0.1),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
                   ),
                 ),
-                const SizedBox(height: 10),
                 Container(
-                  width: 120,
-                  height: 13,
+                  width: 152,
+                  height: 76,
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(4),
+                    color: onSurface.withValues(alpha: 0.08),
+                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(18)),
                   ),
-                ),
-                const SizedBox(height: 5),
-                Container(
-                  width: 80,
-                  height: 11,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 116,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: onSurface.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        width: 78,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: onSurface.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -1235,13 +1330,18 @@ class _CommunityFeaturedCard extends StatefulWidget {
   State<_CommunityFeaturedCard> createState() => _CommunityFeaturedCardState();
 }
 
-class _CommunityFeaturedCardState extends State<_CommunityFeaturedCard>
-    with SingleTickerProviderStateMixin {
+class _CommunityFeaturedCardState extends State<_CommunityFeaturedCard> {
   bool _isPressed = false;
+
+  static const double _cardWidth = 160;
+  static const double _cardHeight = 228;
+  static const double _coverSize = 160;
+  static const double _infoHeight = _cardHeight - _coverSize;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTapDown: (_) => setState(() => _isPressed = true),
       onTapUp: (_) {
         setState(() => _isPressed = false);
@@ -1249,74 +1349,84 @@ class _CommunityFeaturedCardState extends State<_CommunityFeaturedCard>
       },
       onTapCancel: () => setState(() => _isPressed = false),
       child: AnimatedScale(
-        scale: _isPressed ? 0.94 : 1.0,
-        duration: const Duration(milliseconds: 150),
+        scale: _isPressed ? 0.96 : 1.0,
+        duration: const Duration(milliseconds: 140),
+        curve: Curves.easeOutCubic,
         child: SizedBox(
-          width: 172,
-          height: 252,
+          width: _cardWidth,
+          height: _cardHeight,
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             children: [
-              // Album art — fixed 172x172 to avoid unbounded Stack
               SizedBox(
-                width: 172,
-                height: 172,
+                width: _cardWidth,
+                height: _coverSize,
                 child: Stack(
                   children: [
                     ClipRRect(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
                       child: widget.song.artUrl != null
-                          ? Image.network(widget.song.artUrl!,
-                              width: 172, height: 172,
+                          ? Image.network(
+                              widget.song.artUrl!,
+                              width: _cardWidth,
+                              height: _coverSize,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => _featuredPlaceholder())
+                              errorBuilder: (_, __, ___) => _featuredPlaceholder(),
+                            )
                           : _featuredPlaceholder(),
                     ),
-                    // Rank #1 badge
+                    Positioned.fill(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withValues(alpha: 0.06),
+                              Colors.black.withValues(alpha: 0.46),
+                            ],
+                            stops: const [0.45, 0.7, 1],
+                          ),
+                        ),
+                      ),
+                    ),
                     Positioned(
-                      top: 10,
-                      left: 10,
+                      top: 8,
+                      left: 8,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
                             colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
                           ),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(999),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFF59E0B).withValues(alpha: 0.5),
+                              color: const Color(0xFFF59E0B).withValues(alpha: 0.36),
                               blurRadius: 8,
-                              spreadRadius: 1,
+                              offset: const Offset(0, 3),
                             ),
                           ],
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.star_rounded, color: Colors.white, size: 11),
-                            const SizedBox(width: 3),
-                            Text(
-                              'TOP 1',
-                              style: GoogleFonts.dmSans(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                height: 1.1,
-                                letterSpacing: 0.4,
-                              ),
-                            ),
-                          ],
+                        child: Text(
+                          'Mới nhất',
+                          style: GoogleFonts.dmSans(
+                            color: Colors.white,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w800,
+                            height: 1.1,
+                            letterSpacing: 0.3,
+                          ),
                         ),
                       ),
                     ),
-                    // Play button
                     Positioned(
-                      bottom: 10,
-                      right: 10,
+                      bottom: 8,
+                      right: 8,
                       child: Container(
-                        width: 44,
-                        height: 44,
+                        width: 34,
+                        height: 34,
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
                             colors: [Color(0xFF9333EA), Color(0xFFEC4899)],
@@ -1324,98 +1434,96 @@ class _CommunityFeaturedCardState extends State<_CommunityFeaturedCard>
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF9333EA).withValues(alpha: 0.6),
-                              blurRadius: 12,
-                              spreadRadius: 2,
+                              color: const Color(0xFF9333EA).withValues(alpha: 0.48),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
                             ),
                           ],
                         ),
-                        child: const Icon(Icons.play_arrow_rounded,
-                            color: Colors.white, size: 24),
+                        child: const Icon(
+                          Icons.play_arrow_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-              // Info section — SizedBox(height: 80) cố định tránh overflow
-              SizedBox(
-                height: 80,
-                child: Container(
-                  width: 172,
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF1A0E2E), Color(0xFF2D1450)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(22)),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.08),
-                    ),
+              Container(
+                width: _cardWidth,
+                height: _infoHeight,
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF1A0E2E), Color(0xFF2A1248)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        widget.song.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          height: 1.2,
-                          letterSpacing: -0.1,
-                        ),
+                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(18)),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.song.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        height: 1.2,
+                        letterSpacing: -0.1,
                       ),
+                    ),
+                    const SizedBox(height: 3),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.person_rounded,
+                          color: Colors.white.withValues(alpha: 0.62),
+                          size: 10,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            widget.song.artist,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.dmSans(
+                              color: Colors.white.withValues(alpha: 0.72),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              height: 1.2,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+                    if (widget.song.durationMs > 0)
                       Row(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEC4899).withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Icon(Icons.person_rounded,
-                                color: Color(0xFFEC4899), size: 10),
+                          Icon(
+                            Icons.access_time_rounded,
+                            color: Colors.white.withValues(alpha: 0.5),
+                            size: 9,
                           ),
-                          const SizedBox(width: 5),
-                          Expanded(
-                            child: Text(
-                              widget.song.artist,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.dmSans(
-                                color: Colors.white.withValues(alpha: 0.72),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
-                                height: 1.2,
-                              ),
+                          const SizedBox(width: 3),
+                          Text(
+                            _formatDuration(Duration(milliseconds: widget.song.durationMs)),
+                            style: GoogleFonts.dmSans(
+                              color: Colors.white.withValues(alpha: 0.54),
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                              height: 1.2,
                             ),
                           ),
                         ],
                       ),
-                      if (widget.song.durationMs > 0)
-                        Row(
-                          children: [
-                            const Icon(Icons.access_time_rounded,
-                                color: Color(0xFF9333EA), size: 9),
-                            const SizedBox(width: 3),
-                            Text(
-                              _formatDuration(Duration(milliseconds: widget.song.durationMs)),
-                              style: GoogleFonts.dmSans(
-                                color: Colors.white.withValues(alpha: 0.48),
-                                fontSize: 9,
-                                fontWeight: FontWeight.w500,
-                                height: 1.2,
-                              ),
-                            ),
-                          ],
-                        ),
-                    ],
-                  ),
+                  ],
                 ),
               ),
             ],
@@ -1432,11 +1540,12 @@ class _CommunityFeaturedCardState extends State<_CommunityFeaturedCard>
           ),
         ),
         child: const Center(
-          child: Icon(Icons.music_note_rounded, color: Colors.white24, size: 48),
+          child: Icon(Icons.music_note_rounded, color: Colors.white24, size: 44),
         ),
       );
 }
 
+// ─── COMMUNITY SONG CARD ───────────────────────────────────────────────
 // ─── COMMUNITY SONG CARD ───────────────────────────────────────────────
 class _CommunitySongCard extends StatefulWidget {
   final UserSongModel song;
@@ -1456,9 +1565,15 @@ class _CommunitySongCard extends StatefulWidget {
 class _CommunitySongCardState extends State<_CommunitySongCard> {
   bool _isPressed = false;
 
+  static const double _cardWidth = 152;
+  static const double _cardHeight = 228;
+  static const double _coverSize = 152;
+  static const double _infoHeight = _cardHeight - _coverSize;
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTapDown: (_) => setState(() => _isPressed = true),
       onTapUp: (_) {
         setState(() => _isPressed = false);
@@ -1466,83 +1581,82 @@ class _CommunitySongCardState extends State<_CommunitySongCard> {
       },
       onTapCancel: () => setState(() => _isPressed = false),
       child: AnimatedScale(
-        scale: _isPressed ? 0.93 : 1.0,
-        duration: const Duration(milliseconds: 150),
+        scale: _isPressed ? 0.96 : 1.0,
+        duration: const Duration(milliseconds: 140),
+        curve: Curves.easeOutCubic,
         child: SizedBox(
-          width: 150,
-          height: 230,
+          width: _cardWidth,
+          height: _cardHeight,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
             children: [
-              // Album art — fixed 150x150
               SizedBox(
-                width: 150,
-                height: 150,
+                width: _cardWidth,
+                height: _coverSize,
                 child: Stack(
                   children: [
                     ClipRRect(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(19)),
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
                       child: widget.song.artUrl != null
-                          ? Image.network(widget.song.artUrl!,
-                              width: 150, height: 150,
+                          ? Image.network(
+                              widget.song.artUrl!,
+                              width: _cardWidth,
+                              height: _coverSize,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => _cardPlaceholder())
+                              errorBuilder: (_, __, ___) => _cardPlaceholder(),
+                            )
                           : _cardPlaceholder(),
                     ),
-                    // Gradient overlay
                     Positioned.fill(
-                      child: Container(
+                      child: DecoratedBox(
                         decoration: BoxDecoration(
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(19)),
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
                           gradient: LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                             colors: [
                               Colors.transparent,
-                              Colors.black.withValues(alpha: 0.0),
-                              Colors.black.withValues(alpha: 0.5),
+                              Colors.black.withValues(alpha: 0.05),
+                              Colors.black.withValues(alpha: 0.44),
                             ],
-                            stops: const [0.4, 0.7, 1.0],
+                            stops: const [0.45, 0.7, 1],
                           ),
                         ),
                       ),
                     ),
-                    // Rank badge
                     if (widget.rank != null)
                       Positioned(
                         top: 8,
                         left: 8,
                         child: Container(
-                          width: 26,
-                          height: 26,
+                          width: 24,
+                          height: 24,
+                          alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.6),
+                            color: Colors.black.withValues(alpha: 0.58),
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: _getRankColor(widget.rank!).withValues(alpha: 0.6),
-                              width: 1.5,
+                              color: _getRankColor(widget.rank!).withValues(alpha: 0.68),
+                              width: 1.3,
                             ),
                           ),
-                          child: Center(
-                            child: Text(
-                              '${widget.rank}',
-                              style: TextStyle(
-                                color: _getRankColor(widget.rank!),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w900,
-                              ),
+                          child: Text(
+                            '${widget.rank}',
+                            style: GoogleFonts.dmSans(
+                              color: _getRankColor(widget.rank!),
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              height: 1.1,
                             ),
                           ),
                         ),
                       ),
-                    // Play button
                     Positioned(
                       bottom: 8,
                       right: 8,
                       child: Container(
-                        width: 38,
-                        height: 38,
+                        width: 32,
+                        height: 32,
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
                             colors: [Color(0xFF9333EA), Color(0xFFEC4899)],
@@ -1550,92 +1664,94 @@ class _CommunitySongCardState extends State<_CommunitySongCard> {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF9333EA).withValues(alpha: 0.5),
-                              blurRadius: 10,
-                              spreadRadius: 1,
+                              color: const Color(0xFF9333EA).withValues(alpha: 0.44),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
                             ),
                           ],
                         ),
-                        child: const Icon(Icons.play_arrow_rounded,
-                            color: Colors.white, size: 20),
+                        child: const Icon(
+                          Icons.play_arrow_rounded,
+                          color: Colors.white,
+                          size: 18,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-              // Info section — SizedBox(height: 70) cố định tránh overflow
-              SizedBox(
-                height: 70,
-                child: Container(
-                  width: 150,
-                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF161626),
-                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(19)),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.08),
-                      width: 1,
+              Container(
+                width: _cardWidth,
+                height: _infoHeight,
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF161626),
+                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(18)),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.08),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF9333EA).withValues(alpha: 0.08),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF9333EA).withValues(alpha: 0.08),
-                        blurRadius: 12,
-                        offset: const Offset(0, 6),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.song.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        height: 1.2,
+                        letterSpacing: -0.1,
                       ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        widget.song.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          height: 1.2,
-                          letterSpacing: -0.1,
-                        ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      widget.song.artist.isNotEmpty
+                          ? widget.song.artist
+                          : 'Nghệ sĩ cộng đồng',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.dmSans(
+                        color: const Color(0xFFC084FC),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        height: 1.2,
                       ),
-                      if (widget.song.artist.isNotEmpty)
-                        Text(
-                          widget.song.artist,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.dmSans(
-                            color: const Color(0xFFC084FC),
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            height: 1.2,
+                    ),
+                    const Spacer(),
+                    if (widget.song.durationMs > 0)
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.access_time_rounded,
+                            color: Colors.white.withValues(alpha: 0.36),
+                            size: 9,
                           ),
-                        ),
-                      if (widget.song.durationMs > 0)
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.access_time_rounded,
-                              color: Colors.white.withValues(alpha: 0.35),
-                              size: 9,
+                          const SizedBox(width: 3),
+                          Text(
+                            _formatDuration(
+                              Duration(milliseconds: widget.song.durationMs),
                             ),
-                            const SizedBox(width: 3),
-                            Text(
-                              _formatDuration(
-                                Duration(milliseconds: widget.song.durationMs),
-                              ),
-                              style: GoogleFonts.dmSans(
-                                color: Colors.white.withValues(alpha: 0.38),
-                                fontSize: 9,
-                                fontWeight: FontWeight.w500,
-                                height: 1.2,
-                              ),
+                            style: GoogleFonts.dmSans(
+                              color: Colors.white.withValues(alpha: 0.44),
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                              height: 1.2,
                             ),
-                          ],
-                        ),
-                    ],
-                  ),
+                          ),
+                        ],
+                      ),
+                  ],
                 ),
               ),
             ],
@@ -1646,16 +1762,13 @@ class _CommunitySongCardState extends State<_CommunitySongCard> {
   }
 
   Widget _cardPlaceholder() => Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              const Color(0xFF1E1E30),
-              const Color(0xFF161626),
-            ],
+            colors: [Color(0xFF1E1E30), Color(0xFF161626)],
           ),
         ),
         child: const Center(
-          child: Icon(Icons.music_note_rounded, color: Colors.white12, size: 36),
+          child: Icon(Icons.music_note_rounded, color: Colors.white12, size: 34),
         ),
       );
 
