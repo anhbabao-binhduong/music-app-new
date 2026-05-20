@@ -28,7 +28,6 @@ class NewsRepositoryImpl implements NewsRepository {
 
   @override
   Future<List<NewsArticleEntity>> fetchNews({String? source}) async {
-    // Backend hiện chưa filter theo source, nên tạm ignore `source`.
     final uri = Uri.parse('$_backendBaseUrl/api/news');
 
     final response = await http.get(uri).timeout(const Duration(seconds: 15));
@@ -44,10 +43,17 @@ class NewsRepositoryImpl implements NewsRepository {
         ? (jsonMap['articles'] as List? ?? const [])
         : const [];
 
-    return articles
+    var result = articles
         .whereType<Map>()
         .map((e) => NewsArticleModel.fromJson(Map<String, dynamic>.from(e)))
         .where((a) => a.title.isNotEmpty)
         .toList();
+
+    // Filter theo source nếu có
+    if (source != null && source.isNotEmpty) {
+      result = result.where((a) => a.source == source).toList();
+    }
+
+    return result;
   }
 }
