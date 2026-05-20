@@ -10,11 +10,6 @@ import 'package:music_app/presentation/bloc/favorite/favorite_cubit.dart';
 import 'package:music_app/data/local_music_data.dart';
 import 'package:music_app/presentation/bloc/download/download_cubit.dart';
 
-const _kBg = Color(0xFFF3F4F8);
-const _kCard = Colors.white;
-const _kTextPrimary = Color(0xFF1A1A2E);
-const _kTextSecondary = Color(0xFF6B7280);
-const _kDivider = Color(0xFFEEEEF5);
 const _kAccentPink = Color(0xFFD81B60);
 
 class FavoritePage extends StatefulWidget {
@@ -46,13 +41,14 @@ class _FavoritePageState extends State<FavoritePage> {
     );
   }
 
-  Widget _buildSongCard({required Widget child}) {
+  Widget _buildSongCard(BuildContext context, {required Widget child}) {
+    final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: _kCard,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _kDivider),
+        border: Border.all(color: theme.dividerColor),
         boxShadow: [
           BoxShadow(
             color: _kAccentPink.withValues(alpha: 0.06),
@@ -73,8 +69,13 @@ class _FavoritePageState extends State<FavoritePage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+    final onSurfaceDim = onSurface.withValues(alpha: 0.6);
+    final bg = theme.scaffoldBackgroundColor;
+
     return Scaffold(
-      backgroundColor: _kBg,
+      backgroundColor: bg,
       body: BlocBuilder<FavoriteCubit, List<String>>(
         builder: (context, favoriteIds) {
           String normalize(String url) => url.split('/').last;
@@ -95,9 +96,9 @@ class _FavoritePageState extends State<FavoritePage> {
                   SliverAppBar(
                     expandedHeight: 180,
                     pinned: true,
-                    backgroundColor: _kBg,
+                    backgroundColor: bg,
                     elevation: 0,
-                    iconTheme: const IconThemeData(color: _kTextPrimary),
+                    iconTheme: IconThemeData(color: onSurface),
                     flexibleSpace: FlexibleSpaceBar(
                       titlePadding: const EdgeInsets.only(left: 48, bottom: 16),
                       title: const Text(
@@ -113,12 +114,12 @@ class _FavoritePageState extends State<FavoritePage> {
                         fit: StackFit.expand,
                         children: [
                           Container(
-                            decoration: const BoxDecoration(
+                            decoration: BoxDecoration(
                               gradient: LinearGradient(
-                                colors: [Color(0xFFAD1457), Color(0xFFD81B60), Color(0xFFF3F4F8)],
+                                colors: [const Color(0xFFAD1457), const Color(0xFFD81B60), bg],
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
-                                stops: [0.0, 0.55, 1.0],
+                                stops: const [0.0, 0.55, 1.0],
                               ),
                             ),
                           ),
@@ -130,7 +131,7 @@ class _FavoritePageState extends State<FavoritePage> {
                               height: 200,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: Colors.white.withValues(alpha: 0.15),
+                                color: onSurface.withValues(alpha: 0.1),
                               ),
                               child: BackdropFilter(
                                 filter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
@@ -150,25 +151,25 @@ class _FavoritePageState extends State<FavoritePage> {
                           children: [
                             Container(
                               padding: const EdgeInsets.all(24),
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: _kDivider,
+                                color: theme.dividerColor,
                               ),
-                              child: const Icon(Icons.favorite_border_rounded,
-                                  size: 64, color: _kTextSecondary),
+                              child: Icon(Icons.favorite_border_rounded,
+                                  size: 64, color: onSurfaceDim),
                             ),
                             const SizedBox(height: 20),
-                            const Text(
+                            Text(
                               'Chưa có bài hát yêu thích nào',
                               style: TextStyle(
-                                  color: _kTextPrimary,
+                                  color: onSurface,
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600),
                             ),
                             const SizedBox(height: 8),
-                            const Text(
+                            Text(
                               'Thả tim để thêm vào danh sách này',
-                              style: TextStyle(color: _kTextSecondary, fontSize: 14),
+                              style: TextStyle(color: onSurfaceDim, fontSize: 14),
                             ),
                           ],
                         ),
@@ -182,6 +183,7 @@ class _FavoritePageState extends State<FavoritePage> {
                           (context, index) {
                             final item = favoriteSongs[index];
                             return _buildSongCard(
+                              context,
                               child: ListTile(
                                 contentPadding:
                                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -204,15 +206,15 @@ class _FavoritePageState extends State<FavoritePage> {
                                             width: 52,
                                             height: 52,
                                             fit: BoxFit.cover,
-                                            errorBuilder: (_, __, ___) => _placeholder(),
+                                            errorBuilder: (_, __, ___) => _placeholder(context),
                                           )
-                                        : _placeholder(),
+                                        : _placeholder(context),
                                   ),
                                 ),
                                 title: Text(
                                   item.title,
-                                  style: const TextStyle(
-                                      color: _kTextPrimary,
+                                  style: TextStyle(
+                                      color: onSurface,
                                       fontWeight: FontWeight.w700,
                                       fontSize: 15),
                                   maxLines: 1,
@@ -222,8 +224,8 @@ class _FavoritePageState extends State<FavoritePage> {
                                   padding: const EdgeInsets.only(top: 4),
                                   child: Text(
                                     item.artist ?? 'Unknown Artist',
-                                    style: const TextStyle(
-                                        color: _kTextSecondary,
+                                    style: TextStyle(
+                                        color: onSurfaceDim,
                                         fontSize: 13,
                                         fontWeight: FontWeight.w500),
                                     maxLines: 1,
@@ -231,8 +233,8 @@ class _FavoritePageState extends State<FavoritePage> {
                                   ),
                                 ),
                                 trailing: IconButton(
-                                  icon: const Icon(Icons.more_vert_rounded,
-                                      color: _kTextSecondary, size: 22),
+                                  icon: Icon(Icons.more_vert_rounded,
+                                      color: onSurfaceDim, size: 22),
                                   onPressed: () => _showSongOptions(context, item),
                                 ),
                                 onTap: () => _playSongs(favoriteSongs, index),
@@ -253,9 +255,13 @@ class _FavoritePageState extends State<FavoritePage> {
   }
 
   void _showSongOptions(BuildContext context, MediaItem song) {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+    final onSurfaceDim = onSurface.withValues(alpha: 0.6);
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: _kCard,
+      backgroundColor: theme.colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -267,12 +273,12 @@ class _FavoritePageState extends State<FavoritePage> {
               margin: const EdgeInsets.only(top: 12, bottom: 8),
               width: 40,
               height: 4,
-              decoration: BoxDecoration(color: _kDivider, borderRadius: BorderRadius.circular(2)),
+              decoration: BoxDecoration(color: theme.dividerColor, borderRadius: BorderRadius.circular(2)),
             ),
             ListTile(
               leading: const Icon(Icons.favorite_rounded, color: _kAccentPink),
-              title: const Text('Bỏ yêu thích',
-                  style: TextStyle(color: _kTextPrimary, fontWeight: FontWeight.w600)),
+              title: Text('Bỏ yêu thích',
+                  style: TextStyle(color: onSurface, fontWeight: FontWeight.w600)),
               onTap: () {
                 Navigator.pop(context);
                 context.read<FavoriteCubit>().toggleFavorite(song.id);
@@ -284,12 +290,12 @@ class _FavoritePageState extends State<FavoritePage> {
                 return ListTile(
                   leading: Icon(
                     isDownloaded ? Icons.download_done_rounded : Icons.download_rounded,
-                    color: isDownloaded ? const Color(0xFF2E7D32) : _kTextSecondary,
+                    color: isDownloaded ? const Color(0xFF2E7D32) : onSurfaceDim,
                   ),
                   title: Text(
                     isDownloaded ? 'Đã tải' : 'Tải nhạc',
                     style: TextStyle(
-                      color: isDownloaded ? const Color(0xFF2E7D32) : _kTextPrimary,
+                      color: isDownloaded ? const Color(0xFF2E7D32) : onSurface,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -314,16 +320,19 @@ class _FavoritePageState extends State<FavoritePage> {
     );
   }
 
-  Widget _placeholder() => Container(
-        width: 52,
-        height: 52,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFFEEEEF5), Color(0xFFDDDDEE)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+  Widget _placeholder(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: 52,
+      height: 52,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [theme.colorScheme.surfaceContainerHigh, theme.colorScheme.surfaceContainerHighest],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        child: const Icon(Icons.music_note_rounded, color: _kTextSecondary, size: 24),
-      );
+      ),
+      child: Icon(Icons.music_note_rounded, color: theme.colorScheme.onSurface.withValues(alpha: 0.6), size: 24),
+    );
+  }
 }

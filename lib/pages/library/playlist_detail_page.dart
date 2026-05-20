@@ -14,13 +14,8 @@ import '../../presentation/bloc/download/download_cubit.dart';
 import '../player/player_page.dart';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
-const _kBg = Color(0xFFF3F4F8);
-const _kCard = Colors.white;
 const _kPrimary = Color(0xFF0D47A1);
 const _kAccentGreen = Color(0xFF1DB954);
-const _kTextPrimary = Color(0xFF1A1A2E);
-const _kTextSecondary = Color(0xFF6B7280);
-const _kBorder = Color(0xFFE5E7EB);
 
 // ─── Helper: kiểm tra ID có phải UUID không ──────────────────────────────────
 bool _isUuid(String id) => RegExp(
@@ -91,23 +86,27 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
 
   // ─── Dialogs ──────────────────────────────────────────────────────────────
   void _showDeleteConfirmDialog(BuildContext context) {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+    final onSurfaceDim = onSurface.withValues(alpha: 0.6);
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: _kCard,
+        backgroundColor: theme.colorScheme.surface,
         shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Xóa danh sách?',
+        title: Text('Xóa danh sách?',
             style: TextStyle(
-                color: _kTextPrimary, fontWeight: FontWeight.w700)),
-        content: const Text(
+                color: onSurface, fontWeight: FontWeight.w700)),
+        content: Text(
             'Bạn có chắc chắn muốn xóa danh sách phát này không?',
-            style: TextStyle(color: _kTextSecondary)),
+            style: TextStyle(color: onSurfaceDim)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Hủy',
-                style: TextStyle(color: _kTextSecondary)),
+            child: Text('Hủy',
+                style: TextStyle(color: onSurfaceDim)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -132,23 +131,27 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
 
   void _showRemoveConfirm(
       BuildContext context, String sId, String pId) {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+    final onSurfaceDim = onSurface.withValues(alpha: 0.6);
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: _kCard,
+        backgroundColor: theme.colorScheme.surface,
         shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Xóa bài hát?',
+        title: Text('Xóa bài hát?',
             style: TextStyle(
-                color: _kTextPrimary, fontWeight: FontWeight.w700)),
-        content: const Text(
+                color: onSurface, fontWeight: FontWeight.w700)),
+        content: Text(
             'Bạn có chắc chắn muốn xóa bài hát này khỏi danh sách phát không?',
-            style: TextStyle(color: _kTextSecondary)),
+            style: TextStyle(color: onSurfaceDim)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Hủy',
-                style: TextStyle(color: _kTextSecondary)),
+            child: Text('Hủy',
+                style: TextStyle(color: onSurfaceDim)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -172,9 +175,13 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
 
   void _showSongOptions(BuildContext context, MediaItem song,
       String playlistSongId, String pId) {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+    final onSurfaceDim = onSurface.withValues(alpha: 0.6);
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: _kCard,
+      backgroundColor: theme.colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -188,7 +195,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                  color: _kBorder,
+                  color: theme.dividerColor,
                   borderRadius: BorderRadius.circular(2)),
             ),
             // Song info header
@@ -206,9 +213,9 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                       errorWidget: (_, __, ___) => Container(
                         width: 48,
                         height: 48,
-                        color: _kBorder,
-                        child: const Icon(Icons.music_note,
-                            color: _kTextSecondary),
+                        color: theme.dividerColor,
+                        child: Icon(Icons.music_note,
+                            color: onSurfaceDim),
                       ),
                     ),
                   ),
@@ -218,16 +225,16 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(song.title,
-                            style: const TextStyle(
-                                color: _kTextPrimary,
+                            style: TextStyle(
+                                color: onSurface,
                                 fontWeight: FontWeight.w700,
                                 fontSize: 15),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis),
                         const SizedBox(height: 2),
                         Text(song.artist ?? 'Unknown',
-                            style: const TextStyle(
-                                color: _kTextSecondary, fontSize: 13),
+                            style: TextStyle(
+                                color: onSurfaceDim, fontSize: 13),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis),
                       ],
@@ -236,7 +243,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                 ],
               ),
             ),
-            Divider(color: _kBorder, height: 1),
+            Divider(color: theme.dividerColor, height: 1),
             _OptionTile(
               icon: Icons.play_arrow_rounded,
               iconColor: _kPrimary,
@@ -256,7 +263,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                       ? Icons.favorite_rounded
                       : Icons.favorite_border_rounded,
                   iconColor:
-                      isFav ? const Color(0xFFE91E8C) : _kTextSecondary,
+                      isFav ? const Color(0xFFE91E8C) : onSurfaceDim,
                   label: isFav ? 'Bỏ yêu thích' : 'Thêm vào yêu thích',
                   onTap: () async {
                     Navigator.pop(context);
@@ -275,10 +282,10 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                       ? Icons.download_done_rounded
                       : Icons.download_rounded,
                   iconColor:
-                      isDownloaded ? _kAccentGreen : _kTextSecondary,
+                      isDownloaded ? _kAccentGreen : onSurfaceDim,
                   label: isDownloaded ? 'Đã tải về' : 'Tải nhạc',
                   textColor:
-                      isDownloaded ? _kAccentGreen : _kTextPrimary,
+                      isDownloaded ? _kAccentGreen : onSurface,
                   onTap: () async {
                     Navigator.pop(context);
                     try {
@@ -315,17 +322,22 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
   // ─── Build ────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+    final onSurfaceDim = onSurface.withValues(alpha: 0.6);
+    final bg = theme.scaffoldBackgroundColor;
+
     return Scaffold(
-      backgroundColor: _kBg,
+      backgroundColor: bg,
       appBar: AppBar(
-        backgroundColor: _kBg,
+        backgroundColor: bg,
         elevation: 0,
         scrolledUnderElevation: 0,
-        iconTheme: const IconThemeData(color: _kTextPrimary),
-        title: const Text(
+        iconTheme: IconThemeData(color: onSurface),
+        title: Text(
           'Danh sách phát',
           style: TextStyle(
-              color: _kTextPrimary,
+              color: onSurface,
               fontWeight: FontWeight.w800,
               fontSize: 18),
         ),
@@ -349,9 +361,9 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
           final matchIndex =
               state.playlists.indexWhere((p) => p.id == widget.playlistId);
           if (matchIndex == -1) {
-            return const Center(
+            return Center(
               child: Text('Danh sách không tồn tại',
-                  style: TextStyle(color: _kTextSecondary)),
+                  style: TextStyle(color: onSurfaceDim)),
             );
           }
 
@@ -373,9 +385,9 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                         const EdgeInsets.fromLTRB(16, 8, 16, 0),
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: _kCard,
+                      color: theme.colorScheme.surface,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: _kBorder),
+                      border: Border.all(color: theme.dividerColor),
                       boxShadow: [
                         BoxShadow(
                           color: _kPrimary.withValues(alpha: 0.06),
@@ -405,10 +417,10 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: const Icon(
-                                Icons.queue_music_rounded,
-                                color: Colors.white,
-                                size: 32,
-                              ),
+                                  Icons.queue_music_rounded,
+                                  color: Colors.white,
+                                  size: 32,
+                                ),
                             ),
                             const SizedBox(width: 16),
                             Expanded(
@@ -417,8 +429,8 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                                 children: [
                                   Text(
                                     playlist.name,
-                                    style: const TextStyle(
-                                        color: _kTextPrimary,
+                                    style: TextStyle(
+                                        color: onSurface,
                                         fontSize: 22,
                                         fontWeight: FontWeight.w800),
                                     maxLines: 2,
@@ -427,15 +439,15 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                                   const SizedBox(height: 4),
                                   Row(
                                     children: [
-                                      const Icon(
+                                      Icon(
                                           Icons.music_note_rounded,
                                           size: 14,
-                                          color: _kTextSecondary),
+                                          color: onSurfaceDim),
                                       const SizedBox(width: 4),
                                       Text(
                                         '${playlist.songIds.length} bài hát',
-                                        style: const TextStyle(
-                                            color: _kTextSecondary,
+                                        style: TextStyle(
+                                            color: onSurfaceDim,
                                             fontSize: 13),
                                       ),
                                       if (_loadingUserSongs) ...[
@@ -509,12 +521,12 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                                 Icon(Icons.queue_music_rounded,
                                     size: 72,
                                     color:
-                                        _kTextSecondary.withValues(alpha: 0.4)),
+                                        onSurfaceDim.withValues(alpha: 0.4)),
                                 const SizedBox(height: 16),
-                                const Text(
+                                Text(
                                   'Danh sách này chưa có bài hát nào',
                                   style: TextStyle(
-                                      color: _kTextSecondary, fontSize: 15),
+                                      color: onSurfaceDim, fontSize: 15),
                                 ),
                               ],
                             ),
@@ -545,11 +557,11 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                                     margin: const EdgeInsets.only(
                                         bottom: 10),
                                     decoration: BoxDecoration(
-                                      color: _kCard,
+                                      color: theme.colorScheme.surface,
                                       borderRadius:
                                           BorderRadius.circular(16),
                                       border:
-                                          Border.all(color: _kBorder),
+                                          Border.all(color: theme.dividerColor),
                                     ),
                                     child: ListTile(
                                       contentPadding:
@@ -560,18 +572,18 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                                         width: 50,
                                         height: 50,
                                         decoration: BoxDecoration(
-                                          color: _kBorder,
+                                          color: theme.dividerColor,
                                           borderRadius:
                                               BorderRadius.circular(10),
                                         ),
-                                        child: const Icon(
+                                        child: Icon(
                                             Icons.music_off_rounded,
-                                            color: _kTextSecondary),
+                                            color: onSurfaceDim),
                                       ),
-                                      title: const Text(
+                                      title: Text(
                                         'Bài hát không còn khả dụng',
                                         style: TextStyle(
-                                            color: _kTextPrimary,
+                                            color: onSurface,
                                             fontWeight: FontWeight.w600,
                                             fontSize: 14),
                                       ),
@@ -580,8 +592,8 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                                                 _loadingUserSongs
                                             ? 'Đang tải...'
                                             : 'ID: $songId',
-                                        style: const TextStyle(
-                                            color: _kTextSecondary,
+                                        style: TextStyle(
+                                            color: onSurfaceDim,
                                             fontSize: 12),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -601,9 +613,9 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                                                     songId,
                                                     widget.playlistId),
                                           ),
-                                          const Icon(
+                                          Icon(
                                               Icons.drag_handle_rounded,
-                                              color: _kBorder),
+                                              color: theme.dividerColor),
                                         ],
                                       ),
                                     ),
@@ -619,10 +631,10 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                                   margin: const EdgeInsets.only(
                                       bottom: 10),
                                   decoration: BoxDecoration(
-                                    color: _kCard,
+                                    color: theme.colorScheme.surface,
                                     borderRadius:
                                         BorderRadius.circular(16),
-                                    border: Border.all(color: _kBorder),
+                                    border: Border.all(color: theme.dividerColor),
                                     boxShadow: [
                                       BoxShadow(
                                         color: Colors.black
@@ -651,17 +663,17 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                                             Container(
                                           width: 50,
                                           height: 50,
-                                          color: _kBorder,
-                                          child: const Icon(
+                                          color: theme.dividerColor,
+                                          child: Icon(
                                               Icons.music_note,
-                                              color: _kTextSecondary),
+                                              color: onSurfaceDim),
                                         ),
                                       ),
                                     ),
                                     title: Text(
                                       song.title,
-                                      style: const TextStyle(
-                                          color: _kTextPrimary,
+                                      style: TextStyle(
+                                          color: onSurface,
                                           fontWeight: FontWeight.w700,
                                           fontSize: 14),
                                       maxLines: 1,
@@ -669,8 +681,8 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                                     ),
                                     subtitle: Text(
                                       song.artist ?? 'Unknown',
-                                      style: const TextStyle(
-                                          color: _kTextSecondary,
+                                      style: TextStyle(
+                                          color: onSurfaceDim,
                                           fontSize: 12),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -679,9 +691,9 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         IconButton(
-                                          icon: const Icon(
+                                          icon: Icon(
                                               Icons.more_vert_rounded,
-                                              color: _kTextSecondary,
+                                              color: onSurfaceDim,
                                               size: 22),
                                           onPressed: () => _showSongOptions(
                                               context,
@@ -689,9 +701,9 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                                               songId,
                                               widget.playlistId),
                                         ),
-                                        const Icon(
+                                        Icon(
                                             Icons.drag_handle_rounded,
-                                            color: _kBorder),
+                                            color: theme.dividerColor),
                                       ],
                                     ),
                                     onTap: () {
@@ -744,12 +756,16 @@ class _OptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+    final onSurfaceDim = onSurface.withValues(alpha: 0.6);
+
     return ListTile(
-      leading: Icon(icon, color: iconColor ?? _kTextSecondary),
+      leading: Icon(icon, color: iconColor ?? onSurfaceDim),
       title: Text(
         label,
         style: TextStyle(
-            color: textColor ?? _kTextPrimary,
+            color: textColor ?? onSurface,
             fontSize: 15,
             fontWeight: FontWeight.w500),
       ),

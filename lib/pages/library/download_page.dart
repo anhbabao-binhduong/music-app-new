@@ -8,11 +8,6 @@ import 'package:music_app/pages/player/player_page.dart';
 import 'package:music_app/presentation/bloc/download/download_cubit.dart';
 import 'package:music_app/data/local_music_data.dart';
 
-const _kBg = Color(0xFFF3F4F8);
-const _kCard = Colors.white;
-const _kTextPrimary = Color(0xFF1A1A2E);
-const _kTextSecondary = Color(0xFF6B7280);
-const _kDivider = Color(0xFFEEEEF5);
 const _kAccentGreen = Color(0xFF2E7D32);
 
 class DownloadPage extends StatefulWidget {
@@ -41,12 +36,13 @@ class _DownloadPageState extends State<DownloadPage> {
   }
 
   Widget _buildSongCard({required Widget child}) {
+    final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: _kCard,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _kDivider),
+        border: Border.all(color: theme.dividerColor),
         boxShadow: [
           BoxShadow(
             color: _kAccentGreen.withValues(alpha: 0.06),
@@ -67,8 +63,13 @@ class _DownloadPageState extends State<DownloadPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+    final onSurfaceDim = onSurface.withValues(alpha: 0.6);
+    final bg = theme.scaffoldBackgroundColor;
+
     return Scaffold(
-      backgroundColor: _kBg,
+      backgroundColor: bg,
       body: BlocBuilder<DownloadCubit, List<String>>(
         builder: (context, downloadIds) {
           String normalize(String url) => url.split('/').last;
@@ -88,9 +89,9 @@ class _DownloadPageState extends State<DownloadPage> {
                   SliverAppBar(
                     expandedHeight: 180,
                     pinned: true,
-                    backgroundColor: _kBg,
+                    backgroundColor: bg,
                     elevation: 0,
-                    iconTheme: const IconThemeData(color: _kTextPrimary),
+                    iconTheme: IconThemeData(color: onSurface),
                     flexibleSpace: FlexibleSpaceBar(
                       titlePadding: const EdgeInsets.only(left: 48, bottom: 16),
                       title: const Text(
@@ -106,12 +107,12 @@ class _DownloadPageState extends State<DownloadPage> {
                         fit: StackFit.expand,
                         children: [
                           Container(
-                            decoration: const BoxDecoration(
+                            decoration: BoxDecoration(
                               gradient: LinearGradient(
-                                colors: [Color(0xFF1B5E20), Color(0xFF2E7D32), Color(0xFFF3F4F8)],
+                                colors: [const Color(0xFF1B5E20), const Color(0xFF2E7D32), bg],
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
-                                stops: [0.0, 0.55, 1.0],
+                                stops: const [0.0, 0.55, 1.0],
                               ),
                             ),
                           ),
@@ -123,7 +124,7 @@ class _DownloadPageState extends State<DownloadPage> {
                               height: 200,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: Colors.white.withValues(alpha: 0.15),
+                                color: onSurface.withValues(alpha: 0.1),
                               ),
                               child: BackdropFilter(
                                 filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
@@ -143,25 +144,25 @@ class _DownloadPageState extends State<DownloadPage> {
                           children: [
                             Container(
                               padding: const EdgeInsets.all(24),
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: _kDivider,
+                                color: theme.dividerColor,
                               ),
-                              child: const Icon(Icons.download_rounded,
-                                  size: 64, color: _kTextSecondary),
+                              child: Icon(Icons.download_rounded,
+                                  size: 64, color: onSurfaceDim),
                             ),
                             const SizedBox(height: 20),
-                            const Text(
+                            Text(
                               'Chưa có bài hát nào trong máy',
                               style: TextStyle(
-                                  color: _kTextPrimary,
+                                  color: onSurface,
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600),
                             ),
                             const SizedBox(height: 8),
-                            const Text(
+                            Text(
                               'Tải nhạc để nghe khi không có mạng',
-                              style: TextStyle(color: _kTextSecondary, fontSize: 14),
+                              style: TextStyle(color: onSurfaceDim, fontSize: 14),
                             ),
                           ],
                         ),
@@ -204,8 +205,8 @@ class _DownloadPageState extends State<DownloadPage> {
                                 ),
                                 title: Text(
                                   item.title,
-                                  style: const TextStyle(
-                                      color: _kTextPrimary,
+                                  style: TextStyle(
+                                      color: onSurface,
                                       fontWeight: FontWeight.w700,
                                       fontSize: 15),
                                   maxLines: 1,
@@ -215,8 +216,8 @@ class _DownloadPageState extends State<DownloadPage> {
                                   padding: const EdgeInsets.only(top: 4),
                                   child: Text(
                                     item.artist ?? 'Unknown Artist',
-                                    style: const TextStyle(
-                                        color: _kTextSecondary,
+                                    style: TextStyle(
+                                        color: onSurfaceDim,
                                         fontSize: 13,
                                         fontWeight: FontWeight.w500),
                                     maxLines: 1,
@@ -246,20 +247,24 @@ class _DownloadPageState extends State<DownloadPage> {
   }
 
   Future<void> _confirmRemove(BuildContext context, MediaItem item) async {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+    final onSurfaceDim = onSurface.withValues(alpha: 0.6);
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: _kCard,
+        backgroundColor: theme.colorScheme.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Xóa khỏi máy?',
-            style: TextStyle(color: _kTextPrimary, fontWeight: FontWeight.bold)),
-        content: const Text('Bạn có chắc chắn muốn xóa bài hát đã tải này không?',
-            style: TextStyle(color: _kTextSecondary)),
+        title: Text('Xóa khỏi máy?',
+            style: TextStyle(color: onSurface, fontWeight: FontWeight.bold)),
+        content: Text('Bạn có chắc chắn muốn xóa bài hát đã tải này không?',
+            style: TextStyle(color: onSurfaceDim)),
         actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Hủy', style: TextStyle(color: _kTextSecondary)),
+            child: Text('Hủy', style: TextStyle(color: onSurfaceDim)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -291,16 +296,23 @@ class _DownloadPageState extends State<DownloadPage> {
     }
   }
 
-  Widget _placeholder() => Container(
-        width: 52,
-        height: 52,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFFEEEEF5), Color(0xFFDDDDEE)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+  Widget _placeholder() {
+    final theme = Theme.of(context);
+    return Container(
+      width: 52,
+      height: 52,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            theme.colorScheme.surfaceContainerHigh,
+            theme.colorScheme.surfaceContainerHighest,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        child: const Icon(Icons.music_note_rounded, color: _kTextSecondary, size: 24),
-      );
+      ),
+      child: Icon(Icons.music_note_rounded,
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.6), size: 24),
+    );
+  }
 }
