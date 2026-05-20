@@ -11,6 +11,18 @@ class NewsArticleModel extends NewsArticleEntity {
     required super.source,
   });
 
+  /// Parse item returned by backend (FastAPI `app.py`).
+  factory NewsArticleModel.fromJson(Map<String, dynamic> json) {
+    return NewsArticleModel(
+      source: (json['source'] ?? '').toString(),
+      title: (json['title'] ?? '').toString(),
+      link: (json['url'] ?? json['link'] ?? '').toString(),
+      pubDate: (json['publishedAt'] ?? json['published'] ?? json['pubDate'] ?? '').toString(),
+      description: (json['description'] ?? json['summary'])?.toString(),
+      imageUrl: (json['imageUrl'] ?? json['image_url'])?.toString(),
+    );
+  }
+
   static List<NewsArticleEntity> parseRssFeed(
       String xmlString, String sourceName) {
     final document = XmlDocument.parse(xmlString);
