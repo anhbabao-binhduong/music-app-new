@@ -270,11 +270,11 @@ class _ProfileContentState extends State<_ProfileContent> {
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 textAlign: TextAlign.center,
-                                style: GoogleFonts.syne(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w800,
-                                  height: 1.15,
-                                  letterSpacing: -0.4,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w900,
+                                  height: 1.1,
+                                  letterSpacing: -0.6,
                                   color: Colors.white,
                                 ),
                               ),
@@ -672,11 +672,11 @@ class _SectionTitle extends StatelessWidget {
 
     return Text(
       title,
-      style: GoogleFonts.syne(
-        fontSize: 20,
-        fontWeight: FontWeight.w800,
-        height: 1.2,
-        letterSpacing: -0.3,
+      style: GoogleFonts.plusJakartaSans(
+        fontSize: 22,
+        fontWeight: FontWeight.w900,
+        height: 1.15,
+        letterSpacing: -0.5,
         color: scheme.onSurface,
       ),
     );
@@ -765,11 +765,11 @@ class _StatCard extends StatelessWidget {
             value.toString(),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.syne(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              height: 1.1,
-              letterSpacing: -0.3,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 24,
+              fontWeight: FontWeight.w900,
+              height: 1.0,
+              letterSpacing: -0.5,
               color: scheme.onSurface,
             ),
           ),
