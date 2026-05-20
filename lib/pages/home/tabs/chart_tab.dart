@@ -6,6 +6,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/constants/colors.dart';
 import '../../../core/di/service_locator.dart';
 import '../../../domain/entities/chart_top_song.dart';
 import '../../../domain/entities/chart_trend_point.dart';
@@ -76,15 +77,32 @@ class _ChartStickyHeaderDelegate extends SliverPersistentHeaderDelegate {
           Expanded(
             child: Row(
               children: [
-                Text(
-                  '#zingchart',
-                  style: GoogleFonts.syne(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.3,
-                    height: 1.2,
-                    color: Colors.white,
-                  ),
+                Row(
+                  children: [
+                    Container(
+                      width: 3,
+                      height: 22,
+                      margin: const EdgeInsets.only(right: 10),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [kAccent, kAccentPink],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    Text(
+                      '#zingchart',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Theme.of(context).colorScheme.onSurface,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.4,
+                        height: 1.15,
+                      ),
+                    ),
+                  ],
                 ),
                 const Spacer(),
                 Row(

@@ -168,7 +168,7 @@ class _HomePageState extends State<HomePage> {
       child: Scaffold(
       backgroundColor: bgColor,
       extendBody: true,
-      appBar: (_currentNavIndex == 1 || _currentNavIndex == 3 || _currentNavIndex == 4) ? null : _buildAppBar(),
+      appBar: (_currentNavIndex == 1 || _currentNavIndex == 3) ? null : _buildAppBar(),
        body: BlocBuilder<PlayerBloc, PlayerState>(
          builder: (context, state) {
            final hasPlayer = state is PlayerPlaying || state is PlayerPaused;
@@ -196,6 +196,7 @@ class _HomePageState extends State<HomePage> {
     String title = 'Khám phá';
     if (_currentNavIndex == 1) title = '#zingchart';
     if (_currentNavIndex == 2) title = 'Thư viện';
+    if (_currentNavIndex == 4) title = 'Cá nhân';
 
     return AppBar(
       backgroundColor: theme.colorScheme.surface,
