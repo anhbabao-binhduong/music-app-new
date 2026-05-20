@@ -121,12 +121,12 @@ class _NewsReaderPageState extends State<NewsReaderPage> {
         titleSpacing: 0,
         title: Text(
           'Đọc báo',
-          style: GoogleFonts.syne(
+          style: GoogleFonts.plusJakartaSans(
             color: theme.colorScheme.onSurface,
             fontSize: 20,
             fontWeight: FontWeight.w800,
-            letterSpacing: -0.3,
-            height: 1.2,
+            letterSpacing: -0.4,
+            height: 1.15,
           ),
         ),
         actions: [
