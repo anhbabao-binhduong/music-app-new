@@ -127,7 +127,7 @@ class _HomePageState extends State<HomePage> {
           refreshToken: _exploreRefreshToken,
         );
       case 1:
-        return const ChartTab();
+        return ChartTab(userAvatarUrl: _userAvatarUrl);
       case 2:
         return const LibraryPage();
       case 3:

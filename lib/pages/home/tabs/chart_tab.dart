@@ -26,21 +26,100 @@ const _kLine2 = Color(0xFFEC4899); // Brand accent
 const _kLine3 = Color(0xFF06B6D4); // Cyan/teal
 
 class ChartTab extends StatelessWidget {
-  const ChartTab({super.key});
+  final String? userAvatarUrl;
+
+  const ChartTab({super.key, this.userAvatarUrl});
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => getIt<ChartCubit>(),
-      child: const _ChartView(),
+      child: _ChartView(userAvatarUrl: userAvatarUrl),
     );
   }
 }
 
 class _ChartView extends StatefulWidget {
-  const _ChartView();
+  final String? userAvatarUrl;
+
+  const _ChartView({this.userAvatarUrl});
+
   @override
   State<_ChartView> createState() => _ChartViewState();
+}
+
+class _ChartStickyHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final String? avatarUrl;
+
+  const _ChartStickyHeaderDelegate({this.avatarUrl});
+
+  @override
+  double get minExtent => 56.0;
+
+  @override
+  double get maxExtent => 56.0;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    final theme = Theme.of(context);
+    final isLight = theme.brightness == Brightness.light;
+    final backgroundColor = isLight ? const Color(0xFF1A1730) : Colors.black;
+    final dividerColor = isLight
+        ? Colors.white.withValues(alpha: 0.10)
+        : Colors.white.withValues(alpha: 0.08);
+
+    return Container(
+      color: backgroundColor,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                Text(
+                  '#zingchart',
+                  style: GoogleFonts.syne(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
+                    height: 1.2,
+                    color: Colors.white,
+                  ),
+                ),
+                const Spacer(),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      onPressed: () {},
+                      icon: const Icon(
+                        Icons.search_rounded,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                      splashRadius: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundColor: Colors.grey.shade700,
+                      backgroundImage: avatarUrl != null && avatarUrl!.isNotEmpty
+                          ? CachedNetworkImageProvider(avatarUrl!)
+                          : null,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Container(height: 1, color: dividerColor),
+        ],
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _ChartStickyHeaderDelegate oldDelegate) => false;
 }
 
 class _ChartViewState extends State<_ChartView> with SingleTickerProviderStateMixin {
@@ -102,6 +181,12 @@ class _ChartViewState extends State<_ChartView> with SingleTickerProviderStateMi
             child: CustomScrollView(
               physics: const BouncingScrollPhysics(),
               slivers: [
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _ChartStickyHeaderDelegate(
+                    avatarUrl: widget.userAvatarUrl,
+                  ),
+                ),
                 _header(ctx, state.filter),
                 if (state is ChartLoading) _shimmer(),
                 if (state is ChartError) _error(state.message),
