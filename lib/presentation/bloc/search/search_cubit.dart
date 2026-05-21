@@ -73,8 +73,9 @@ class SearchCubit extends Cubit<SearchState> {
           .toList();
 
       // 2) Lyrics match (when user types/pastes lyrics)
-      // Heuristic: lyrics queries usually have spaces and are not too short.
-      final shouldTryLyrics = _shouldTryLyricsSearch(query, metaMatchedCount: metaMatched.length);
+      // NOTE: Lyrics search requires network calls, so we apply heuristics + caps.
+      final shouldTryLyrics =
+          _shouldTryLyricsSearch(query, metaMatchedCount: metaMatched.length);
 
       if (!shouldTryLyrics) {
         if (metaMatched.isEmpty) {
@@ -89,6 +90,7 @@ class SearchCubit extends Cubit<SearchState> {
       final candidates = _pickLyricsCandidates(
         pool: pool,
         metaMatched: metaMatched,
+        query: query,
       );
 
       final lyricMatched = <SongEntity>[];
@@ -121,22 +123,27 @@ class SearchCubit extends Cubit<SearchState> {
     if (q.length < 4) return false;
 
     // If metadata already returns many hits, avoid extra network calls.
-    if (metaMatchedCount >= 15) return false;
+    if (metaMatchedCount >= 20) return false;
 
-    // Typical lyric fragments contain spaces.
-    if (!q.contains(' ')) return false;
-
-    return true;
+    // Lyrics fragments usually have spaces; but allow long single-token fragments too.
+    final looksLikeLyrics = q.contains(' ') || q.length >= 8;
+    return looksLikeLyrics;
   }
 
   List<SongEntity> _pickLyricsCandidates({
     required Set<SongEntity> pool,
     required List<SongEntity> metaMatched,
+    required String query,
   }) {
-    // Prefer meta matched (most likely), then fill from pool up to a cap.
-    const cap = 30;
+    final q = query.trim();
+
+    // When metaMatched is empty, user is likely searching by lyrics only.
+    // We broaden the candidate cap to improve recall (still capped to avoid too many API calls).
+    final int cap = metaMatched.isEmpty ? 120 : 60;
 
     final result = <SongEntity>[];
+
+    // Prefer meta matched (most likely)
     for (final s in metaMatched) {
       if (result.length >= cap) break;
       result.add(s);
@@ -144,6 +151,8 @@ class SearchCubit extends Cubit<SearchState> {
 
     if (result.length >= cap) return result;
 
+    // Fill from pool deterministically. If query is long, we can afford a slightly larger set.
+    // (Still bounded by cap above.)
     for (final s in pool) {
       if (result.length >= cap) break;
       if (result.any((e) => e.id == s.id)) continue;
