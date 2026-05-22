@@ -6,7 +6,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/constants/colors.dart';
 import '../../core/di/service_locator.dart';
+import '../../core/router/app_routes.dart';
 import '../../domain/entities/user_search_result_entity.dart';
+import '../../domain/repositories/chat_repository.dart';
 import '../../presentation/bloc/user_profile/user_profile_cubit.dart';
 import '../../presentation/bloc/user_profile/user_profile_state.dart';
 
@@ -319,6 +321,9 @@ class _ProfileContentState extends State<_ProfileContent> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Nút Nhắn tin — chỉ hiện khi xem profile người khác
+                    if (Supabase.instance.client.auth.currentUser?.id != user.id)
+                      _ChatActionButton(user: user),
                     if (hasStatsSection) ...[
                       _SectionTitle(title: 'Tổng quan'),
                       const SizedBox(height: 12),
@@ -1148,6 +1153,115 @@ class _ErrorView extends StatelessWidget {
               child: const Text('Quay lại'),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ChatActionButton extends StatefulWidget {
+  final UserSearchResultEntity user;
+
+  const _ChatActionButton({required this.user});
+
+  @override
+  State<_ChatActionButton> createState() => _ChatActionButtonState();
+}
+
+class _ChatActionButtonState extends State<_ChatActionButton> {
+  bool _isLoading = false;
+
+  Future<void> _openChat() async {
+    setState(() => _isLoading = true);
+    final repo = getIt<ChatRepository>();
+    final displayName = (widget.user.name?.trim().isNotEmpty == true)
+        ? widget.user.name!.trim()
+        : 'Người dùng';
+
+    final result = await repo.findOrCreateConversation(widget.user.id);
+    if (!mounted) return;
+
+    setState(() => _isLoading = false);
+
+    result.fold(
+      (failure) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              failure.message,
+              style: GoogleFonts.dmSans(color: Colors.white),
+            ),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      },
+      (conversationId) {
+        Navigator.of(context).pushNamed(
+          AppRoutes.chat,
+          arguments: {
+            'conversationId': conversationId,
+            'otherUserName': displayName,
+          },
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: SizedBox(
+        width: double.infinity,
+        height: 52,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF9333EA), Color(0xFFEC4899)],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF9333EA).withValues(alpha: 0.3),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: ElevatedButton.icon(
+            onPressed: _isLoading ? null : _openChat,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            icon: _isLoading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(
+                    Icons.chat_bubble_outline_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+            label: Text(
+              _isLoading ? 'Đang mở...' : 'Nhắn tin',
+              style: GoogleFonts.syne(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+          ),
         ),
       ),
     );

@@ -7,6 +7,8 @@ import 'package:music_app/pages/auth/forgot_password_page.dart';
 import 'package:music_app/pages/auth/login_page.dart';
 import 'package:music_app/pages/auth/reset_password_page.dart';
 import 'package:music_app/presentation/bloc/forgot_password/forgot_password_cubit.dart';
+import 'package:music_app/pages/chat/chat_page.dart';
+import 'package:music_app/pages/chat/conversations_page.dart';
 import 'core/constants/app_theme.dart';
 import 'presentation/bloc/theme/theme_bloc.dart';
 import 'pages/root_page.dart';
@@ -37,6 +39,7 @@ class MyApp extends StatelessWidget {
                 child: const ResetPasswordPage(),
               ),
           AppRoutes.userSearch: (_) => const UserSearchPage(),
+          AppRoutes.conversations: (_) => const ConversationsPage(),
         },
         onGenerateRoute: (settings) {
           if (settings.name == AppRoutes.forgotPasswordCheckEmail) {
@@ -52,6 +55,15 @@ class MyApp extends StatelessWidget {
             final userId = settings.arguments as String;
             return MaterialPageRoute(
               builder: (_) => UserProfileViewPage(userId: userId),
+            );
+          }
+          if (settings.name == AppRoutes.chat) {
+            final args = settings.arguments as Map<String, String>;
+            return MaterialPageRoute(
+              builder: (_) => ChatPage(
+                conversationId: args['conversationId']!,
+                otherUserName: args['otherUserName']!,
+              ),
             );
           }
           return null;

@@ -24,6 +24,7 @@ import 'package:music_app/presentation/bloc/user_songs/user_songs_cubit.dart';
 import 'package:music_app/presentation/bloc/admin/admin_cubit.dart';
 import 'package:music_app/presentation/bloc/news/news_cubit.dart'; // 👈 THÊM
 import 'package:music_app/core/router/app_routes.dart';
+import 'services/chat_notification_service.dart';
 
 Map<String, String> _readAuthParamsFromUrl(Uri uri) {
   final params = <String, String>{...uri.queryParameters};
@@ -76,6 +77,7 @@ void _setupAuthListener() {
       getIt<DownloadCubit>().clear();
       // ✅ Xóa sạch lịch sử khỏi bộ nhớ ngay lập tức
       getIt<HistoryCubit>().clearLocalData();
+      await getIt<ChatNotificationService>().dispose();
     }
 
     if (event.event == AuthChangeEvent.passwordRecovery) {
@@ -92,6 +94,8 @@ void _setupAuthListener() {
         event.event == AuthChangeEvent.initialSession) {
       // Tải lại lịch sử của user mới (xóa cũ trước, load mới sau)
       getIt<HistoryCubit>().reloadForUser();
+      // Bắt đầu lắng nghe tin nhắn chưa đọc sau khi user đã login xong
+      getIt<ChatNotificationService>().startListening();
     }
   });
 }

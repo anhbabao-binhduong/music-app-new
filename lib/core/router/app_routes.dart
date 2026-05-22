@@ -7,6 +7,8 @@ class AppRoutes {
   static const String resetPassword = '/reset-password';
   static const String userSearch = '/user-search';
   static const String userProfile = '/user-profile';
+  static const String chat = '/chat';
+  static const String conversations = '/conversations';
 }
 
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();

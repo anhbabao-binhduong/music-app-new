@@ -42,6 +42,13 @@ import '../../data/repositories/news_repository_impl.dart';
 import '../../domain/usecases/fetch_news_usecase.dart';
 import '../../presentation/bloc/news/news_cubit.dart';
 
+// 👇 IMPORT CHO CHAT
+import '../../domain/repositories/chat_repository.dart';
+import '../../data/repositories/chat_repository_impl.dart';
+import '../../presentation/bloc/chat/chat_cubit.dart';
+import '../../presentation/bloc/conversations/conversations_cubit.dart';
+import '../../services/chat_notification_service.dart';
+
 // 👇 IMPORT CHO USER SEARCH
 import '../../domain/repositories/user_repository.dart';
 import '../../data/repositories/user_repository_impl.dart';
@@ -149,6 +156,24 @@ Future<void> setupServiceLocator() async {
   getIt.registerLazySingleton(() => FetchNewsUsecase(getIt<NewsRepository>()));
   getIt.registerFactory<NewsCubit>(
     () => NewsCubit(fetchNewsUsecase: getIt<FetchNewsUsecase>()),
+  );
+
+  // ─── Chat feature ─────────────────────────────────────────────────────────
+  getIt.registerLazySingleton<ChatRepository>(
+    () => ChatRepositoryImpl(supabaseClient: getIt<SupabaseClient>()),
+  );
+  getIt.registerLazySingleton<ChatNotificationService>(
+    () => ChatNotificationService(supabase: getIt<SupabaseClient>()),
+  );
+  getIt.registerFactoryParam<ChatCubit, String, String>(
+    (conversationId, currentUserId) => ChatCubit(
+      repo: getIt<ChatRepository>(),
+      conversationId: conversationId,
+      currentUserId: currentUserId,
+    ),
+  );
+  getIt.registerFactory<ConversationsCubit>(
+    () => ConversationsCubit(chatRepository: getIt<ChatRepository>()),
   );
 
   // ─── User Search feature ──────────────────────────────────────────────────

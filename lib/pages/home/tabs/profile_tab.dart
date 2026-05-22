@@ -21,6 +21,9 @@ import '../../profile/notifications_page.dart';
 import '../../profile/settings_page.dart';
 import '../../upload/upload_music_sheet.dart';
 import '../../user_search/user_search_page.dart';
+import '../../../core/di/service_locator.dart';
+import '../../../services/chat_notification_service.dart';
+import '../../../core/router/app_routes.dart';
 
 class ProfileTab extends StatelessWidget {
   final bool isLoggedIn;
@@ -428,15 +431,12 @@ class _LoggedInProfile extends StatelessWidget {
         final hasPlayer =
             playerState is PlayerPlaying || playerState is PlayerPaused;
 
-        // Extra space for floating action button
-        final fabExtraScrollSpace = 80.0;
-        final bottomPad = (hasPlayer ? 74.0 : 16.0) + fabExtraScrollSpace;
+        final playerHeight = hasPlayer ? 74.0 : 0.0;
+        final bottomPad = kBottomNavigationBarHeight + playerHeight + 16.0;
 
-        return Stack(
-          children: [
-            SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: EdgeInsets.fromLTRB(20, 16, 20, bottomPad),
+        return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: EdgeInsets.fromLTRB(20, 16, 20, bottomPad),
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 920),
@@ -464,73 +464,124 @@ class _LoggedInProfile extends StatelessWidget {
                             (item) => _MenuItem(
                               icon: item.$1,
                               label: item.$2,
+                              trailing: item.$2 == 'Tin nhắn'
+                                  ? ValueListenableBuilder<int>(
+                                      valueListenable:
+                                          getIt<ChatNotificationService>()
+                                              .unreadCount,
+                                      builder: (context, count, _) {
+                                        return Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            if (count > 0)
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4,
+                                                    ),
+                                                margin: const EdgeInsets.only(
+                                                  right: 8,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: Theme.of(
+                                                    context,
+                                                  ).colorScheme.error,
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                                child: Text(
+                                                  count > 99
+                                                      ? '99+'
+                                                      : count.toString(),
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            Icon(
+                                              Icons.chevron_right_rounded,
+                                              color: palette.softText,
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    )
+                                  : null,
                               onTap: () async {
-                                    if (item.$2 == 'Chỉnh sửa hồ sơ' &&
-                                        userId != null) {
-                                      final user = Supabase
-                                          .instance.client.auth.currentUser;
-                                      final profileData = {
-                                        'name': user?.userMetadata?['name'],
-                                        'avatar_url':
-                                            user?.userMetadata?['avatar_url'],
-                                        'bio': user?.userMetadata?['bio'],
-                                        'location':
-                                            user?.userMetadata?['location'],
-                                        'website': user?.userMetadata?['website'],
-                                      };
-                                      await Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => EditProfilePage(
-                                            profileData: profileData,
-                                          ),
-                                        ),
-                                      );
-                                      if (context.mounted) {
-                                        onProfileUpdated?.call();
-                                      }
-                                    } else if (item.$2 == 'Tìm người dùng') {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              const UserSearchPage(),
-                                        ),
-                                      );
-                                    } else if (item.$2 == 'Lịch sử bình luận' &&
-                                        userId != null) {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              CommentHistoryPage(userId: userId!),
-                                        ),
-                                      );
-                                    } else if (item.$2 == 'Thông báo' &&
-                                        userId != null) {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              const NotificationsPage(),
-                                        ),
-                                      );
-                                    } else if (item.$2 == 'Cài đặt') {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => const SettingsPage(),
-                                        ),
-                                      );
-                                    } else if (item.$2 ==
-                                        'Trợ giúp & Phản hồi') {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => HelpPages.faq(),
-                                        ),
-                                      );
-                                    }
+                                if (item.$2 == 'Chỉnh sửa hồ sơ' &&
+                                    userId != null) {
+                                  final user =
+                                      Supabase.instance.client.auth.currentUser;
+                                  final profileData = {
+                                    'name': user?.userMetadata?['name'],
+                                    'avatar_url':
+                                        user?.userMetadata?['avatar_url'],
+                                    'bio': user?.userMetadata?['bio'],
+                                    'location':
+                                        user?.userMetadata?['location'],
+                                    'website':
+                                        user?.userMetadata?['website'],
+                                  };
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => EditProfilePage(
+                                        profileData: profileData,
+                                      ),
+                                    ),
+                                  );
+                                  if (context.mounted) {
+                                    onProfileUpdated?.call();
+                                  }
+                                } else if (item.$2 == 'Tìm người dùng') {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const UserSearchPage(),
+                                    ),
+                                  );
+                                } else if (item.$2 == 'Tin nhắn') {
+                                  Navigator.pushNamed(
+                                    context,
+                                    AppRoutes.conversations,
+                                  );
+                                } else if (item.$2 == 'Lịch sử bình luận' &&
+                                    userId != null) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => CommentHistoryPage(
+                                        userId: userId!,
+                                      ),
+                                    ),
+                                  );
+                                } else if (item.$2 == 'Thông báo' &&
+                                    userId != null) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          const NotificationsPage(),
+                                    ),
+                                  );
+                                } else if (item.$2 == 'Cài đặt') {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const SettingsPage(),
+                                    ),
+                                  );
+                                } else if (item.$2 == 'Trợ giúp & Phản hồi') {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => HelpPages.faq(),
+                                    ),
+                                  );
+                                }
                               },
                             ),
                           )
@@ -543,32 +594,48 @@ class _LoggedInProfile extends StatelessWidget {
                   const _AdminSection(),
                   const SizedBox(height: 18),
                   _LogoutButton(onLogout: onLogout),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: palette.accentGradient,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: palette.accent.withValues(alpha: 0.28),
+                            blurRadius: 16,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: FilledButton.icon(
+                        onPressed: () => showUploadMusicSheet(context),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        icon: const Icon(Icons.upload_rounded, size: 20),
+                        label: const Text(
+                          'Upload nhạc',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: kBottomNavigationBarHeight + 16),
                 ],
               ),
             ),
           ),
-        ),
-        // Floating Upload button positioned above bottom nav
-        Positioned(
-          right: 20,
-          bottom: (hasPlayer ? 74.0 : 0.0) + 16.0,
-          child: FloatingActionButton.extended(
-            onPressed: () => showUploadMusicSheet(context),
-            backgroundColor: palette.accent,
-            foregroundColor: Colors.white,
-            elevation: 8,
-            icon: const Icon(Icons.upload_rounded, size: 20),
-            label: const Text(
-              'Upload nhạc',
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 14,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
+        );
       },
     );
   }
@@ -910,6 +977,7 @@ class _StatChip extends StatelessWidget {
 const _kMenuItems = [
   (Icons.manage_accounts_outlined, 'Chỉnh sửa hồ sơ'),
   (Icons.person_search_rounded, 'Tìm người dùng'),
+  (Icons.chat_bubble_outline_rounded, 'Tin nhắn'),
   (Icons.comment_rounded, 'Lịch sử bình luận'),
   (Icons.notifications_outlined, 'Thông báo'),
   (Icons.settings_outlined, 'Cài đặt'),
@@ -920,11 +988,13 @@ class _MenuItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final Widget? trailing;
 
   const _MenuItem({
     required this.icon,
     required this.label,
     required this.onTap,
+    this.trailing,
   });
 
   @override
@@ -961,10 +1031,11 @@ class _MenuItem extends StatelessWidget {
                   ),
                 ),
               ),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: palette.softText,
-              ),
+              trailing ??
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: palette.softText,
+                  ),
             ],
           ),
         ),
