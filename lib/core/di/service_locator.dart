@@ -98,7 +98,10 @@ Future<void> setupServiceLocator() async {
   );
 
   getIt.registerFactory<SearchCubit>(
-    () => SearchCubit(getIt<MusicRepository>()),
+    () => SearchCubit(
+      getIt<MusicRepository>(),
+      getIt<LyricsService>(),
+    ),
   );
 
   getIt.registerFactory<ChartCubit>(() => ChartCubit(getIt<MusicRepository>()));

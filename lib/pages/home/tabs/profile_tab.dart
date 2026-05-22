@@ -428,12 +428,8 @@ class _LoggedInProfile extends StatelessWidget {
         final hasPlayer =
             playerState is PlayerPlaying || playerState is PlayerPaused;
 
-        // Ensure the last items (especially the Logout button) are scrollable
-        // and not covered by the floating Upload button / mini player.
-        const fabHeight = 56.0;
-        const fabBottomMargin = 24.0;
-        const fabExtraScrollSpace = fabHeight + fabBottomMargin + 16.0;
-
+        // Extra space for floating action button
+        final fabExtraScrollSpace = 80.0;
         final bottomPad = (hasPlayer ? 74.0 : 16.0) + fabExtraScrollSpace;
 
         return Stack(
@@ -441,34 +437,34 @@ class _LoggedInProfile extends StatelessWidget {
             SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               padding: EdgeInsets.fromLTRB(20, 16, 20, bottomPad),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 920),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _ProfileHeader(
-                        userName: userName,
-                        userEmail: userEmail,
-                        userAvatarUrl: userAvatarUrl,
-                        favoriteCount: favoriteCount,
-                        playlistCount: playlistCount,
-                        downloadCount: downloadCount,
-                      ),
-                      const SizedBox(height: 24),
-                      const _SectionTitle(
-                        title: 'Tài khoản',
-                        subtitle: 'Quản lý hồ sơ, hoạt động và cài đặt cá nhân',
-                      ),
-                      const SizedBox(height: 14),
-                      _SurfaceCard(
-                        child: Column(
-                          children: _kMenuItems
-                              .map(
-                                (item) => _MenuItem(
-                                  icon: item.$1,
-                                  label: item.$2,
-                                  onTap: () async {
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 920),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _ProfileHeader(
+                    userName: userName,
+                    userEmail: userEmail,
+                    userAvatarUrl: userAvatarUrl,
+                    favoriteCount: favoriteCount,
+                    playlistCount: playlistCount,
+                    downloadCount: downloadCount,
+                  ),
+                  const SizedBox(height: 24),
+                  const _SectionTitle(
+                    title: 'Tài khoản',
+                    subtitle: 'Quản lý hồ sơ, hoạt động và cài đặt cá nhân',
+                  ),
+                  const SizedBox(height: 14),
+                  _SurfaceCard(
+                    child: Column(
+                      children: _kMenuItems
+                          .map(
+                            (item) => _MenuItem(
+                              icon: item.$1,
+                              label: item.$2,
+                              onTap: () async {
                                     if (item.$2 == 'Chỉnh sửa hồ sơ' &&
                                         userId != null) {
                                       final user = Supabase
@@ -535,46 +531,44 @@ class _LoggedInProfile extends StatelessWidget {
                                         ),
                                       );
                                     }
-                                  },
-                                ),
-                              )
-                              .toList(),
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      _QuickActionBar(
-                        palette: palette,
-                        isDark: isDark,
-                        onUploadTap: () => showUploadMusicSheet(context),
-                      ),
-                      const SizedBox(height: 18),
-                      _MyMusicSection(userId: userId),
-                      const SizedBox(height: 18),
-                      const _AdminSection(),
-                      const SizedBox(height: 18),
-                      _LogoutButton(onLogout: onLogout),
-                    ],
+                              },
+                            ),
+                          )
+                          .toList(),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 18),
+                  _MyMusicSection(userId: userId),
+                  const SizedBox(height: 18),
+                  const _AdminSection(),
+                  const SizedBox(height: 18),
+                  _LogoutButton(onLogout: onLogout),
+                ],
               ),
             ),
-            Positioned(
-              bottom: (hasPlayer ? 74.0 : 0.0) + 24.0,
-              right: 20,
-              child: FloatingActionButton.extended(
-                onPressed: () => showUploadMusicSheet(context),
-                backgroundColor: palette.accent,
-                foregroundColor: Colors.white,
-                elevation: 8,
-                icon: const Icon(Icons.cloud_upload_rounded),
-                label: const Text(
-                  'Upload nhạc',
-                  style: TextStyle(fontWeight: FontWeight.w800),
-                ),
+          ),
+        ),
+        // Floating Upload button positioned above bottom nav
+        Positioned(
+          right: 20,
+          bottom: (hasPlayer ? 74.0 : 0.0) + 16.0,
+          child: FloatingActionButton.extended(
+            onPressed: () => showUploadMusicSheet(context),
+            backgroundColor: palette.accent,
+            foregroundColor: Colors.white,
+            elevation: 8,
+            icon: const Icon(Icons.upload_rounded, size: 20),
+            label: const Text(
+              'Upload nhạc',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
               ),
             ),
-          ],
-        );
+          ),
+        ),
+      ],
+    );
       },
     );
   }

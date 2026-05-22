@@ -1,5 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../../../data/local_music_data.dart';
 import '../../../domain/entities/song_entity.dart';
@@ -16,9 +19,20 @@ class SearchPage extends StatefulWidget {
 class _SearchPageState extends State<SearchPage> {
   final _controller = TextEditingController();
 
+  late final stt.SpeechToText _speech;
+  bool _isListening = false;
+  bool _speechAvailable = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _speech = stt.SpeechToText();
+  }
+
   @override
   void dispose() {
     _controller.dispose();
+    _speech.stop();
     super.dispose();
   }
 
@@ -28,12 +42,61 @@ class _SearchPageState extends State<SearchPage> {
     playWithAuthGuard(ctx, playlist: localPlaylist, index: index);
   }
 
+  Future<void> _toggleVoice() async {
+    if (_isListening) {
+      await _speech.stop();
+      if (mounted) setState(() => _isListening = false);
+      return;
+    }
+
+    // Web: browser will request mic permission itself.
+    // Mobile/Desktop: request permission via permission_handler.
+    if (!kIsWeb) {
+      final micStatus = await Permission.microphone.request();
+      if (!micStatus.isGranted) return;
+    }
+
+    _speechAvailable = await _speech.initialize(
+      onError: (e) {
+        if (mounted) setState(() => _isListening = false);
+      },
+      onStatus: (status) {
+        if (status == 'notListening' || status == 'done') {
+          if (mounted) setState(() => _isListening = false);
+        }
+      },
+    );
+
+    if (!_speechAvailable) return;
+
+    if (mounted) setState(() => _isListening = true);
+
+    await _speech.listen(
+      localeId: 'vi_VN',
+      listenMode: stt.ListenMode.search,
+      partialResults: true,
+      onResult: (result) {
+        final recognized = result.recognizedWords.trim();
+        if (recognized.isEmpty) return;
+
+        _controller.value = TextEditingValue(
+          text: recognized,
+          selection: TextSelection.collapsed(offset: recognized.length),
+        );
+
+        context.read<SearchCubit>().onQueryChanged(recognized);
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: _SearchBar(
           controller: _controller,
+          isListening: _isListening,
+          onVoiceTap: _toggleVoice,
           onChanged: (q) => context.read<SearchCubit>().onQueryChanged(q),
           onClear: () {
             _controller.clear();
@@ -48,12 +111,12 @@ class _SearchPageState extends State<SearchPage> {
           SearchLoading() => const Center(child: CircularProgressIndicator()),
           SearchSuccess s => _ResultList(
               results: s.results,
-              query:   s.query,
-              onTap:   (song) => _playSong(context, song),
+              query: s.query,
+              onTap: (song) => _playSong(context, song),
             ),
-          SearchEmpty s   => _NoResults(query: s.query),
-          SearchError s   => _ErrorView(message: s.message),
-          _               => const SizedBox.shrink(),
+          SearchEmpty s => _NoResults(query: s.query),
+          SearchError s => _ErrorView(message: s.message),
+          _ => const SizedBox.shrink(),
         },
       ),
     );
@@ -64,9 +127,17 @@ class _SearchPageState extends State<SearchPage> {
 
 class _SearchBar extends StatelessWidget {
   final TextEditingController controller;
+  final bool isListening;
+  final VoidCallback onVoiceTap;
   final ValueChanged<String> onChanged;
   final VoidCallback onClear;
-  const _SearchBar({required this.controller, required this.onChanged, required this.onClear});
+  const _SearchBar({
+    required this.controller,
+    required this.isListening,
+    required this.onVoiceTap,
+    required this.onChanged,
+    required this.onClear,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -77,17 +148,29 @@ class _SearchBar extends StatelessWidget {
       onChanged: onChanged,
       style: Theme.of(context).textTheme.bodyMedium,
       decoration: InputDecoration(
-        hintText: 'Tìm bài hát, nghệ sĩ...',
+        hintText: 'Tìm bài hát, nghệ sĩ hoặc nhập lời bài hát...',
         hintStyle: TextStyle(color: cs.outline),
         prefixIcon: Icon(Icons.search_rounded, color: cs.outline),
         suffixIcon: ValueListenableBuilder(
           valueListenable: controller,
-          builder: (_, v, __) => v.text.isNotEmpty
-              ? IconButton(
+          builder: (_, v, __) => Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                tooltip: isListening ? 'Dừng ghi âm' : 'Tìm bằng giọng nói',
+                icon: Icon(
+                  isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
+                  color: isListening ? cs.primary : cs.outline,
+                ),
+                onPressed: onVoiceTap,
+              ),
+              if (v.text.isNotEmpty)
+                IconButton(
                   icon: Icon(Icons.clear_rounded, color: cs.outline),
                   onPressed: onClear,
-                )
-              : const SizedBox.shrink(),
+                ),
+            ],
+          ),
         ),
         border: InputBorder.none,
         filled: false,

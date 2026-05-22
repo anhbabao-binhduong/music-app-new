@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:url_launcher/url_launcher.dart';
+
 import '../../core/constants/colors.dart';
 import '../../data/repositories/news_repository_impl.dart';
 import '../../presentation/bloc/news/news_cubit.dart';
@@ -10,6 +10,7 @@ import '../../presentation/bloc/news/news_state.dart';
 import '../../presentation/bloc/player/player_bloc.dart';
 import '../../presentation/bloc/player/player_state.dart';
 import '../../widgets/mini_player_bar.dart';
+import 'news_reader_page.dart';
 import 'widgets/news_article_card.dart';
 
 class NewsPage extends StatefulWidget {
@@ -32,13 +33,46 @@ class _NewsPageState extends State<NewsPage> {
     context.read<NewsCubit>().loadNews();
   }
 
-  Future<void> _openArticle(String url) async {
-    if (url.isEmpty) return;
-    final uri = Uri.tryParse(url);
-    if (uri == null) return;
-    try {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (_) {}
+  Future<void> _openArticle({
+    required String url,
+    required String title,
+    required String source,
+  }) async {
+    debugPrint('🔍 Đang mở bài báo: $url');
+    
+    if (url.isEmpty) {
+      debugPrint('❌ URL rỗng, không thể mở');
+      return;
+    }
+
+    Uri? uri = Uri.tryParse(url);
+    if (uri == null) {
+      debugPrint('❌ URL không hợp lệ: $url');
+      return;
+    }
+
+    if (uri.scheme.isEmpty) {
+      uri = Uri.tryParse('https://$url');
+      if (uri == null) {
+        debugPrint('❌ Không thể parse URL: $url');
+        return;
+      }
+    }
+
+    debugPrint('✅ URL hợp lệ, đang navigate...');
+
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => NewsReaderPage(
+          url: uri.toString(),
+          title: title,
+          source: source,
+        ),
+      ),
+    );
+    
+    debugPrint('✅ Đã quay lại từ NewsReaderPage');
   }
 
   void _filterBySource(String source) {
@@ -169,7 +203,6 @@ class _NewsPageState extends State<NewsPage> {
   Widget _buildBody(ThemeData theme) {
     return BlocBuilder<NewsCubit, NewsState>(
       builder: (context, state) {
-        print('[UI] state = $state');
         if (state is NewsLoading) {
           return const Center(
             child: CircularProgressIndicator(color: kAccent),
@@ -249,7 +282,11 @@ class _NewsPageState extends State<NewsPage> {
                   final article = state.articles[index];
                   return NewsArticleCard(
                     article: article,
-                    onTap: () => _openArticle(article.link),
+                    onTap: () => _openArticle(
+                      url: article.link,
+                      title: article.title,
+                      source: article.source,
+                    ),
                   );
                 },
               );
