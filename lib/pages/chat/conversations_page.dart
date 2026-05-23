@@ -109,6 +109,7 @@ class _ConversationTile extends StatelessWidget {
               arguments: {
                 'conversationId': conversation.id,
                 'otherUserName': conversation.otherUserName,
+                'otherUserId': conversation.otherUserId,
               },
             );
 

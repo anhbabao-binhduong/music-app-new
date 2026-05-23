@@ -1201,6 +1201,7 @@ class _ChatActionButtonState extends State<_ChatActionButton> {
           arguments: {
             'conversationId': conversationId,
             'otherUserName': displayName,
+            'otherUserId': widget.user.id,
           },
         );
       },
