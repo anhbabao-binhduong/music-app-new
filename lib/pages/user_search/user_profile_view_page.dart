@@ -21,13 +21,15 @@ class UserProfileViewPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider<UserProfileCubit>(
       create: (_) => getIt<UserProfileCubit>()..loadUserProfile(userId),
-      child: const _UserProfileView(),
+      child: _UserProfileView(userId: userId),
     );
   }
 }
 
 class _UserProfileView extends StatelessWidget {
-  const _UserProfileView();
+  final String userId;
+
+  const _UserProfileView({required this.userId});
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +52,10 @@ class _UserProfileView extends StatelessWidget {
             return _ErrorView(message: state.message, scheme: scheme);
           }
           if (state is UserProfileLoaded) {
-            return _ProfileContent(user: state.user);
+            return _ProfileContent(
+              user: state.user,
+              viewedUserId: userId,
+            );
           }
           return const SizedBox.shrink();
         },
@@ -61,8 +66,12 @@ class _UserProfileView extends StatelessWidget {
 
 class _ProfileContent extends StatefulWidget {
   final UserSearchResultEntity user;
+  final String viewedUserId;
 
-  const _ProfileContent({required this.user});
+  const _ProfileContent({
+    required this.user,
+    required this.viewedUserId,
+  });
 
   @override
   State<_ProfileContent> createState() => _ProfileContentState();
@@ -74,53 +83,91 @@ class _ProfileContentState extends State<_ProfileContent> {
   @override
   void initState() {
     super.initState();
-    _supplementalFuture = _loadSupplementalData(widget.user.id);
+    _supplementalFuture = _loadSupplementalData(widget.viewedUserId);
   }
 
   Future<_ProfileSupplementalData> _loadSupplementalData(String userId) async {
     final supabase = Supabase.instance.client;
 
-    try {
-      final results = await Future.wait<dynamic>([
-        supabase.from('profiles').select(
-          'created_at, favorite_genres, listening_moods, music_level',
-        ).eq('id', userId).maybeSingle(),
-        supabase.from('favorites').select('song_id').eq('user_id', userId),
-        supabase.from('listening_history').select(
-          'song_id, song_title, song_artist, song_art_uri, played_at',
-        ).eq('user_id', userId).order('played_at', ascending: false),
-        supabase.from('user_songs').select(
-          'id, title, artist, art_url, status, created_at',
-        ).eq('user_id', userId).order('created_at', ascending: false),
-      ]);
-
-      final profileMap = Map<String, dynamic>.from(
-        (results[0] as Map<String, dynamic>?) ?? const {},
-      );
-      final favoritesRows = List<Map<String, dynamic>>.from(results[1] as List);
-      final historyRows = List<Map<String, dynamic>>.from(results[2] as List);
-      final uploadedRows = List<Map<String, dynamic>>.from(results[3] as List);
-
-      final approvedSongs = uploadedRows
-          .where((song) => song['status']?.toString() == 'approved')
-          .take(5)
-          .map(_ProfileSongItem.fromMap)
-          .toList();
-
-      return _ProfileSupplementalData(
-        createdAt: DateTime.tryParse(profileMap['created_at']?.toString() ?? ''),
-        favoriteGenres: _extractStringList(profileMap['favorite_genres']),
-        listeningMoods: _extractStringList(profileMap['listening_moods']),
-        musicLevel: _normalizedText(profileMap['music_level']?.toString()),
-        favoritesCount: favoritesRows.length,
-        listeningCount: historyRows.length,
-        uploadedSongsCount: uploadedRows.length,
-        recentHistory: historyRows.take(5).map(_RecentSongItem.fromMap).toList(),
-        approvedSongs: approvedSongs,
-      );
-    } catch (_) {
-      return const _ProfileSupplementalData();
+    Future<T> safeQuery<T>(Future<T> future, T fallback) async {
+      try {
+        return await future;
+      } catch (_) {
+        return fallback;
+      }
     }
+
+    final profileResult = await safeQuery<Map<String, dynamic>?>(
+      supabase
+          .from('profiles')
+          .select('created_at, favorite_genres, listening_moods, music_level')
+          .eq('id', userId)
+          .maybeSingle(),
+      null,
+    );
+
+    final favoritesRows = await safeQuery<List<dynamic>>(
+      supabase.from('favorites').select('song_id').eq('user_id', userId),
+      const [],
+    );
+
+    final listeningRows = await safeQuery<List<dynamic>>(
+      supabase.from('listening_history').select('song_id').eq('user_id', userId),
+      const [],
+    );
+
+    final favoritesCount = favoritesRows
+        .map((row) => (row as Map)['song_id']?.toString())
+        .where((id) => id != null && id.isNotEmpty)
+        .toSet()
+        .length;
+
+    final listeningCount = listeningRows.length;
+
+    final historyRows = await safeQuery<List<dynamic>>(
+      supabase
+          .from('listening_history')
+          .select('song_id, song_title, song_artist, song_art_uri, played_at')
+          .eq('user_id', userId)
+          .order('played_at', ascending: false)
+          .limit(5),
+      const [],
+    );
+
+    final uploadedRows = await safeQuery<List<dynamic>>(
+      supabase
+          .from('user_songs')
+          .select('id, title, artist, art_url, status, created_at')
+          .eq('user_id', userId)
+          .order('created_at', ascending: false),
+      const [],
+    );
+
+    final profileMap = Map<String, dynamic>.from(profileResult ?? const {});
+    final normalizedHistoryRows = historyRows
+        .map((row) => Map<String, dynamic>.from(row as Map))
+        .toList();
+    final normalizedUploadedRows = uploadedRows
+        .map((row) => Map<String, dynamic>.from(row as Map))
+        .toList();
+
+    final approvedSongs = normalizedUploadedRows
+        .where((song) => song['status']?.toString() == 'approved')
+        .take(5)
+        .map(_ProfileSongItem.fromMap)
+        .toList();
+
+    return _ProfileSupplementalData(
+      createdAt: DateTime.tryParse(profileMap['created_at']?.toString() ?? ''),
+      favoriteGenres: _extractStringList(profileMap['favorite_genres']),
+      listeningMoods: _extractStringList(profileMap['listening_moods']),
+      musicLevel: _normalizedText(profileMap['music_level']?.toString()),
+      favoritesCount: favoritesCount,
+      listeningCount: listeningCount,
+      uploadedSongsCount: normalizedUploadedRows.length,
+      recentHistory: normalizedHistoryRows.map(_RecentSongItem.fromMap).toList(),
+      approvedSongs: approvedSongs,
+    );
   }
 
   static List<String> _extractStringList(dynamic raw) {
@@ -362,34 +409,8 @@ class _ProfileContentState extends State<_ProfileContent> {
                       ),
                       const SizedBox(height: 32),
                     ],
-                    if (supplemental.recentHistory.isNotEmpty) ...[
-                      _SectionTitle(title: 'Nghe gần đây'),
-                      const SizedBox(height: 12),
-                      _SectionCard(
-                        scheme: scheme,
-                        isDark: isDark,
-                        child: Column(
-                          children: [
-                            for (var i = 0; i < supplemental.recentHistory.length; i++) ...[
-                              _SongListTile(
-                                title: supplemental.recentHistory[i].title,
-                                subtitle: supplemental.recentHistory[i].subtitle,
-                                trailing: supplemental.recentHistory[i].playedAt != null
-                                    ? _formatDateTimeShort(
-                                        supplemental.recentHistory[i].playedAt!,
-                                      )
-                                    : null,
-                                imageUrl: supplemental.recentHistory[i].imageUrl,
-                                fallbackIcon: Icons.history_rounded,
-                              ),
-                              if (i != supplemental.recentHistory.length - 1)
-                                _Divider(scheme: scheme),
-                            ],
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                    ],
+                    // "Nghe gần đây" section ẩn
+                    const SizedBox.shrink(),
                     if (supplemental.approvedSongs.isNotEmpty) ...[
                       _SectionTitle(title: 'Bài hát đã đăng'),
                       const SizedBox(height: 12),
@@ -1202,6 +1223,7 @@ class _ChatActionButtonState extends State<_ChatActionButton> {
             'conversationId': conversationId,
             'otherUserName': displayName,
             'otherUserId': widget.user.id,
+            'otherUserAvatarUrl': widget.user.avatarUrl,
           },
         );
       },

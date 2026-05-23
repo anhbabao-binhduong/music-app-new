@@ -58,12 +58,13 @@ class MyApp extends StatelessWidget {
             );
           }
           if (settings.name == AppRoutes.chat) {
-            final args = settings.arguments as Map<String, String>;
+            final args = settings.arguments as Map<String, String?>;
             return MaterialPageRoute(
               builder: (_) => ChatPage(
                 conversationId: args['conversationId']!,
                 otherUserName: args['otherUserName']!,
                 otherUserId: args['otherUserId']!,
+                otherUserAvatarUrl: args['otherUserAvatarUrl'],
               ),
             );
           }

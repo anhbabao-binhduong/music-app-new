@@ -104,14 +104,15 @@ class _ConversationTile extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
           onTap: () async {
-            await Navigator.of(context).pushNamed(
-              AppRoutes.chat,
-              arguments: {
-                'conversationId': conversation.id,
-                'otherUserName': conversation.otherUserName,
-                'otherUserId': conversation.otherUserId,
-              },
-            );
+              await Navigator.of(context).pushNamed(
+                AppRoutes.chat,
+                arguments: {
+                  'conversationId': conversation.id,
+                  'otherUserName': conversation.otherUserName,
+                  'otherUserId': conversation.otherUserId,
+                  'otherUserAvatarUrl': conversation.otherUserAvatarUrl,
+                },
+              );
 
             if (context.mounted) {
               context.read<ConversationsCubit>().init();

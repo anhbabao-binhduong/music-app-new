@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -16,12 +17,14 @@ class ChatPage extends StatefulWidget {
   final String conversationId;
   final String otherUserName;
   final String otherUserId;
+  final String? otherUserAvatarUrl;
 
   const ChatPage({
     super.key,
     required this.conversationId,
     required this.otherUserName,
     required this.otherUserId,
+    this.otherUserAvatarUrl,
   });
 
   @override
@@ -101,16 +104,48 @@ class _ChatPageState extends State<ChatPage> {
                     backgroundColor: Theme.of(
                       context,
                     ).colorScheme.surfaceContainerHighest,
-                    child: Text(
-                      widget.otherUserName.isNotEmpty
-                          ? widget.otherUserName[0].toUpperCase()
-                          : '?',
-                      style: GoogleFonts.syne(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
+                    child: widget.otherUserAvatarUrl != null &&
+                            widget.otherUserAvatarUrl!.isNotEmpty
+                        ? ClipOval(
+                            child: CachedNetworkImage(
+                              imageUrl: widget.otherUserAvatarUrl!,
+                              width: 32,
+                              height: 32,
+                              fit: BoxFit.cover,
+                              placeholder: (_, __) => Text(
+                                widget.otherUserName.isNotEmpty
+                                    ? widget.otherUserName[0].toUpperCase()
+                                    : '?',
+                                style: GoogleFonts.syne(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
+                                ),
+                              ),
+                              errorWidget: (_, __, ___) => Text(
+                                widget.otherUserName.isNotEmpty
+                                    ? widget.otherUserName[0].toUpperCase()
+                                    : '?',
+                                style: GoogleFonts.syne(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
+                                ),
+                              ),
+                            ),
+                          )
+                        : Text(
+                            widget.otherUserName.isNotEmpty
+                                ? widget.otherUserName[0].toUpperCase()
+                                : '?',
+                            style: GoogleFonts.syne(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
