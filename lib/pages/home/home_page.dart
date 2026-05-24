@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:music_app/presentation/bloc/download/download_cubit.dart';
 import 'package:music_app/presentation/bloc/favorite/favorite_cubit.dart';
+import 'package:music_app/presentation/bloc/playlist/playlist_cubit.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../presentation/bloc/search/search_page.dart';
@@ -135,6 +136,10 @@ class _HomePageState extends State<HomePage> {
       case 4:
         final totalFavorites = context.watch<FavoriteCubit>().state.length;
         final totalDownloads = context.watch<DownloadCubit>().state.length;
+        final playlistState = context.watch<PlaylistCubit>().state;
+        final totalPlaylists = playlistState is PlaylistLoaded 
+            ? playlistState.playlists.length 
+            : 0;
         return ProfileTab(
           isLoggedIn: _isLoggedIn,
           userName: _userName,
@@ -142,6 +147,7 @@ class _HomePageState extends State<HomePage> {
           userId: _isLoggedIn ? _user?.id : null,
           userAvatarUrl: _userAvatarUrl,
           favoriteCount: totalFavorites,
+          playlistCount: totalPlaylists,
           downloadCount: totalDownloads,
           onLogout: _onLogout,
           onProfileUpdated: _refreshExploreRecommendations,

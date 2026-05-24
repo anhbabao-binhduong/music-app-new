@@ -1255,8 +1255,8 @@ class _ChatActionButtonState extends State<_ChatActionButton> {
           ),
           child: ElevatedButton.icon(
             onPressed: _isLoading ? null : _openChat,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.transparent,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
               shadowColor: Colors.transparent,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
